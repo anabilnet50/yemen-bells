@@ -212,6 +212,7 @@ function Home() {
             </motion.div>
 
             {/* Right Spacer to preserve layout balance */}
+            {/* Right Spacer - visible only on desktop */}
             <div className="hidden lg:block w-1/4"></div>
           </div>
         </header>
@@ -499,8 +500,8 @@ function Home() {
 
           {/* Middle Section - Precision Journalism Layout */}
           <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 items-stretch px-4 md:px-6">
-            {/* Right Column (Articles & Studies) - order-3 on mobile, order-1 on desktop */}
-            <div className="lg:col-span-1 order-3 lg:order-1 flex flex-col gap-6">
+            {/* Right Column (Articles & Studies) - order-1 on mobile, order-1 on desktop */}
+            <div className="lg:col-span-1 order-1 lg:order-1 flex flex-col gap-6">
 
               {/* Opinion Articles */}
               <div className="glass-card overflow-hidden flex-1 flex flex-col border border-primary-navy/5 bg-white/40">
@@ -721,8 +722,8 @@ function Home() {
               }
             </div>
 
-            {/* Left Column (Images/Widgets - Multimedia Focus) - order-4 on mobile, order-4 on desktop */}
-            <div className="lg:col-span-1 order-4 flex flex-col gap-6">
+            {/* Left Column (Images/Widgets - Multimedia Focus) - order-3 on mobile, order-4 on desktop */}
+            <div className="lg:col-span-1 order-3 lg:order-4 flex flex-col gap-6">
               {/* Rights and Freedoms - Cinematic Style */}
               <div className="glass-card overflow-hidden flex-1 flex flex-col border border-primary-navy/10 relative group min-h-[350px]">
                 <div className="absolute inset-0">
