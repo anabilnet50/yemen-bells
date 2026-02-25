@@ -156,6 +156,11 @@ export async function initDb() {
       { key: 'economy_title', value: 'اقتصاد' },
       { key: 'tourism_title', value: 'سياحة' },
       { key: 'sports_title', value: 'رياضة' },
+      { key: 'facebook_url', value: 'https://facebook.com' },
+      { key: 'twitter_url', value: 'https://twitter.com' },
+      { key: 'youtube_url', value: 'https://youtube.com' },
+      { key: 'linkedin_url', value: 'https://linkedin.com' },
+      { key: 'telegram_url', value: 'https://t.me/yemen_bells' },
     ];
 
     for (const s of defaultSettings) {

@@ -129,6 +129,7 @@ function Home() {
                 {settings.facebook_url && <a href={settings.facebook_url} target="_blank" rel="noopener noreferrer" className="text-white/40 hover:text-blue-400 hover:scale-110 transition-all duration-300"><Facebook className="w-3.5 h-3.5" /></a>}
                 {settings.twitter_url && <a href={settings.twitter_url} target="_blank" rel="noopener noreferrer" className="text-white/40 hover:text-sky-400 hover:scale-110 transition-all duration-300"><Twitter className="w-3.5 h-3.5" /></a>}
                 {settings.youtube_url && <a href={settings.youtube_url} target="_blank" rel="noopener noreferrer" className="text-white/40 hover:text-primary-crimson hover:scale-110 transition-all duration-300"><Youtube className="w-3.5 h-3.5" /></a>}
+                {settings.telegram_url && <a href={settings.telegram_url} target="_blank" rel="noopener noreferrer" className="text-white/40 hover:text-sky-400 hover:scale-110 transition-all duration-300"><Send className="w-3.5 h-3.5" /></a>}
                 {settings.linkedin_url && <a href={settings.linkedin_url} target="_blank" rel="noopener noreferrer" className="text-white/40 hover:text-blue-500 hover:scale-110 transition-all duration-300"><Linkedin className="w-3.5 h-3.5" /></a>}
               </div>
             </div>
