@@ -45,7 +45,7 @@ export default function ArticleDetail() {
     })
       .then(res => res.json())
       .then(() => {
-        setComments([{ name: userName, content: comment, created_at: new Date().toISOString() }, ...comments]);
+        // setComments([{ name: userName, content: comment, created_at: new Date().toISOString() }, ...comments]);
         setComment('');
         setUserName('');
         alert('تم إضافة تعليقك بنجاح');
@@ -86,7 +86,10 @@ export default function ArticleDetail() {
         shareUrl = `https://twitter.com/intent/tweet?url=${encodeURIComponent(url)}&text=${encodeURIComponent(text)}`;
         break;
       case 'whatsapp':
-        shareUrl = `https://api.whatsapp.com/send?text=${encodeURIComponent(text + ' ' + url)}`;
+        shareUrl = `https://wa.me/?text=${encodeURIComponent(text + ' ' + url)}`;
+        break;
+      case 'telegram':
+        shareUrl = `https://t.me/share/url?url=${encodeURIComponent(url)}&text=${encodeURIComponent(text)}`;
         break;
     }
 
@@ -189,7 +192,7 @@ export default function ArticleDetail() {
                     <span className="flex items-center gap-3"><Eye className="w-4 h-4 text-primary-crimson" /> {article.views || 0} قراءة</span>
                     <span className="flex items-center gap-3"><Clock className="w-4 h-4 text-primary-crimson" /> {readingTime} د قراءة</span>
                   </div>
-                  <h1 className="text-4xl md:text-6xl font-black text-primary-navy leading-[1.15] mb-10 drop-shadow-sm">
+                  <h1 className="text-3xl md:text-5xl font-black text-primary-navy leading-[1.15] mb-10 drop-shadow-sm">
                     {article.title}
                   </h1>
                   <div className="w-24 h-1.5 bg-primary-crimson rounded-full"></div>
@@ -202,6 +205,20 @@ export default function ArticleDetail() {
                     ))}
                   </div>
 
+                  {/* Writer Profile Section */}
+                  {article.writer_name && (
+                    <div className="mt-20 p-10 bg-surface-soft rounded-[3rem] border border-primary-navy/5 flex flex-col md:flex-row items-center gap-10">
+                      <div className="w-32 h-32 rounded-full overflow-hidden border-4 border-white shadow-xl bg-gray-100 shrink-0">
+                        <img src={article.writer_image || 'https://via.placeholder.com/150'} className="w-full h-full object-cover" />
+                      </div>
+                      <div className="text-center md:text-right">
+                        <p className="text-xs font-black text-primary-crimson uppercase tracking-widest mb-2">عن الكاتب</p>
+                        <h4 className="text-2xl font-black text-primary-navy mb-4">{article.writer_name}</h4>
+                        <p className="text-gray-600 font-bold text-base leading-relaxed">{article.writer_bio || 'كاتب ومحرر صحفي لدى أجراس اليمن، مهتم بتغطية الأحداث الجارية والتحليلات السياسية.'}</p>
+                      </div>
+                    </div>
+                  )}
+
                   {/* Share Panel - Sophisticated Design */}
                   <div className="mt-20 p-12 glass-card bg-surface-soft/50 rounded-[3rem] border border-primary-navy/5 text-center relative overflow-hidden">
                     <div className="absolute -bottom-20 -right-20 w-60 h-60 bg-primary-crimson/5 blur-[80px] rounded-full"></div>
@@ -212,7 +229,8 @@ export default function ArticleDetail() {
                       {[
                         { icon: Facebook, color: 'bg-[#1877f2]', platform: 'facebook', label: 'Facebook' },
                         { icon: Twitter, color: 'bg-black', platform: 'twitter', label: 'X' },
-                        { icon: MessageCircle, color: 'bg-[#25d366]', platform: 'whatsapp', label: 'Whatsapp' }
+                        { icon: MessageCircle, color: 'bg-[#25d366]', platform: 'whatsapp', label: 'Whatsapp' },
+                        { icon: Send, color: 'bg-[#0088cc]', platform: 'telegram', label: 'Telegram' }
                       ].map((social, i) => (
                         <button
                           key={i}
@@ -257,25 +275,15 @@ export default function ArticleDetail() {
                         </button>
                       </form>
 
-                      {/* Comments Display */}
                       <div className="space-y-6">
                         {comments.map((c, i) => (
-                          <motion.div
-                            initial={{ opacity: 0, x: 20 }}
-                            whileInView={{ opacity: 1, x: 0 }}
-                            key={i}
-                            className="p-8 bg-white rounded-3xl border border-gray-50 shadow-sm relative group"
-                          >
-                            <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-0 group-hover:h-full bg-primary-crimson transition-all duration-500 rounded-full"></div>
+                          <div key={i} className="bg-white p-8 rounded-[2rem] shadow-sm border border-gray-50 hover:border-primary-crimson/20 transition-all">
                             <div className="flex justify-between items-center mb-4">
-                              <div className="flex items-center gap-4">
-                                <div className="w-10 h-10 bg-primary-navy/5 rounded-full flex items-center justify-center font-black text-primary-navy">{c.name?.[0]}</div>
-                                <span className="font-black text-primary-navy text-sm uppercase tracking-widest">{c.name}</span>
-                              </div>
-                              <span className="text-[10px] text-gray-400 font-bold uppercase tracking-widest px-3 py-1 bg-gray-50 rounded-full">{new Date(c.created_at).toLocaleDateString('ar-YE')}</span>
+                              <span className="font-black text-primary-navy text-sm">{c.name}</span>
+                              <span className="text-[10px] text-gray-400 font-bold uppercase tracking-widest">{new Date(c.created_at).toLocaleDateString('ar-YE')}</span>
                             </div>
-                            <p className="text-gray-600 font-bold leading-relaxed text-sm">{c.content}</p>
-                          </motion.div>
+                            <p className="text-gray-600 font-bold text-base leading-relaxed">{c.content}</p>
+                          </div>
                         ))}
                       </div>
                     </div>

@@ -1,14 +1,22 @@
 import React, { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Link, useNavigate } from 'react-router-dom';
-import { Search, Globe, Facebook, Twitter, Youtube, Linkedin, ChevronLeft, ChevronRight, Calendar, User, Eye, TrendingUp, Play, Clock, Send, MessageCircle, ArrowLeft, MapPin } from 'lucide-react';
+import { Search, Globe, Facebook, Twitter, Youtube, Linkedin, ChevronLeft, ChevronRight, Calendar, User, Eye, TrendingUp, Play, Clock, Send, MessageCircle, ArrowLeft, MapPin, DollarSign } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import ArticleDetail from './components/ArticleDetail';
 import AdminDashboard from './components/AdminDashboard';
+
+const getYoutubeEmbedUrl = (url: string) => {
+  if (!url) return null;
+  const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/;
+  const match = url.match(regExp);
+  return (match && match[2].length === 11) ? `https://www.youtube.com/embed/${match[2]}?autoplay=1&mute=1&controls=0&loop=1&playlist=${match[2]}` : null;
+};
 
 function Home() {
   const [articles, setArticles] = useState<any[]>([]);
   const [urgentArticles, setUrgentArticles] = useState<any[]>([]);
   const [categories, setCategories] = useState<any[]>([]);
+  const [ads, setAds] = useState<any[]>([]);
   const [settings, setSettings] = useState<any>({});
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
@@ -40,10 +48,23 @@ function Home() {
   const smallArticlesPerPage = 3;
   const navigate = useNavigate();
 
+  const mainArticle = urgentArticles[0] || articles[0];
+  const [videoLoaded, setVideoLoaded] = useState(false);
+  const [currentTime, setCurrentTime] = useState(new Date());
+
+  useEffect(() => {
+    const timer = setInterval(() => setCurrentTime(new Date()), 1000);
+    return () => clearInterval(timer);
+  }, []);
+
+  useEffect(() => {
+    // Delay loading video to prioritize initial render
+    const timer = setTimeout(() => setVideoLoaded(true), 1500);
+    return () => clearTimeout(timer);
+  }, [mainArticle?.id]);
+
   useEffect(() => {
     setCurrentPage(1);
-    setOpinionPage(1);
-    setStudiesPage(1);
   }, [selectedCategory, searchTerm]);
 
   useEffect(() => {
@@ -53,20 +74,15 @@ function Home() {
   }, []);
 
   useEffect(() => {
-    fetch('/api/articles')
+    fetch('/api/init')
       .then(res => res.json())
       .then(data => {
-        setArticles(data);
-        setUrgentArticles(data.filter((a: any) => a.is_urgent === 1));
+        setArticles(data.articles);
+        setUrgentArticles(data.articles.filter((a: any) => a.is_urgent === 1));
+        setCategories(data.categories);
+        setSettings(data.settings);
+        setAds(data.ads);
       });
-
-    fetch('/api/settings')
-      .then(res => res.json())
-      .then(setSettings);
-
-    fetch('/api/categories')
-      .then(res => res.json())
-      .then(setCategories);
   }, []);
 
   const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -85,7 +101,6 @@ function Home() {
     }
   };
 
-  const mainArticle = urgentArticles[0] || articles[0];
   const filteredDisplayArticles = selectedCategory
     ? articles.filter(a => a.category_slug === selectedCategory)
     : articles;
@@ -97,18 +112,7 @@ function Home() {
   );
 
   const opinionArticles = articles.filter(a => a.category_slug === 'opinion');
-  const totalOpinionPages = Math.ceil(opinionArticles.length / smallArticlesPerPage);
-  const paginatedOpinion = opinionArticles.slice(
-    (opinionPage - 1) * smallArticlesPerPage,
-    opinionPage * smallArticlesPerPage
-  );
-
-  const studiesArticles = articles.filter(a => a.category_slug === 'studies'); // Fixed slug
-  const totalStudiesPages = Math.ceil(studiesArticles.length / smallArticlesPerPage);
-  const paginatedStudies = studiesArticles.slice(
-    (studiesPage - 1) * smallArticlesPerPage,
-    studiesPage * smallArticlesPerPage
-  );
+  const studiesArticles = articles.filter(a => a.category_slug === 'studies');
 
   return (
     <div className="font-sans bg-surface-soft min-h-screen text-primary-navy">
@@ -125,13 +129,14 @@ function Home() {
                 {settings.facebook_url && <a href={settings.facebook_url} target="_blank" rel="noopener noreferrer" className="text-white/40 hover:text-blue-400 hover:scale-110 transition-all duration-300"><Facebook className="w-3.5 h-3.5" /></a>}
                 {settings.twitter_url && <a href={settings.twitter_url} target="_blank" rel="noopener noreferrer" className="text-white/40 hover:text-sky-400 hover:scale-110 transition-all duration-300"><Twitter className="w-3.5 h-3.5" /></a>}
                 {settings.youtube_url && <a href={settings.youtube_url} target="_blank" rel="noopener noreferrer" className="text-white/40 hover:text-primary-crimson hover:scale-110 transition-all duration-300"><Youtube className="w-3.5 h-3.5" /></a>}
+                {settings.telegram_url && <a href={settings.telegram_url} target="_blank" rel="noopener noreferrer" className="text-white/40 hover:text-sky-400 hover:scale-110 transition-all duration-300"><Send className="w-3.5 h-3.5" /></a>}
                 {settings.linkedin_url && <a href={settings.linkedin_url} target="_blank" rel="noopener noreferrer" className="text-white/40 hover:text-blue-500 hover:scale-110 transition-all duration-300"><Linkedin className="w-3.5 h-3.5" /></a>}
               </div>
             </div>
           </div>
 
           {/* Luxury Header Content */}
-          <div className="relative h-auto min-h-[500px] md:h-72 px-4 md:px-8 flex flex-col md:flex-row justify-between items-center overflow-hidden py-12 md:py-0">
+          <div className="relative h-auto min-h-[400px] md:h-60 px-4 md:px-8 flex flex-col md:flex-row justify-between items-center overflow-hidden py-12 md:py-0">
             {/* Artistic Background Overlay - News Globe Animation */}
             <div className="absolute inset-0 z-0 bg-primary-navy">
               {/* Spinning Globe Image - Fully Visible & Flush Left */}
@@ -316,124 +321,186 @@ function Home() {
               {mainArticle && (
                 <div
                   onClick={() => navigate(`/article/${mainArticle.id}`)}
-                  className="relative h-[400px] md:h-[550px] bg-primary-navy rounded-3xl overflow-hidden cursor-pointer shadow-premium border border-white/5 group"
+                  className="relative h-[350px] md:h-[480px] bg-primary-navy rounded-3xl overflow-hidden cursor-pointer shadow-premium border border-white/5 group"
                 >
-                  {mainArticle.image_url && (
-                    <img src={mainArticle.image_url || undefined} alt={mainArticle.title} className="w-full h-full object-cover transition-transform duration-1000 scale-100 group-hover:scale-110" referrerPolicy="no-referrer" />
+                  {mainArticle.video_url && videoLoaded ? (
+                    (() => {
+                      const ytUrl = getYoutubeEmbedUrl(mainArticle.video_url);
+                      return ytUrl ? (
+                        <iframe
+                          src={ytUrl}
+                          className="w-full h-full pointer-events-none"
+                          frameBorder="0"
+                          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                          allowFullScreen
+                        ></iframe>
+                      ) : (
+                        <video
+                          src={mainArticle.video_url}
+                          autoPlay
+                          muted
+                          loop
+                          className="w-full h-full object-cover"
+                        />
+                      );
+                    })()
+                  ) : (
+                    <motion.div
+                      initial={{ opacity: 0.5 }}
+                      animate={{ opacity: 1 }}
+                      className="w-full h-full relative"
+                    >
+                      {mainArticle.image_url && (
+                        <img
+                          src={mainArticle.image_url || undefined}
+                          alt={mainArticle.title}
+                          className="w-full h-full object-cover transition-transform duration-1000 scale-100 group-hover:scale-110"
+                          referrerPolicy="no-referrer"
+                        />
+                      )}
+                      {mainArticle.video_url && !videoLoaded && (
+                        <div className="absolute inset-0 flex items-center justify-center bg-black/20 backdrop-blur-sm">
+                          <div className="w-16 h-16 bg-white/10 rounded-full flex items-center justify-center border border-white/30">
+                            <Play className="w-8 h-8 text-white animate-pulse" />
+                          </div>
+                        </div>
+                      )}
+                    </motion.div>
                   )}
 
-                  {/* High-End Overlay */}
-                  <div className="absolute inset-0 bg-gradient-to-t from-primary-navy via-primary-navy/40 to-transparent flex flex-col justify-end p-8 md:p-12">
-                    <div className="flex items-center gap-3 mb-4">
-                      {mainArticle.is_urgent === 1 && (
-                        <span className="bg-primary-crimson text-white px-4 py-1.5 text-sm font-black uppercase tracking-widest rounded-full shadow-[0_0_20px_rgba(225,29,72,0.5)] flex items-center gap-2">
-                          <div className="w-2 h-2 bg-white rounded-full animate-pulse"></div>
-                          عاجل
+                  {/* Broadcast Style In-Vision Ticker (Al Hadath Style) */}
+                  <div className="absolute bottom-0 left-0 right-0 bg-primary-navy/95 backdrop-blur-3xl border-t border-white/20 z-20 flex items-stretch h-10 md:h-12 overflow-hidden shadow-[0_-10px_40px_rgba(0,0,0,0.7)]">
+                    {/* Urgent Tag - Right Side */}
+                    <div className="bg-primary-crimson text-white px-4 md:px-6 flex items-center justify-center font-black text-[10px] md:text-xs uppercase tracking-[0.2em] relative group/urgent shrink-0 shadow-[10px_0_20px_rgba(225,29,72,0.4)] z-30">
+                      <div className="absolute inset-0 bg-white/20 translate-x-[-100%] group-hover/urgent:translate-x-[100%] transition-transform duration-1000"></div>
+                      عـــاجل
+                    </div>
+
+                    {/* Scrolling Content - Center */}
+                    <div className="flex-1 overflow-hidden flex items-center bg-transparent px-4">
+                      <div className="animate-marquee whitespace-nowrap flex items-center gap-16 text-white font-black text-xs md:text-sm tracking-wide">
+                        {urgentArticles.length > 0 ? (
+                          <>
+                            {[...Array(10)].map((_, i) => (
+                              <React.Fragment key={`inv-rep-${i}`}>
+                                {urgentArticles.map(a => (
+                                  <Link key={`inv-${i}-${a.id}`} to={`/article/${a.id}`} className="flex items-center gap-4 hover:text-accent-gold transition-colors">
+                                    <span className="w-2 h-2 bg-accent-gold rounded-full animate-pulse shadow-[0_0_8px_rgba(245,158,11,0.6)]"></span>
+                                    {a.title}
+                                  </Link>
+                                ))}
+                              </React.Fragment>
+                            ))}
+                          </>
+                        ) : (
+                          <>
+                            {[...Array(6)].map((_, i) => (
+                              <span key={`placeholder-${i}`} className="opacity-50 italic text-[10px] md:text-xs uppercase tracking-[0.3em] flex-shrink-0">
+                                أجراس اليمن .. تغطية حية ومستمرة لكل ما يدور في الساحة اليمنية والمنطقة &nbsp;&nbsp; | &nbsp;&nbsp;
+                              </span>
+                            ))}
+                          </>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Live Clock - Left Side */}
+                    <div className="bg-primary-navy/80 backdrop-blur-md text-white px-4 md:px-6 flex items-center justify-center border-r border-white/10 shrink-0 z-30">
+                      <div className="flex flex-col items-center">
+                        <span className="text-[8px] md:text-[9px] text-accent-gold font-black uppercase tracking-widest opacity-80 leading-none mb-0.5">KSA</span>
+                        <span className="text-xs md:text-base font-black tracking-tighter tabular-nums text-white">
+                          {currentTime.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false })}
                         </span>
-                      )}
-                      <span className="bg-white/10 backdrop-blur-md text-white/90 border border-white/10 px-4 py-1.5 text-sm font-black uppercase tracking-widest rounded-full">
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* High-End Overlay - Moved Up slightly to accommodate the ticker */}
+                  <div className="absolute inset-0 bg-gradient-to-t from-primary-navy/90 via-transparent to-transparent flex flex-col justify-end p-8 md:p-10 pb-16 md:pb-20">
+                    <div className="flex items-center gap-3 mb-3">
+                      <span className="bg-white/10 backdrop-blur-md text-white/90 border border-white/10 px-3 py-1 text-[10px] md:text-xs font-black uppercase tracking-[0.2em] rounded-full">
                         {mainArticle.category_name}
                       </span>
                     </div>
 
-                    <h2 className="text-white text-3xl md:text-4xl font-black leading-[1.15] mb-6 hover:text-accent-gold transition-colors duration-500 drop-shadow-2xl">
+                    <h2 className="text-white text-2xl md:text-3xl font-black leading-[1.15] mb-4 group-hover:text-accent-gold transition-colors duration-500 drop-shadow-2xl line-clamp-2">
                       {mainArticle.title}
                     </h2>
 
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-4">
-                        <div className="w-10 h-10 bg-white/10 backdrop-blur-md rounded-xl flex items-center justify-center text-white/60">
-                          <User className="w-5 h-5" />
+                        <div className="w-8 h-8 bg-white/10 backdrop-blur-md rounded-lg flex items-center justify-center text-white/60">
+                          <User className="w-4 h-4" />
                         </div>
                         <div>
-                          <p className="text-sm text-white/40 font-bold uppercase tracking-widest">المصدر</p>
-                          <p className="text-base text-white font-black">{mainArticle.author || 'أجراس اليمن'}</p>
+                          <p className="text-[10px] text-white/40 font-bold uppercase tracking-widest">المصدر</p>
+                          <p className="text-xs md:text-sm text-white font-black">{mainArticle.author || 'أجراس اليمن'}</p>
                         </div>
                       </div>
 
-                      <div className="flex items-center gap-4 text-white/40 font-bold text-sm uppercase tracking-[0.2em]">
-                        <span className="flex items-center gap-2"><Eye className="w-4 h-4" /> {mainArticle.views || 1024}</span>
-                        <span className="flex items-center gap-2"><Clock className="w-4 h-4" /> {new Date(mainArticle.created_at).toLocaleTimeString('ar-YE', { hour: '2-digit', minute: '2-digit' })}</span>
+                      <div className="flex items-center gap-4 text-white/40 font-bold text-[10px] md:text-xs uppercase tracking-[0.2em]">
+                        <span className="flex items-center gap-1.5"><Eye className="w-3.5 h-3.5" /> {mainArticle.views || 1024}</span>
+                        <span className="flex items-center gap-1.5"><Clock className="w-3.5 h-3.5" /> {new Date(mainArticle.created_at).toLocaleTimeString('ar-YE', { hour: '2-digit', minute: '2-digit' })}</span>
                       </div>
                     </div>
                   </div>
 
                   {/* Hero Navigation Buttons - Sleek Style */}
                   <div className="absolute top-1/2 -translate-y-1/2 left-4 right-4 flex justify-between opacity-0 group-hover:opacity-100 transition-opacity duration-500">
-                    <button className="w-12 h-12 bg-white/10 backdrop-blur-xl text-white rounded-2xl border border-white/10 flex items-center justify-center hover:bg-primary-crimson hover:scale-110 transition-all"><ChevronRight className="w-6 h-6" /></button>
-                    <button className="w-12 h-12 bg-white/10 backdrop-blur-xl text-white rounded-2xl border border-white/10 flex items-center justify-center hover:bg-primary-crimson hover:scale-110 transition-all"><ChevronLeft className="w-6 h-6" /></button>
+                    <button className="w-10 h-10 bg-white/10 backdrop-blur-xl text-white rounded-xl border border-white/10 flex items-center justify-center hover:bg-primary-crimson hover:scale-110 transition-all"><ChevronRight className="w-5 h-5" /></button>
+                    <button className="w-10 h-10 bg-white/10 backdrop-blur-xl text-white rounded-xl border border-white/10 flex items-center justify-center hover:bg-primary-crimson hover:scale-110 transition-all"><ChevronLeft className="w-5 h-5" /></button>
                   </div>
                 </div>
               )}
-
-              {/* Broadcast News Ticker - Premium Edition */}
-              <div className="mt-6 flex bg-white border border-primary-navy/5 items-stretch rounded-2xl md:rounded-3xl overflow-hidden shadow-premium h-14 md:h-20">
-                <div className="bg-primary-navy text-white px-6 md:px-10 py-3 font-black whitespace-nowrap flex items-center gap-3 relative overflow-hidden group">
-                  <div className="absolute inset-0 bg-primary-crimson/20 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-1000"></div>
-                  <span className="relative z-10 text-xs md:text-base tracking-[0.2em] uppercase text-accent-gold">عاجل</span>
-                  <div className="w-2 md:w-2.5 h-2 md:h-2.5 bg-primary-crimson rounded-full animate-pulse shadow-[0_0_10px_rgba(225,29,72,1)]"></div>
-                </div>
-
-                <div className="overflow-hidden flex-1 px-4 md:px-8 text-sm md:text-base font-black flex items-center bg-surface-soft/50">
-                  <div className="animate-marquee whitespace-nowrap text-primary-navy/80 hover:pause flex items-center gap-16">
-                    {urgentArticles.length > 0 ? (
-                      <>
-                        {urgentArticles.map(a => (
-                          <Link key={a.id} to={`/article/${a.id}`} className="text-primary-crimson underline underline-offset-4 decoration-primary-crimson/40 hover:decoration-primary-crimson transition-all duration-300 flex items-center gap-4 hover:gap-6">
-                            <span className="w-1.5 h-1.5 bg-primary-crimson rounded-full shrink-0"></span> {a.title} <span className="opacity-0 group-hover:opacity-100 transition-opacity">←</span>
-                          </Link>
-                        ))}
-                        {/* Repeat for seamless loop */}
-                        {urgentArticles.map(a => (
-                          <Link key={`dup-${a.id}`} to={`/article/${a.id}`} className="text-primary-crimson underline underline-offset-4 decoration-primary-crimson/40 hover:decoration-primary-crimson transition-all duration-300 flex items-center gap-4 hover:gap-6">
-                            <span className="w-1.5 h-1.5 bg-primary-crimson rounded-full shrink-0"></span> {a.title} <span className="opacity-0 group-hover:opacity-100 transition-opacity">←</span>
-                          </Link>
-                        ))}
-                      </>
-                    ) : (
-                      <span className="text-gray-400 italic tracking-widest opacity-60">ترقبوا أهم الأخبار العاجلة على مدار الساعة ...</span>
-                    )}
-                  </div>
-                </div>
-
-                <div className="hidden md:flex bg-primary-navy text-white px-10 py-3 font-black items-center gap-4 border-r border-white/5" dir="ltr">
-                  <div className="flex flex-col items-end">
-                    <span className="text-sm text-accent-gold/60 uppercase tracking-[0.2em]">Live</span>
-                    <span className="text-2xl tracking-tighter tabular-nums text-white drop-shadow-glow">
-                      {new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false })}
-                    </span>
-                  </div>
-                </div>
-              </div>
             </div>
 
-            {/* Ad Space - Elite Promotion */}
-            <div className="lg:col-span-1 glass-card bg-gradient-to-br from-primary-navy to-primary-crimson text-white flex flex-col items-center justify-center p-8 text-center relative overflow-hidden h-[300px] lg:h-auto group shadow-2xl">
-              <div className="absolute inset-0 opacity-20 bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')]"></div>
-              <div className="absolute inset-0 bg-gradient-to-tr from-accent-gold/5 via-transparent to-white/5 opacity-0 group-hover:opacity-100 transition-opacity duration-1000"></div>
-
-              <div className="relative z-10 p-6 rounded-[2rem] border border-white/10 backdrop-blur-xl bg-white/5 w-full h-full flex flex-col justify-center items-center">
-                <motion.div
-                  animate={{ y: [0, -5, 0] }}
-                  transition={{ duration: 4, repeat: Infinity }}
-                  className="bg-accent-gold text-primary-navy px-4 py-1 rounded-full text-xs font-black uppercase tracking-widest mb-6 shadow-glow"
-                >
-                  عرض حصري
-                </motion.div>
-                <div className="text-2xl md:text-3xl font-black mb-4 leading-tight drop-shadow-2xl font-serif italic text-white/90">
-                  {settings.ad_title || 'مساحة إعلانية بريميوم'}
+            {/* Ad Space - Dynamic Elite Promotion */}
+            <div className="lg:col-span-1 glass-card bg-primary-navy text-white flex flex-col items-center justify-center p-0 text-center relative overflow-hidden h-[300px] lg:h-auto group shadow-2xl border border-white/5 rounded-[2rem]">
+              {ads.filter(ad => ad.is_active === 1 && ad.position === 'top').length > 0 ? (
+                (() => {
+                  const ad = ads.filter(ad => ad.is_active === 1 && ad.position === 'top')[0];
+                  return (
+                    <a href={ad.link_url || '#'} target="_blank" rel="noopener noreferrer" className="w-full h-full relative group">
+                      {ad.image_url ? (
+                        <img src={ad.image_url} alt={ad.title} className="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-110" />
+                      ) : ad.adsense_code ? (
+                        <div className="w-full h-full p-4 flex items-center justify-center overflow-hidden" dangerouslySetInnerHTML={{ __html: ad.adsense_code }} />
+                      ) : (
+                        <div className="w-full h-full p-12 flex flex-col items-center justify-center bg-gradient-to-br from-primary-navy to-primary-crimson">
+                          <h3 className="text-2xl font-black mb-4">{ad.title}</h3>
+                          <DollarSign className="w-12 h-12 text-accent-gold" />
+                        </div>
+                      )}
+                      <div className="absolute inset-0 bg-black/20 group-hover:bg-black/0 transition-all"></div>
+                      <div className="absolute top-4 right-4 bg-accent-gold text-primary-navy text-[10px] font-black px-2 py-0.5 rounded tracking-widest uppercase shadow-glow">Sponsored</div>
+                    </a>
+                  );
+                })()
+              ) : (
+                <div className="relative z-10 p-10 flex flex-col justify-center items-center h-full bg-gradient-to-br from-primary-navy to-primary-crimson w-full">
+                  <div className="absolute inset-0 opacity-20 bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')]"></div>
+                  <motion.div
+                    animate={{ y: [0, -5, 0] }}
+                    transition={{ duration: 4, repeat: Infinity }}
+                    className="bg-accent-gold text-primary-navy px-4 py-1 rounded-full text-xs font-black uppercase tracking-widest mb-6 shadow-glow relative z-10"
+                  >
+                    مساحة إعلانية
+                  </motion.div>
+                  <div className="text-2xl md:text-3xl font-black mb-4 leading-tight drop-shadow-2xl font-serif italic text-white/90 relative z-10">
+                    أجراس اليمن بريميوم
+                  </div>
+                  <p className="text-xl font-bold mb-3 text-accent-gold/90 relative z-10">صوتك الحر في كل مكان</p>
+                  <div className="h-px w-12 bg-white/20 mb-4 relative z-10"></div>
+                  <p className="text-sm text-white/60 font-bold leading-relaxed relative z-10">للتواصل والإعلان معنا عبر البريد الإلكتروني أو قنوات التواصل الاجتماعي</p>
                 </div>
-                <p className="text-xl font-bold mb-3 text-accent-gold/90">{settings.ad_text || 'انضم إلى نخبة القراء اليوم'}</p>
-                <div className="h-px w-12 bg-white/20 mb-4"></div>
-                <p className="text-sm text-white/60 font-bold leading-relaxed">{settings.ad_subtext || 'أحدث الأخبار، التحليلات، والتقارير الحصرية في متناول يدك'}</p>
-              </div>
+              )}
             </div>
           </div>
 
           {/* Middle Section - Precision Journalism Layout */}
           <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 items-stretch px-4 md:px-6">
-            {/* Right Column (Articles & Studies) - Prestigious Scroll */}
-            <div className="lg:col-span-1 flex flex-col gap-6">
+            {/* Right Column (Articles & Studies) - order-3 on mobile, order-1 on desktop */}
+            <div className="lg:col-span-1 order-3 lg:order-1 flex flex-col gap-6">
 
               {/* Opinion Articles */}
               <div className="glass-card overflow-hidden flex-1 flex flex-col border border-primary-navy/5 bg-white/40">
@@ -448,49 +515,30 @@ function Home() {
                   مقالات الرأي
                 </motion.div>
                 <div className="p-6 flex-1 flex flex-col justify-between">
-                  <div className="flex flex-col space-y-6 text-base font-black text-center mb-6">
-                    {paginatedOpinion.map((a, index) => (
-                      <motion.div
-                        key={a.id}
-                        initial={{ opacity: 0, y: 40 }}
-                        whileInView={{ opacity: 1, y: 0 }}
-                        viewport={{ once: true, margin: "-20px" }}
-                        transition={{ duration: 0.8, delay: index * 0.15 }}
-                      >
-                        <Link to={`/article/${a.id}`} className="text-primary-crimson underline underline-offset-4 decoration-primary-crimson/40 hover:decoration-primary-crimson transition-all duration-300 leading-relaxed block hover:translate-x-[-4px] group/lnk flex items-center justify-center gap-2">
-                          <span className="opacity-0 group-hover/lnk:opacity-100 transition-opacity text-sm">←</span>{a.title}
-                        </Link>
-                      </motion.div>
-                    ))}
-                    {opinionArticles.length === 0 && (
-                      <>
-                        <motion.span initial={{ opacity: 0, y: 40 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, margin: "-20px" }} transition={{ duration: 0.8, delay: 0 }} className="text-primary-crimson/60 underline underline-offset-4 decoration-primary-crimson/20 leading-relaxed block">تحليل رصين للتحولات الجيوسياسية في اليمن والمنطقة</motion.span>
-                        <motion.span initial={{ opacity: 0, y: 40 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, margin: "-20px" }} transition={{ duration: 0.8, delay: 0.15 }} className="text-primary-crimson/60 underline underline-offset-4 decoration-primary-crimson/20 leading-relaxed block">أبعاد التنمية المستدامة في ظل التحديات الحالية</motion.span>
-                        <motion.span initial={{ opacity: 0, y: 40 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, margin: "-20px" }} transition={{ duration: 0.8, delay: 0.3 }} className="text-primary-crimson/60 underline underline-offset-4 decoration-primary-crimson/20 leading-relaxed block">دور الدبلوماسية الرقمية في صياغة الرأي العام</motion.span>
-                        <motion.span initial={{ opacity: 0, y: 40 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, margin: "-20px" }} transition={{ duration: 0.8, delay: 0.45 }} className="text-primary-crimson/60 underline underline-offset-4 decoration-primary-crimson/20 leading-relaxed block">قراءة نقدية وتطلعات لمستقبل العمل السياسي</motion.span>
-                        <motion.span initial={{ opacity: 0, y: 40 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, margin: "-20px" }} transition={{ duration: 0.8, delay: 0.6 }} className="text-primary-crimson/60 underline underline-offset-4 decoration-primary-crimson/20 leading-relaxed block">التأثيرات الاقتصادية للأزمات وتحديات التعافي</motion.span>
-                      </>
-                    )}
-                  </div>
-
-                  {/* Small Pagination for Opinion */}
-                  {totalOpinionPages > 1 && (
-                    <div className="flex items-center justify-center gap-2 pt-4 border-t border-primary-navy/5">
-                      <button
-                        onClick={() => setOpinionPage(prev => Math.max(prev - 1, 1))}
-                        disabled={opinionPage === 1}
-                        className="w-8 h-8 rounded-lg flex items-center justify-center bg-white border border-primary-navy/10 text-primary-navy hover:bg-primary-crimson hover:text-white transition-all disabled:opacity-50 disabled:cursor-not-allowed">
-                        <ChevronRight className="w-4 h-4" />
-                      </button>
-                      <span className="text-sm font-black text-primary-navy">{opinionPage} / {totalOpinionPages}</span>
-                      <button
-                        onClick={() => setOpinionPage(prev => Math.min(prev + 1, totalOpinionPages))}
-                        disabled={opinionPage === totalOpinionPages}
-                        className="w-8 h-8 rounded-lg flex items-center justify-center bg-white border border-primary-navy/10 text-primary-navy hover:bg-primary-crimson hover:text-white transition-all disabled:opacity-50 disabled:cursor-not-allowed">
-                        <ChevronLeft className="w-4 h-4" />
-                      </button>
+                  <div className="h-32 overflow-hidden relative mb-6">
+                    <div className="animate-marquee-vertical flex flex-col space-y-4 text-base font-black text-center">
+                      {opinionArticles.length > 0 ? (
+                        <>
+                          {opinionArticles.map((a, index) => (
+                            <Link key={a.id} to={`/article/${a.id}`} className="text-primary-crimson underline underline-offset-4 decoration-primary-crimson/40 hover:decoration-primary-crimson transition-all duration-300 leading-relaxed block hover:translate-x-[-4px] group/lnk flex items-center justify-center gap-2">
+                              {a.title}
+                            </Link>
+                          ))}
+                          {/* Repeat for seamless loop */}
+                          {opinionArticles.map((a, index) => (
+                            <Link key={`dup-${a.id}`} to={`/article/${a.id}`} className="text-primary-crimson underline underline-offset-4 decoration-primary-crimson/40 hover:decoration-primary-crimson transition-all duration-300 leading-relaxed block hover:translate-x-[-4px] group/lnk flex items-center justify-center gap-2">
+                              {a.title}
+                            </Link>
+                          ))}
+                        </>
+                      ) : (
+                        <>
+                          <span className="text-primary-crimson/60 underline underline-offset-4 decoration-primary-crimson/20 leading-relaxed block">تحليل رصين للتحولات الجيوسياسية في اليمن والمنطقة</span>
+                          <span className="text-primary-crimson/60 underline underline-offset-4 decoration-primary-crimson/20 leading-relaxed block">أبعاد التنمية المستدامة في ظل التحديات الحالية</span>
+                        </>
+                      )}
                     </div>
-                  )}
+                  </div>
                 </div>
               </div>
 
@@ -507,55 +555,36 @@ function Home() {
                   دراسات وأبحاث
                 </motion.div>
                 <div className="p-6 flex-1 flex flex-col justify-between">
-                  <div className="flex flex-col space-y-6 text-base font-black text-center mb-6">
-                    {paginatedStudies.map((a, index) => (
-                      <motion.div
-                        key={a.id}
-                        initial={{ opacity: 0, y: 40 }}
-                        whileInView={{ opacity: 1, y: 0 }}
-                        viewport={{ once: true, margin: "-20px" }}
-                        transition={{ duration: 0.8, delay: index * 0.15 }}
-                      >
-                        <Link to={`/article/${a.id}`} className="text-accent-gold underline underline-offset-4 decoration-accent-gold/40 hover:decoration-accent-gold transition-all duration-300 leading-relaxed block hover:translate-x-[-4px] group/lnk2 flex items-center justify-center gap-2">
-                          <span className="opacity-0 group-hover/lnk2:opacity-100 transition-opacity text-sm">←</span>{a.title}
-                        </Link>
-                      </motion.div>
-                    ))}
-                    {studiesArticles.length === 0 && (
-                      <>
-                        <motion.span initial={{ opacity: 0, y: 40 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, margin: "-20px" }} transition={{ duration: 0.8, delay: 0 }} className="text-accent-gold/60 underline underline-offset-4 decoration-accent-gold/20 leading-relaxed block">دراسة استشرافية حول مستقبل الاقتصاد الرقمي اليمني</motion.span>
-                        <motion.span initial={{ opacity: 0, y: 40 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, margin: "-20px" }} transition={{ duration: 0.8, delay: 0.15 }} className="text-accent-gold/60 underline underline-offset-4 decoration-accent-gold/20 leading-relaxed block">توثيق التراث الثقافي: رؤية أكاديمية للحفاظ على الهوية</motion.span>
-                        <motion.span initial={{ opacity: 0, y: 40 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, margin: "-20px" }} transition={{ duration: 0.8, delay: 0.3 }} className="text-accent-gold/60 underline underline-offset-4 decoration-accent-gold/20 leading-relaxed block">التغير المناخي وأثره على الموارد المائية والزراعية</motion.span>
-                        <motion.span initial={{ opacity: 0, y: 40 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, margin: "-20px" }} transition={{ duration: 0.8, delay: 0.45 }} className="text-accent-gold/60 underline underline-offset-4 decoration-accent-gold/20 leading-relaxed block">دراسة تحليلية للنظام التعليمي واقتراحات التطوير</motion.span>
-                        <motion.span initial={{ opacity: 0, y: 40 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, margin: "-20px" }} transition={{ duration: 0.8, delay: 0.6 }} className="text-accent-gold/60 underline underline-offset-4 decoration-accent-gold/20 leading-relaxed block">الأمن الغذائي: تحديات الحاضر والحلول المبتكرة</motion.span>
-                      </>
-                    )}
-                  </div>
-
-                  {/* Small Pagination for Studies */}
-                  {totalStudiesPages > 1 && (
-                    <div className="flex items-center justify-center gap-2 pt-4 border-t border-primary-navy/5">
-                      <button
-                        onClick={() => setStudiesPage(prev => Math.max(prev - 1, 1))}
-                        disabled={studiesPage === 1}
-                        className="w-8 h-8 rounded-lg flex items-center justify-center bg-white border border-primary-navy/10 text-primary-navy hover:bg-accent-gold hover:text-white transition-all disabled:opacity-50 disabled:cursor-not-allowed">
-                        <ChevronRight className="w-4 h-4" />
-                      </button>
-                      <span className="text-sm font-black text-primary-navy">{studiesPage} / {totalStudiesPages}</span>
-                      <button
-                        onClick={() => setStudiesPage(prev => Math.min(prev + 1, totalStudiesPages))}
-                        disabled={studiesPage === totalStudiesPages}
-                        className="w-8 h-8 rounded-lg flex items-center justify-center bg-white border border-primary-navy/10 text-primary-navy hover:bg-accent-gold hover:text-white transition-all disabled:opacity-50 disabled:cursor-not-allowed">
-                        <ChevronLeft className="w-4 h-4" />
-                      </button>
+                  <div className="h-32 overflow-hidden relative mb-6">
+                    <div className="animate-marquee-vertical flex flex-col space-y-4 text-base font-black text-center">
+                      {studiesArticles.length > 0 ? (
+                        <>
+                          {studiesArticles.map((a, index) => (
+                            <Link key={a.id} to={`/article/${a.id}`} className="text-accent-gold underline underline-offset-4 decoration-accent-gold/40 hover:decoration-accent-gold transition-all duration-300 leading-relaxed block hover:translate-x-[-4px] group/lnk2 flex items-center justify-center gap-2">
+                              {a.title}
+                            </Link>
+                          ))}
+                          {/* Repeat for seamless loop */}
+                          {studiesArticles.map((a, index) => (
+                            <Link key={`dup-${a.id}`} to={`/article/${a.id}`} className="text-accent-gold underline underline-offset-4 decoration-accent-gold/40 hover:decoration-accent-gold transition-all duration-300 leading-relaxed block hover:translate-x-[-4px] group/lnk2 flex items-center justify-center gap-2">
+                              {a.title}
+                            </Link>
+                          ))}
+                        </>
+                      ) : (
+                        <>
+                          <span className="text-accent-gold/60 underline underline-offset-4 decoration-accent-gold/20 leading-relaxed block">دراسة استشرافية حول مستقبل الاقتصاد الرقمي اليمني</span>
+                          <span className="text-accent-gold/60 underline underline-offset-4 decoration-accent-gold/20 leading-relaxed block">توثيق التراث الثقافي: رؤية أكاديمية للحفاظ على الهوية</span>
+                        </>
+                      )}
                     </div>
-                  )}
+                  </div>
                 </div>
               </div>
             </div>
 
-            {/* Center Column (News Feed - Elite Curation) */}
-            <div id="news-feed-top" className="lg:col-span-2 flex flex-col glass-card bg-white shadow-2xl overflow-hidden border border-primary-navy/10 group/feed">
+            {/* Center Column (News Feed - Elite Curation) - order-2 on both */}
+            <div id="news-feed-top" className="lg:col-span-2 order-2 flex flex-col glass-card bg-white shadow-2xl overflow-hidden border border-primary-navy/10 group/feed">
               <div className="bg-primary-navy p-6 flex justify-between items-center relative overflow-hidden">
                 <div className="absolute inset-0 bg-primary-crimson/5 skew-x-[-20deg] translate-x-[-50%] group-hover/feed:translate-x-[-40%] transition-transform duration-1000"></div>
                 <h3 className="font-black text-xl text-white flex items-center gap-4 relative z-10">
@@ -620,7 +649,7 @@ function Home() {
                         <h5 className="text-primary-navy font-black text-xl md:text-2xl mb-5 group-hover/item:text-primary-crimson premium-transition leading-[1.2] drop-shadow-sm">
                           {article.title}
                         </h5>
-                        <p className="text-gray-500 font-bold leading-relaxed text-base line-clamp-3 mb-6 opacity-80 group-hover/item:opacity-100 transition-opacity">
+                        <p className="text-gray-500 font-bold leading-relaxed text-base line-clamp-2 mb-6 opacity-80 group-hover/item:opacity-100 transition-opacity">
                           {article.content}
                         </p>
                         <div className={`flex items-center justify-between text-sm font-black uppercase tracking-[0.2em] border-t border-gray-100/50 pt-6 mt-auto ${index % 2 !== 0 ? '' : 'flex-row-reverse'}`}>
@@ -645,53 +674,55 @@ function Home() {
               </div>
 
               {/* Pagination Controls */}
-              {totalPages > 1 && (
-                <div className="bg-surface-soft/30 p-6 flex items-center justify-center gap-2 border-t border-primary-navy/5">
-                  <button
-                    onClick={() => {
-                      setCurrentPage(prev => Math.max(prev - 1, 1));
-                      const feedElement = document.getElementById('news-feed-top');
-                      if (feedElement) feedElement.scrollIntoView({ behavior: 'smooth' });
-                    }}
-                    disabled={currentPage === 1}
-                    className="w-10 h-10 rounded-xl flex items-center justify-center border border-primary-navy/10 bg-white text-primary-navy hover:bg-primary-crimson hover:text-white hover:border-primary-crimson transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    <ChevronRight className="w-5 h-5" />
-                  </button>
+              {
+                totalPages > 1 && (
+                  <div className="bg-surface-soft/30 p-6 flex items-center justify-center gap-2 border-t border-primary-navy/5">
+                    <button
+                      onClick={() => {
+                        setCurrentPage(prev => Math.max(prev - 1, 1));
+                        const feedElement = document.getElementById('news-feed-top');
+                        if (feedElement) feedElement.scrollIntoView({ behavior: 'smooth' });
+                      }}
+                      disabled={currentPage === 1}
+                      className="w-10 h-10 rounded-xl flex items-center justify-center border border-primary-navy/10 bg-white text-primary-navy hover:bg-primary-crimson hover:text-white hover:border-primary-crimson transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      <ChevronRight className="w-5 h-5" />
+                    </button>
 
-                  <div className="flex items-center gap-1 font-black text-primary-navy">
-                    {[...Array(totalPages)].map((_, i) => (
-                      <button
-                        key={i}
-                        onClick={() => {
-                          setCurrentPage(i + 1);
-                          const feedElement = document.getElementById('news-feed-top');
-                          if (feedElement) feedElement.scrollIntoView({ behavior: 'smooth' });
-                        }}
-                        className={`w-10 h-8 sm:w-10 sm:h-10 rounded-xl flex items-center justify-center border transition-all text-base ${currentPage === i + 1 ? 'bg-primary-crimson text-white border-primary-crimson shadow-[0_0_15px_rgba(225,29,72,0.4)]' : 'bg-white border-primary-navy/10 hover:bg-surface-soft'}`}
-                      >
-                        {i + 1}
-                      </button>
-                    ))}
+                    <div className="flex items-center gap-1 font-black text-primary-navy">
+                      {[...Array(totalPages)].map((_, i) => (
+                        <button
+                          key={i}
+                          onClick={() => {
+                            setCurrentPage(i + 1);
+                            const feedElement = document.getElementById('news-feed-top');
+                            if (feedElement) feedElement.scrollIntoView({ behavior: 'smooth' });
+                          }}
+                          className={`w-10 h-8 sm:w-10 sm:h-10 rounded-xl flex items-center justify-center border transition-all text-base ${currentPage === i + 1 ? 'bg-primary-crimson text-white border-primary-crimson shadow-[0_0_15px_rgba(225,29,72,0.4)]' : 'bg-white border-primary-navy/10 hover:bg-surface-soft'}`}
+                        >
+                          {i + 1}
+                        </button>
+                      ))}
+                    </div>
+
+                    <button
+                      onClick={() => {
+                        setCurrentPage(prev => Math.min(prev + 1, totalPages));
+                        const feedElement = document.getElementById('news-feed-top');
+                        if (feedElement) feedElement.scrollIntoView({ behavior: 'smooth' });
+                      }}
+                      disabled={currentPage === totalPages}
+                      className="w-10 h-10 rounded-xl flex items-center justify-center border border-primary-navy/10 bg-white text-primary-navy hover:bg-primary-crimson hover:text-white hover:border-primary-crimson transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      <ChevronLeft className="w-5 h-5" />
+                    </button>
                   </div>
-
-                  <button
-                    onClick={() => {
-                      setCurrentPage(prev => Math.min(prev + 1, totalPages));
-                      const feedElement = document.getElementById('news-feed-top');
-                      if (feedElement) feedElement.scrollIntoView({ behavior: 'smooth' });
-                    }}
-                    disabled={currentPage === totalPages}
-                    className="w-10 h-10 rounded-xl flex items-center justify-center border border-primary-navy/10 bg-white text-primary-navy hover:bg-primary-crimson hover:text-white hover:border-primary-crimson transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    <ChevronLeft className="w-5 h-5" />
-                  </button>
-                </div>
-              )}
+                )
+              }
             </div>
 
-            {/* Left Column (Images/Widgets - Multimedia Focus) */}
-            <div className="lg:col-span-1 flex flex-col gap-6">
+            {/* Left Column (Images/Widgets - Multimedia Focus) - order-4 on mobile, order-4 on desktop */}
+            <div className="lg:col-span-1 order-4 flex flex-col gap-6">
               {/* Rights and Freedoms - Cinematic Style */}
               <div className="glass-card overflow-hidden flex-1 flex flex-col border border-primary-navy/10 relative group min-h-[350px]">
                 <div className="absolute inset-0">
@@ -728,7 +759,7 @@ function Home() {
 
                 <div className="relative z-10 p-8 h-full flex flex-col justify-end">
                   <div className="h-24 overflow-hidden relative w-full mb-6">
-                    <div className="animate-marquee-vertical-reverse flex flex-col space-y-6 text-white/90 text-center font-black text-base drop-shadow-lg">
+                    <div className="animate-marquee-vertical flex flex-col space-y-6 text-white/90 text-center font-black text-base drop-shadow-lg">
                       {articles.filter(a => a.category_slug === 'tech').slice(0, 3).map(a => (
                         <Link key={`${a.id}`} to={`/article/${a.id}`} className="text-primary-crimson underline underline-offset-4 decoration-primary-crimson/40 hover:decoration-primary-crimson transition-all duration-300 leading-relaxed block hover:translate-x-[-4px] group/lnk flex items-center justify-center gap-2">
                           <span className="opacity-0 group-hover/lnk:opacity-100 transition-opacity text-sm">←</span>{a.title}
@@ -757,39 +788,41 @@ function Home() {
           </div>
 
           {/* Bottom Section (Elite Categories Showcase) */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 px-6 pt-6 pb-12">
-            {[
-              { label: settings.economy_title || 'اقتصاد', slug: 'economy', color: 'border-green-600', accent: 'text-green-400', img: settings.economy_bg || 'https://picsum.photos/seed/economy-gold/600/400' },
-              { label: settings.tourism_title || 'سياحة', slug: 'tourism', color: 'border-purple-600', accent: 'text-purple-400', img: settings.tourism_bg || 'https://picsum.photos/seed/tourism-yemen/600/400' },
-              { label: settings.sports_title || 'رياضة', slug: 'sports', color: 'border-blue-600', accent: 'text-blue-400', img: settings.sports_bg || 'https://picsum.photos/seed/sports-action/600/400' }
-            ].map((cat, i) => (
-              <motion.div
-                whileHover={{ y: -10 }}
-                key={cat.label}
-                className={`relative h-60 group overflow-hidden rounded-[2rem] shadow-premium ${cat.color} border-b-8`}
-              >
-                <img src={(cat.img.startsWith('http') || cat.img.startsWith('/')) ? cat.img : `https://picsum.photos/seed/${cat.img}/600/400`} alt={cat.label} className="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-110" referrerPolicy="no-referrer" />
-                <div className="absolute inset-0 bg-gradient-to-t from-primary-navy via-primary-navy/60 to-transparent flex flex-col justify-end p-6">
-                  <div className="h-20 overflow-hidden relative mb-4">
-                    <div className="animate-marquee-vertical-reverse flex flex-col space-y-3 text-white text-center font-black text-sm drop-shadow-md" style={{ animationDelay: `-${i * 2}s` }}>
-                      {articles.filter(a => a.category_slug === cat.slug).slice(0, 3).map(a => (
-                        <Link key={a.id} to={`/article/${a.id}`} className="text-white underline underline-offset-4 decoration-white/50 hover:text-accent-gold hover:decoration-accent-gold transition-all duration-300 block">{a.title}</Link>
-                      ))}
-                      {/* Repeat for seamless loop */}
-                      {articles.filter(a => a.category_slug === cat.slug).slice(0, 3).map(a => (
-                        <Link key={`dup-${a.id}`} to={`/article/${a.id}`} className="text-white underline underline-offset-4 decoration-white/50 hover:text-accent-gold hover:decoration-accent-gold transition-all duration-300 block">{a.title}</Link>
-                      ))}
-                      {articles.filter(a => a.category_slug === cat.slug).length === 0 && (
-                        <span className="text-white/70 underline underline-offset-4 decoration-white/30 block">تغطية شاملة وحصرية لأهم مستجدات الـ {cat.label}</span>
-                      )}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 px-6 pt-6 pb-12 order-5 lg:order-5">
+            {
+              [
+                { label: settings.sports_title || 'رياضة', slug: 'sports', color: 'border-blue-600', accent: 'text-blue-400', img: settings.sports_bg || 'https://picsum.photos/seed/sports-action/600/400' },
+                { label: settings.tourism_title || 'سياحة', slug: 'tourism', color: 'border-purple-600', accent: 'text-purple-400', img: settings.tourism_bg || 'https://picsum.photos/seed/tourism-yemen/600/400' },
+                { label: settings.economy_title || 'اقتصاد', slug: 'economy', color: 'border-green-600', accent: 'text-green-400', img: settings.economy_bg || 'https://picsum.photos/seed/economy-gold/600/400' }
+              ].map((cat, i) => (
+                <motion.div
+                  whileHover={{ y: -10 }}
+                  key={cat.label}
+                  className={`relative h-60 group overflow-hidden rounded-[2rem] shadow-premium ${cat.color} border-b-8`}
+                >
+                  <img src={(cat.img.startsWith('http') || cat.img.startsWith('/')) ? cat.img : `https://picsum.photos/seed/${cat.img}/600/400`} alt={cat.label} className="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-110" referrerPolicy="no-referrer" />
+                  <div className="absolute inset-0 bg-gradient-to-t from-primary-navy via-primary-navy/60 to-transparent flex flex-col justify-end p-6">
+                    <div className="h-20 overflow-hidden relative mb-4">
+                      <div className="animate-marquee-vertical flex flex-col space-y-3 text-white text-center font-black text-sm drop-shadow-md" style={{ animationDelay: `-${i * 2}s` }}>
+                        {articles.filter(a => a.category_slug === cat.slug).slice(0, 3).map(a => (
+                          <Link key={a.id} to={`/article/${a.id}`} className="text-white underline underline-offset-4 decoration-white/50 hover:text-accent-gold hover:decoration-accent-gold transition-all duration-300 block">{a.title}</Link>
+                        ))}
+                        {/* Repeat for seamless loop */}
+                        {articles.filter(a => a.category_slug === cat.slug).slice(0, 3).map(a => (
+                          <Link key={`dup-${a.id}`} to={`/article/${a.id}`} className="text-white underline underline-offset-4 decoration-white/50 hover:text-accent-gold hover:decoration-accent-gold transition-all duration-300 block">{a.title}</Link>
+                        ))}
+                        {articles.filter(a => a.category_slug === cat.slug).length === 0 && (
+                          <span className="text-white/70 underline underline-offset-4 decoration-white/30 block">تغطية شاملة وحصرية لأهم مستجدات الـ {cat.label}</span>
+                        )}
+                      </div>
                     </div>
+                    <h3 className="text-white font-serif italic font-black text-3xl text-center drop-shadow-2xl group-hover:text-accent-gold transition-colors py-2 w-full uppercase tracking-widest leading-none">
+                      {cat.label}
+                    </h3>
                   </div>
-                  <h3 className="text-white font-serif italic font-black text-3xl text-center drop-shadow-2xl group-hover:text-accent-gold transition-colors py-2 w-full uppercase tracking-widest leading-none">
-                    {cat.label}
-                  </h3>
-                </div>
-              </motion.div>
-            ))}
+                </motion.div>
+              ))
+            }
 
             {/* YouTube Premium Card */}
             <a href="https://youtube.com" target="_blank" rel="noopener noreferrer"
@@ -806,7 +839,6 @@ function Home() {
               <div className="text-accent-gold font-serif italic text-2xl relative z-10 tracking-tighter drop-shadow-glow">YouTube Channel</div>
             </a>
           </div>
-
         </main>
 
         {/* Footer - Prestigious Archive */}
@@ -814,7 +846,7 @@ function Home() {
           <div className="absolute inset-0 opacity-5 bg-[url('https://www.transparenttextures.com/patterns/asfalt-dark.png')]"></div>
           <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-transparent via-primary-crimson to-transparent shadow-glow"></div>
 
-          <div className="px-8 md:px-16 relative z-10">
+          <div className="max-w-7xl mx-auto px-8 md:px-16 relative z-10">
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-16 mb-24">
               {/* Brand Column */}
               <div className="space-y-8">
@@ -830,6 +862,7 @@ function Home() {
                     { icon: Facebook, color: 'hover:bg-blue-600', url: settings.facebook_url },
                     { icon: Twitter, color: 'hover:bg-sky-500', url: settings.twitter_url },
                     { icon: Youtube, color: 'hover:bg-primary-crimson', url: settings.youtube_url },
+                    { icon: Send, color: 'hover:bg-[#0088cc]', url: settings.telegram_url || "#" },
                     { icon: Linkedin, color: 'hover:bg-blue-700', url: settings.linkedin_url }
                   ].map((social, i) => (
                     <a key={i} href={social.url || "#"} target="_blank" rel="noopener noreferrer"
@@ -950,7 +983,7 @@ function Home() {
             </div>
           </div>
         </footer>
-      </div >
+      </div>
 
       {/* Modals and Overlays */}
       <AnimatePresence>
@@ -997,7 +1030,7 @@ function Home() {
             </div>
           )
         }
-      </AnimatePresence >
+      </AnimatePresence>
 
       <AnimatePresence>
         {showBackToTop && (
@@ -1012,7 +1045,7 @@ function Home() {
           </motion.button>
         )}
       </AnimatePresence>
-    </div >
+    </div>
   );
 }
 
