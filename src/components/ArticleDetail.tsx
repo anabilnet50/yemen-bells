@@ -10,7 +10,6 @@ export default function ArticleDetail() {
   const [loading, setLoading] = useState(true);
   const [comment, setComment] = useState('');
 
-  const [latestArticles, setLatestArticles] = useState<any[]>([]);
   const [comments, setComments] = useState<any[]>([]);
   const [userName, setUserName] = useState('');
   const [email, setEmail] = useState('');
@@ -29,9 +28,6 @@ export default function ArticleDetail() {
       .then(res => res.json())
       .then(setComments);
 
-    fetch('/api/articles?limit=8')
-      .then(res => res.json())
-      .then(setLatestArticles);
   }, [id]);
 
   const handleCommentSubmit = (e: React.FormEvent) => {
@@ -127,27 +123,24 @@ export default function ArticleDetail() {
         <div className="absolute bottom-1/4 -left-20 w-[400px] h-[400px] bg-accent-gold/5 blur-[120px] rounded-full"></div>
       </div>
 
-      <div className="max-w-7xl mx-auto px-6 -mt-[350px] relative z-20">
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-12">
+      <div className="max-w-5xl mx-auto px-0 md:px-6 -mt-[150px] md:-mt-[350px] relative z-20">
+        <div className="flex flex-col gap-12">
 
           {/* Main Content Area */}
-          <div className="lg:col-span-8 flex flex-col">
-            <motion.div
-              initial={{ x: 20, opacity: 0 }}
-              animate={{ x: 0, opacity: 1 }}
-              transition={{ duration: 0.8 }}
+          <div className="w-full flex flex-col">
+            <button
+              onClick={() => navigate(-1)}
+              className="inline-flex items-center bg-white border border-primary-navy/5 text-primary-navy px-8 py-4 rounded-2xl font-black mb-12 hover:bg-primary-navy hover:text-white transition-all shadow-premium group cursor-pointer"
             >
-              <Link to="/" className="inline-flex items-center bg-white border border-primary-navy/5 text-primary-navy px-8 py-4 rounded-2xl font-black mb-12 hover:bg-primary-navy hover:text-white transition-all shadow-premium group">
-                <ArrowRight className="w-5 h-5 ml-3 group-hover:translate-x-2 transition-transform" />
-                العودة للرئيسية
-              </Link>
-            </motion.div>
+              <ArrowRight className="w-5 h-5 ml-3 group-hover:translate-x-2 transition-transform" />
+              العودة بالسابق
+            </button>
 
             <motion.article
               initial={{ y: 50, opacity: 0 }}
               animate={{ y: 0, opacity: 1 }}
               transition={{ duration: 1, ease: [0.16, 1, 0.3, 1] }}
-              className="bg-white rounded-[3rem] shadow-[0_50px_100px_-20px_rgba(0,0,0,0.1)] overflow-hidden border border-gray-50 flex flex-col"
+              className="bg-white rounded-t-[2rem] md:rounded-[3rem] shadow-none md:shadow-[0_50px_100px_-20px_rgba(0,0,0,0.1)] overflow-hidden border-none md:border border-gray-50 flex flex-col"
             >
               {/* Premium Media Shell */}
               <div className="relative group overflow-hidden bg-primary-navy">
@@ -177,47 +170,39 @@ export default function ArticleDetail() {
                   </div>
                 )}
                 {/* Category Badge - Elite Style */}
-                <div className="absolute top-8 right-8">
-                  <span className="bg-primary-crimson text-white px-8 py-2.5 rounded-full text-xs font-black uppercase tracking-[0.3em] shadow-glow border border-white/10 backdrop-blur-md">
+                <div className="absolute top-4 right-4 md:top-8 md:right-8">
+                  <span className="bg-primary-crimson text-white px-4 md:px-8 py-1.5 md:py-2.5 rounded-full text-[10px] md:text-xs font-black uppercase tracking-[0.3em] shadow-glow border border-white/10 backdrop-blur-md">
                     {article.category_name}
                   </span>
                 </div>
               </div>
 
-              <div className="p-10 md:p-20">
-                <header className="mb-16">
-                  <div className="flex flex-wrap items-center gap-8 text-gray-400 text-[10px] font-black uppercase tracking-[0.2em] mb-12 border-b border-gray-50 pb-12">
-                    <span className="flex items-center gap-3"><Calendar className="w-4 h-4 text-primary-crimson" /> {new Date(article.created_at).toLocaleDateString('ar-YE', { day: 'numeric', month: 'long', year: 'numeric' })}</span>
-                    <span className="flex items-center gap-3"><User className="w-4 h-4 text-primary-crimson" /> {article.author || 'هيئة التحرير'}</span>
-                    <span className="flex items-center gap-3"><Eye className="w-4 h-4 text-primary-crimson" /> {article.views || 0} قراءة</span>
-                    <span className="flex items-center gap-3"><Clock className="w-4 h-4 text-primary-crimson" /> {readingTime} د قراءة</span>
+              <div className="p-6 md:p-20">
+                <header className="mb-8 md:mb-12">
+                  <div className="flex flex-wrap items-center gap-6 md:gap-8 text-gray-500 text-[11px] font-black uppercase tracking-[0.2em] mb-10 border-b border-gray-100 pb-10">
+                    <span className="flex items-center gap-2 transition-colors hover:text-primary-crimson cursor-default"><Calendar className="w-4 h-4 text-primary-crimson" /> {new Date(article.created_at).toLocaleDateString('ar-YE', { day: 'numeric', month: 'long', year: 'numeric' })}</span>
+                    <span className="flex items-center gap-2 transition-colors hover:text-primary-crimson cursor-default">
+                      <div className="w-6 h-6 rounded-full overflow-hidden border border-primary-navy/10 bg-gray-50">
+                        <img src={article.writer_image || 'https://via.placeholder.com/50'} className="w-full h-full object-cover" />
+                      </div>
+                      {article.writer_name || 'هيئة التحرير'}
+                    </span>
+                    <span className="flex items-center gap-2"><Eye className="w-4 h-4 text-primary-crimson" /> {article.views || 0} قراءة</span>
+                    <span className="flex items-center gap-2"><Clock className="w-4 h-4 text-primary-crimson" /> {readingTime} د قراءة</span>
                   </div>
-                  <h1 className="text-3xl md:text-5xl font-black text-primary-navy leading-[1.15] mb-10 drop-shadow-sm">
+                  <h1 className="text-3xl lg:text-5xl font-black text-primary-navy leading-[1.3] mb-8 md:mb-10 drop-shadow-sm">
                     {article.title}
                   </h1>
-                  <div className="w-24 h-1.5 bg-primary-crimson rounded-full"></div>
+                  <div className="w-32 h-2 bg-primary-crimson rounded-full shadow-glow"></div>
                 </header>
 
                 <div className="max-w-4xl mx-auto">
-                  <div className="prose prose-2xl max-w-none text-primary-navy/80 leading-[2.2] font-medium text-justify font-serif">
+                  <div className="prose prose-xl md:prose-2xl max-w-none text-primary-navy/90 leading-[2] font-bold text-right font-sans">
                     {article.content.split('\n').map((p: string, i: number) => (
-                      <p key={i} className="mb-10 first-letter:text-5xl first-letter:font-black first-letter:text-primary-crimson first-letter:ml-3 first-letter:float-right">{p}</p>
+                      <p key={i} className="mb-8">{p}</p>
                     ))}
                   </div>
 
-                  {/* Writer Profile Section */}
-                  {article.writer_name && (
-                    <div className="mt-20 p-10 bg-surface-soft rounded-[3rem] border border-primary-navy/5 flex flex-col md:flex-row items-center gap-10">
-                      <div className="w-32 h-32 rounded-full overflow-hidden border-4 border-white shadow-xl bg-gray-100 shrink-0">
-                        <img src={article.writer_image || 'https://via.placeholder.com/150'} className="w-full h-full object-cover" />
-                      </div>
-                      <div className="text-center md:text-right">
-                        <p className="text-xs font-black text-primary-crimson uppercase tracking-widest mb-2">عن الكاتب</p>
-                        <h4 className="text-2xl font-black text-primary-navy mb-4">{article.writer_name}</h4>
-                        <p className="text-gray-600 font-bold text-base leading-relaxed">{article.writer_bio || 'كاتب ومحرر صحفي لدى أجراس اليمن، مهتم بتغطية الأحداث الجارية والتحليلات السياسية.'}</p>
-                      </div>
-                    </div>
-                  )}
 
                   {/* Share Panel - Sophisticated Design */}
                   <div className="mt-20 p-12 glass-card bg-surface-soft/50 rounded-[3rem] border border-primary-navy/5 text-center relative overflow-hidden">
@@ -260,7 +245,7 @@ export default function ArticleDetail() {
                             value={userName}
                             onChange={e => setUserName(e.target.value)}
                             placeholder="الاسم المستعار"
-                            className="w-full p-5 bg-surface-soft border-2 border-transparent focus:border-primary-crimson focus:bg-white transition-all rounded-2xl outline-none font-black text-sm"
+                            className="w-full p-5 bg-white border-2 border-primary-crimson focus:border-red-600 focus:bg-red-50/10 transition-all rounded-2xl outline-none font-black text-sm text-black"
                           />
                         </div>
                         <textarea
@@ -268,7 +253,7 @@ export default function ArticleDetail() {
                           onChange={e => setComment(e.target.value)}
                           placeholder="ما هو انطباعك حول هذا الخبر؟"
                           rows={4}
-                          className="w-full p-6 bg-surface-soft border-2 border-transparent focus:border-primary-crimson focus:bg-white transition-all rounded-2xl outline-none font-bold text-base"
+                          className="w-full p-6 bg-white border-2 border-primary-crimson focus:border-red-600 focus:bg-red-50/10 transition-all rounded-2xl outline-none font-bold text-base text-black"
                         ></textarea>
                         <button className="bg-primary-navy text-white py-5 rounded-2xl font-black shadow-2xl shadow-primary-navy/20 hover:bg-primary-crimson transition-all flex items-center justify-center gap-4 group">
                           <Send className="w-5 h-5 group-hover:translate-x-[-10px] transition-transform" /> إرسال التعليق
@@ -282,7 +267,7 @@ export default function ArticleDetail() {
                               <span className="font-black text-primary-navy text-sm">{c.name}</span>
                               <span className="text-[10px] text-gray-400 font-bold uppercase tracking-widest">{new Date(c.created_at).toLocaleDateString('ar-YE')}</span>
                             </div>
-                            <p className="text-gray-600 font-bold text-base leading-relaxed">{c.content}</p>
+                            <p className="text-black font-bold text-base leading-relaxed">{c.content}</p>
                           </div>
                         ))}
                       </div>
@@ -291,101 +276,6 @@ export default function ArticleDetail() {
                 </div>
               </div>
             </motion.article>
-          </div>
-
-          {/* Sidebar Area - Elite Discovery */}
-          <div className="lg:col-span-4 flex flex-col gap-10">
-
-            {/* Trending Sidebar */}
-            <div className="glass-card bg-white/40 border border-primary-navy/5 overflow-hidden flex flex-col shadow-2xl rounded-[3rem]">
-              <div className="p-8 bg-primary-navy text-white flex items-center justify-between relative overflow-hidden">
-                <div className="absolute inset-0 bg-primary-crimson/10 skew-x-[-20deg] translate-x-[-30%]"></div>
-                <h4 className="font-black text-lg flex items-center gap-4 relative z-10">
-                  <TrendingUp className="w-5 h-5 text-accent-gold" /> شـائع الآن
-                </h4>
-                <div className="w-2.5 h-2.5 bg-primary-crimson rounded-full animate-pulse shadow-glow relative z-10"></div>
-              </div>
-              <div className="p-8 flex flex-col gap-8 divide-y divide-gray-50">
-                {latestArticles.slice(0, 5).map((a, i) => (
-                  <Link key={a.id} to={`/article/${a.id}`} className="group pt-8 first:pt-0 flex gap-6 items-start">
-                    <div className="flex flex-col gap-2 flex-1">
-                      <span className="text-[9px] font-black text-primary-crimson uppercase tracking-[0.3em]">{a.category_name}</span>
-                      <p className="text-primary-navy font-black text-base line-clamp-2 leading-[1.4] group-hover:text-primary-crimson transition-colors">{a.title}</p>
-                      <div className="flex items-center gap-4 mt-2 opacity-40 text-[9px] font-bold uppercase tracking-widest">
-                        <span className="flex items-center gap-1.5"><Eye className="w-3 h-3" /> {a.views || 0}</span>
-                        <span className="flex items-center gap-1.5"><Clock className="w-3 h-3" /> {new Date(a.created_at).toLocaleDateString()}</span>
-                      </div>
-                    </div>
-                    <div className="w-20 h-20 shrink-0 rounded-2xl overflow-hidden shadow-lg border border-white group-hover:scale-105 transition-transform">
-                      <img src={a.image_url || `https://picsum.photos/seed/${a.id}/200`} className="w-full h-full object-cover" />
-                    </div>
-                  </Link>
-                ))}
-              </div>
-            </div>
-
-            {/* Dynamic Newsletter - Elite Style */}
-            <div className="glass-card p-10 bg-gradient-to-br from-primary-navy to-primary-navy/90 rounded-[3rem] shadow-2xl relative overflow-hidden group border border-white/5">
-              <div className="absolute inset-0 opacity-10 bg-[url('https://www.transparenttextures.com/patterns/pinstriped-suit.png')] group-hover:scale-125 transition-transform duration-1000"></div>
-              <div className="relative z-10 text-center">
-                <div className="w-20 h-20 bg-primary-crimson/20 backdrop-blur-xl rounded-[2rem] flex items-center justify-center mx-auto mb-8 border border-white/10 shadow-2xl">
-                  <TrendingUp className="w-10 h-10 text-primary-crimson" />
-                </div>
-                <h3 className="text-white font-black text-2xl mb-4 tracking-tighter">نشرة الصفوة الإخبارية</h3>
-                <p className="text-white/40 font-bold text-xs mb-8 uppercase tracking-widest">Premium Weekly Briefing</p>
-                <form onSubmit={handleSubscribe} className="space-y-4">
-                  <input
-                    type="email"
-                    value={email}
-                    onChange={e => setEmail(e.target.value)}
-                    placeholder="عنوان بريدك الإلكتروني"
-                    className="w-full p-5 bg-white/5 border border-white/10 rounded-[1.5rem] focus:bg-white focus:text-primary-navy focus:border-white transition-all outline-none font-bold text-white text-sm"
-                    required
-                  />
-                  <button disabled={isSubscribing} className="w-full bg-white text-primary-navy py-5 rounded-[1.5rem] font-black shadow-2xl hover:bg-primary-crimson hover:text-white transition-all active:scale-95 uppercase tracking-widest text-xs">
-                    {isSubscribing ? 'Processing...' : 'اشـتراك الآن'}
-                  </button>
-                </form>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Bottom Related Section - Visual Grid */}
-        <div className="mt-24 pt-24 border-t border-gray-100/50">
-          <h3 className="text-3xl font-black text-primary-navy mb-16 flex items-center gap-6">
-            <div className="w-2.5 h-10 bg-primary-crimson rounded-full"></div>
-            تحليلات ولقـاءات ذات صـلة
-            <div className="flex-1 h-px bg-gray-100 ml-6"></div>
-          </h3>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-            {latestArticles.filter(a => a.id !== Number(id)).slice(0, 4).map((a, i) => (
-              <motion.div
-                initial={{ opacity: 0, y: 30 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                transition={{ delay: i * 0.1 }}
-                whileHover={{ y: -15 }}
-                key={a.id}
-              >
-                <Link to={`/article/${a.id}`} className="group bg-white rounded-[2.5rem] overflow-hidden border border-gray-50 shadow-premium block flex flex-col h-full">
-                  <div className="h-56 overflow-hidden relative">
-                    <img src={a.image_url || `https://picsum.photos/seed/editorial${a.id}/600/400`} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-1000" referrerPolicy="no-referrer" />
-                    <div className="absolute inset-0 bg-primary-navy/20 group-hover:bg-transparent transition-colors"></div>
-                    <div className="absolute top-6 right-6 px-4 py-1.5 bg-white/90 backdrop-blur-md rounded-full text-[9px] font-black text-primary-navy uppercase tracking-widest border border-white shadow-lg">
-                      {a.category_name}
-                    </div>
-                  </div>
-                  <div className="p-8 flex-1 flex flex-col">
-                    <p className="text-xl font-black text-primary-navy group-hover:text-primary-crimson premium-transition line-clamp-2 leading-tight mb-6 flex-1">{a.title}</p>
-                    <div className="flex items-center justify-between text-[10px] text-gray-400 font-bold uppercase tracking-widest pt-6 border-t border-gray-50">
-                      <span className="flex items-center gap-2"><Calendar className="w-4 h-4 text-primary-crimson/50" /> {new Date(a.created_at).toLocaleDateString('ar-YE')}</span>
-                      <span className="flex items-center gap-2 group-hover:text-primary-crimson transition-colors">التفاصيل <ArrowLeft className="w-3.5 h-3.5" /></span>
-                    </div>
-                  </div>
-                </Link>
-              </motion.div>
-            ))}
           </div>
         </div>
       </div>

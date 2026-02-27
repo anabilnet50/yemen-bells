@@ -41,6 +41,7 @@ export async function initDb() {
         created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
         is_urgent INTEGER DEFAULT 0,
         is_deleted INTEGER DEFAULT 0,
+        is_active INTEGER DEFAULT 1,
         views INTEGER DEFAULT 0,
         tags TEXT
       );
@@ -56,10 +57,14 @@ export async function initDb() {
       );
     `);
 
-    // Add foreign key if not exists (for existing tables)
+    // Add foreign key and background_url if not exists
     try {
       await client.query('ALTER TABLE articles ADD COLUMN IF NOT EXISTS writer_id INTEGER REFERENCES writers(id)');
       await client.query('ALTER TABLE articles ADD COLUMN IF NOT EXISTS is_deleted INTEGER DEFAULT 0');
+      await client.query('ALTER TABLE articles ADD COLUMN IF NOT EXISTS is_active INTEGER DEFAULT 1');
+      await client.query('ALTER TABLE categories ADD COLUMN IF NOT EXISTS background_url TEXT');
+      await client.query('ALTER TABLE ads ADD COLUMN IF NOT EXISTS start_date TIMESTAMPTZ');
+      await client.query('ALTER TABLE ads ADD COLUMN IF NOT EXISTS end_date TIMESTAMPTZ');
     } catch (e) {
       console.log('Columns might already exist');
     }
@@ -72,7 +77,9 @@ export async function initDb() {
         link_url TEXT,
         adsense_code TEXT,
         position TEXT DEFAULT 'sidebar',
-        is_active INTEGER DEFAULT 1
+        is_active INTEGER DEFAULT 1,
+        start_date TIMESTAMPTZ,
+        end_date TIMESTAMPTZ
       );
     `);
 
@@ -102,6 +109,15 @@ export async function initDb() {
     `);
 
     await client.query(`
+      CREATE TABLE IF NOT EXISTS poll_comments (
+        id SERIAL PRIMARY KEY,
+        name TEXT NOT NULL,
+        content TEXT NOT NULL,
+        created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+      );
+    `);
+
+    await client.query(`
       CREATE TABLE IF NOT EXISTS system_users (
         id SERIAL PRIMARY KEY,
         username TEXT NOT NULL UNIQUE,
@@ -125,8 +141,9 @@ export async function initDb() {
       );
     `);
 
-    // Ensure Categories
     const ensureCategories = [
+      { name: 'أخبار محلية', slug: 'local' },
+      { name: 'أخبار دولية', slug: 'intl' },
       { name: 'عام', slug: 'general' },
       { name: 'اقتصاد', slug: 'economy' },
       { name: 'سياحة', slug: 'tourism' },
@@ -135,7 +152,7 @@ export async function initDb() {
       { name: 'حقوق وحريات', slug: 'rights' },
       { name: 'مقالات', slug: 'opinion' },
       { name: 'أبحاث ودراسات', slug: 'studies' },
-      { name: 'هاشتاج', slug: 'hashtag' },
+      { name: 'يوتيوب', slug: 'youtube' },
     ];
 
     for (const cat of ensureCategories) {
@@ -144,6 +161,9 @@ export async function initDb() {
         [cat.name, cat.slug]
       );
     }
+
+    // Ensure 'hashtag' is removed if it exists
+    await client.query("DELETE FROM categories WHERE slug = 'hashtag'");
 
     // Initial Settings
     const defaultSettings = [
@@ -161,6 +181,9 @@ export async function initDb() {
       { key: 'youtube_url', value: 'https://youtube.com' },
       { key: 'linkedin_url', value: 'https://linkedin.com' },
       { key: 'telegram_url', value: 'https://t.me/yemen_bells' },
+      { key: 'youtube_section_title', value: 'محتوى اليوتيوب' },
+      { key: 'news_ball_image', value: '/logo.png' },
+      { key: 'copyright_text', value: 'جميع الحقوق محفوظة © 2024 أجراس اليمن' },
     ];
 
     for (const s of defaultSettings) {

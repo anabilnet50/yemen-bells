@@ -73,8 +73,17 @@ async function startServer() {
     }
   });
 
-  app.get("/api/auth/me", requireAuth, (req, res) => {
-    res.json((req as any).user);
+  app.get("/api/auth/me", requireAuth, async (req, res) => {
+    try {
+      const { rows } = await db.query("SELECT id, username, full_name, role FROM system_users WHERE id = $1", [(req as any).user.id]);
+      if (rows.length > 0) {
+        res.json(rows[0]);
+      } else {
+        res.status(404).json({ error: "User not found" });
+      }
+    } catch (e) {
+      res.status(500).json({ error: "Internal server error" });
+    }
   });
 
   // Forgot Password
@@ -83,37 +92,56 @@ async function startServer() {
     try {
       const { rows } = await db.query("SELECT id, username FROM system_users WHERE email = $1", [email]);
       if (rows.length === 0) {
-        return res.status(404).json({ error: "Email not found" });
+        return res.status(404).json({ error: "البريد الإلكتروني غير موجود" });
       }
 
-      const token = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
+      const code = Math.floor(100000 + Math.random() * 900000).toString();
       const expiry = new Date(Date.now() + 3600000); // 1 hour
 
       await db.query(
         "UPDATE system_users SET reset_token = $1, reset_token_expiry = $2 WHERE id = $3",
-        [token, expiry, rows[0].id]
+        [code, expiry, rows[0].id]
       );
 
       // Simulated email sending
-      console.log(`[EMAIL SIMULATION] Reset link for ${email}: http://localhost:5173/admin?reset_token=${token}`);
+      console.log(`[EMAIL SIMULATION] Verification Code for ${email}: ${code}`);
 
-      res.json({ message: "Reset link sent to your email" });
+      res.json({ message: "تم إرسال رمز التحقق إلى بريدك الإلكتروني" });
     } catch (e) {
-      res.status(500).json({ error: "Internal server error" });
+      res.status(500).json({ error: "حدث خطأ داخلي" });
+    }
+  });
+
+  // Verify Code
+  app.post("/api/auth/verify-code", async (req, res) => {
+    const { email, code } = req.body;
+    try {
+      const { rows } = await db.query(
+        "SELECT id FROM system_users WHERE email = $1 AND reset_token = $2 AND reset_token_expiry > NOW()",
+        [email, code]
+      );
+
+      if (rows.length === 0) {
+        return res.status(400).json({ error: "رمز التحقق غير صحيح أو انتهت صلاحيته" });
+      }
+
+      res.json({ message: "تم التحقق بنجاح" });
+    } catch (e) {
+      res.status(500).json({ error: "حدث خطأ داخلي" });
     }
   });
 
   // Reset Password
   app.post("/api/auth/reset-password", async (req, res) => {
-    const { token, newPassword } = req.body;
+    const { email, code, newPassword } = req.body;
     try {
       const { rows } = await db.query(
-        "SELECT id FROM system_users WHERE reset_token = $1 AND reset_token_expiry > NOW()",
-        [token]
+        "SELECT id FROM system_users WHERE email = $1 AND reset_token = $2 AND reset_token_expiry > NOW()",
+        [email, code]
       );
 
       if (rows.length === 0) {
-        return res.status(400).json({ error: "Invalid or expired token" });
+        return res.status(400).json({ error: "رمز التحقق غير صحيح أو انتهت صلاحيته" });
       }
 
       const hashedPassword = newPassword; // Using plain text for now as requested/seen in current implementation, but should be hashed
@@ -122,9 +150,9 @@ async function startServer() {
         [hashedPassword, rows[0].id]
       );
 
-      res.json({ message: "Password updated successfully" });
+      res.json({ message: "تم تحديث كلمة المرور بنجاح" });
     } catch (e) {
-      res.status(500).json({ error: "Internal server error" });
+      res.status(500).json({ error: "حدث خطأ داخلي" });
     }
   });
 
@@ -148,16 +176,100 @@ async function startServer() {
     }
   });
 
+  app.put("/api/admin/users/:id", requireAuth, async (req, res) => {
+    const { username, password, full_name, role } = req.body;
+    const { id } = req.params;
+
+    // Only admins can update users
+    const currentUser = await db.query("SELECT role FROM system_users WHERE id = $1", [(req as any).user.id]);
+    if (currentUser.rows[0].role !== 'admin') {
+      return res.status(403).json({ error: "Permission denied" });
+    }
+
+    try {
+      if (password) {
+        await db.query(
+          "UPDATE system_users SET username = $1, password = $2, full_name = $3, role = $4 WHERE id = $5",
+          [username, password, full_name, role, id]
+        );
+      } else {
+        await db.query(
+          "UPDATE system_users SET username = $1, full_name = $2, role = $3 WHERE id = $4",
+          [username, full_name, role, id]
+        );
+      }
+      await logAction((req as any).user.id, 'تعديل مستخدم', `تم تعديل المستخدم رقم: ${id}`);
+      res.json({ success: true });
+    } catch (e) {
+      res.status(400).json({ error: "Error updating user" });
+    }
+  });
+
+  app.delete("/api/admin/users/:id", requireAuth, async (req, res) => {
+    const { id } = req.params;
+
+    // Only admins can delete users
+    const currentUser = await db.query("SELECT role FROM system_users WHERE id = $1", [(req as any).user.id]);
+    if (currentUser.rows[0].role !== 'admin') {
+      return res.status(403).json({ error: "Permission denied" });
+    }
+
+    // Prevent self-deletion
+    if (Number(id) === (req as any).user.id) {
+      return res.status(400).json({ error: "Cannot delete yourself" });
+    }
+
+    await db.query("DELETE FROM system_users WHERE id = $1", [id]);
+    await logAction((req as any).user.id, 'حذف مستخدم', `تم حذف المستخدم رقم: ${id}`);
+    res.json({ success: true });
+  });
+
   // Audit Logs
   app.get("/api/admin/audit-logs", requireAuth, async (req, res) => {
-    const { rows } = await db.query(`
+    const { user_id, startDate, endDate } = req.query;
+
+    let query = `
       SELECT audit_logs.*, system_users.full_name as user_name 
       FROM audit_logs 
       LEFT JOIN system_users ON audit_logs.user_id = system_users.id 
-      ORDER BY created_at DESC 
-      LIMIT 100
-    `);
-    res.json(rows);
+      WHERE 1=1
+    `;
+    const params: any[] = [];
+    let paramIndex = 1;
+
+    if (user_id) {
+      query += ` AND audit_logs.user_id = $${paramIndex}`;
+      params.push(user_id);
+      paramIndex++;
+    }
+
+    if (startDate) {
+      query += ` AND audit_logs.created_at >= $${paramIndex}`;
+      params.push(startDate);
+      paramIndex++;
+    }
+
+    if (endDate) {
+      // Add 1 day to end date to include the whole day
+      query += ` AND audit_logs.created_at <= (cast($${paramIndex} as timestamp) + interval '1 day')`;
+      params.push(endDate);
+      paramIndex++;
+    }
+
+    query += ` ORDER BY created_at DESC`;
+
+    // Only limit if no filters are applied to prevent massive data load, otherwise show full report
+    if (!user_id && !startDate && !endDate) {
+      query += ` LIMIT 100`;
+    }
+
+    try {
+      const { rows } = await db.query(query, params);
+      res.json(rows);
+    } catch (error) {
+      console.error("Error fetching audit logs", error);
+      res.status(500).json({ error: "Error fetching audit logs" });
+    }
   });
 
   // Upload Route
@@ -263,23 +375,23 @@ async function startServer() {
   });
 
   app.post("/api/articles", requireAuth, async (req, res) => {
-    const { title, content, category_id, image_url, video_url, is_urgent, tags } = req.body;
+    const { title, content, category_id, image_url, video_url, is_urgent, tags, writer_id, is_active } = req.body;
     const res_db = await db.query(`
-      INSERT INTO articles (title, content, category_id, image_url, video_url, is_urgent, tags)
-      VALUES ($1, $2, $3, $4, $5, $6, $7)
+      INSERT INTO articles (title, content, category_id, image_url, video_url, is_urgent, tags, writer_id, is_active)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
       RETURNING id
-    `, [title, content, category_id, image_url, video_url, is_urgent ? 1 : 0, tags]);
+    `, [title, content, category_id, image_url, video_url, is_urgent ? 1 : 0, tags, writer_id || null, is_active !== undefined ? (is_active ? 1 : 0) : 1]);
     await logAction((req as any).user.id, 'إضافة خبر', `تم إضافة الخبر: ${title}`);
     res.json({ id: res_db.rows[0].id });
   });
 
   app.put("/api/articles/:id", requireAuth, async (req, res) => {
-    const { title, content, category_id, image_url, video_url, is_urgent, tags } = req.body;
+    const { title, content, category_id, image_url, video_url, is_urgent, tags, writer_id, is_active } = req.body;
     await db.query(`
       UPDATE articles 
-      SET title = $1, content = $2, category_id = $3, image_url = $4, video_url = $5, is_urgent = $6, tags = $7
-      WHERE id = $8
-    `, [title, content, category_id, image_url, video_url, is_urgent ? 1 : 0, tags, req.params.id]);
+      SET title = $1, content = $2, category_id = $3, image_url = $4, video_url = $5, is_urgent = $6, tags = $7, writer_id = $8, is_active = $9
+      WHERE id = $10
+    `, [title, content, category_id, image_url, video_url, is_urgent ? 1 : 0, tags, writer_id || null, is_active !== undefined ? (is_active ? 1 : 0) : 1, req.params.id]);
     await logAction((req as any).user.id, 'تعديل خبر', `تم تعديل الخبر رقم: ${req.params.id}`);
     res.json({ success: true });
   });
@@ -299,6 +411,13 @@ async function startServer() {
   app.post("/api/articles/:id/restore", requireAuth, async (req, res) => {
     await db.query("UPDATE articles SET is_deleted = 0 WHERE id = $1", [req.params.id]);
     await logAction((req as any).user.id, 'استعادة خبر', `تم استعادة الخبر رقم: ${req.params.id}`);
+    res.json({ success: true });
+  });
+
+  app.patch("/api/articles/:id/status", requireAuth, async (req, res) => {
+    const { is_active } = req.body;
+    await db.query("UPDATE articles SET is_active = $1 WHERE id = $2", [is_active ? 1 : 0, req.params.id]);
+    await logAction((req as any).user.id, 'تغيير حالة الخبر', `تم تغيير حالة الخبر رقم: ${req.params.id} إلى ${is_active ? 'مفعل' : 'معطل'}`);
     res.json({ success: true });
   });
 
@@ -362,20 +481,20 @@ async function startServer() {
   });
 
   app.post("/api/ads", requireAuth, async (req, res) => {
-    const { title, image_url, link_url, adsense_code, position, is_active } = req.body;
+    const { title, image_url, link_url, adsense_code, position, is_active, start_date, end_date } = req.body;
     const { rows } = await db.query(
-      "INSERT INTO ads (title, image_url, link_url, adsense_code, position, is_active) VALUES ($1, $2, $3, $4, $5, $6) RETURNING id",
-      [title, image_url, link_url, adsense_code, position, is_active ? 1 : 0]
+      "INSERT INTO ads (title, image_url, link_url, adsense_code, position, is_active, start_date, end_date) VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING id",
+      [title, image_url, link_url, adsense_code, position, is_active ? 1 : 0, start_date || null, end_date || null]
     );
     await logAction((req as any).user.id, 'إضافة إعلان', `تم إضافة الإعلان: ${title}`);
     res.json({ id: rows[0].id });
   });
 
   app.put("/api/ads/:id", requireAuth, async (req, res) => {
-    const { title, image_url, link_url, adsense_code, position, is_active } = req.body;
+    const { title, image_url, link_url, adsense_code, position, is_active, start_date, end_date } = req.body;
     await db.query(
-      "UPDATE ads SET title = $1, image_url = $2, link_url = $3, adsense_code = $4, position = $5, is_active = $6 WHERE id = $7",
-      [title, image_url, link_url, adsense_code, position, is_active ? 1 : 0, req.params.id]
+      "UPDATE ads SET title = $1, image_url = $2, link_url = $3, adsense_code = $4, position = $5, is_active = $6, start_date = $7, end_date = $8 WHERE id = $9",
+      [title, image_url, link_url, adsense_code, position, is_active ? 1 : 0, start_date || null, end_date || null, req.params.id]
     );
     await logAction((req as any).user.id, 'تعديل إعلان', `تم تعديل الإعلان رقم: ${req.params.id}`);
     res.json({ success: true });
@@ -415,6 +534,32 @@ async function startServer() {
     res.json({ success: true });
   });
 
+  // Poll Comments with 48h Auto-Cleanup
+  app.get("/api/poll/comments", async (req, res) => {
+    try {
+      // Auto-cleanup: delete comments older than 48 hours
+      await db.query("DELETE FROM poll_comments WHERE created_at < NOW() - INTERVAL '48 hours'");
+
+      const { rows } = await db.query("SELECT * FROM poll_comments ORDER BY created_at DESC");
+      res.json(rows);
+    } catch (e) {
+      res.status(500).json({ error: "Error fetching poll comments" });
+    }
+  });
+
+  app.post("/api/poll/comments", async (req, res) => {
+    const { name, content } = req.body;
+    const finalName = name || 'زائر';
+    if (!content) return res.status(400).json({ error: "Content is required" });
+
+    try {
+      await db.query("INSERT INTO poll_comments (name, content) VALUES ($1, $2)", [finalName, content]);
+      res.json({ success: true });
+    } catch (e) {
+      res.status(500).json({ error: "Error posting poll comment" });
+    }
+  });
+
   // Categories
   app.get("/api/categories", async (req, res) => {
     const { rows } = await db.query("SELECT * FROM categories");
@@ -422,9 +567,9 @@ async function startServer() {
   });
 
   app.post("/api/categories", requireAuth, async (req, res) => {
-    const { name, slug } = req.body;
+    const { name, slug, background_url } = req.body;
     try {
-      const res_db = await db.query("INSERT INTO categories (name, slug) VALUES ($1, $2) RETURNING id", [name, slug]);
+      const res_db = await db.query("INSERT INTO categories (name, slug, background_url) VALUES ($1, $2, $3) RETURNING id", [name, slug, background_url]);
       await logAction((req as any).user.id, 'إضافة قسم', `تم إضافة القسم: ${name}`);
       res.json({ id: res_db.rows[0].id });
     } catch (e) {
@@ -433,8 +578,8 @@ async function startServer() {
   });
 
   app.put("/api/categories/:id", requireAuth, async (req, res) => {
-    const { name, slug } = req.body;
-    await db.query("UPDATE categories SET name = $1, slug = $2 WHERE id = $3", [name, slug, req.params.id]);
+    const { name, slug, background_url } = req.body;
+    await db.query("UPDATE categories SET name = $1, slug = $2, background_url = $3 WHERE id = $4", [name, slug, background_url, req.params.id]);
     await logAction((req as any).user.id, 'تعديل قسم', `تم تعديل القسم رقم: ${req.params.id}`);
     res.json({ success: true });
   });

@@ -17,8 +17,8 @@
   --font-serif: "Tajawal", "Readex Pro", ui-serif, Georgia, serif;
 
   --animate-marquee: marquee 60s linear infinite;
-  --animate-marquee-vertical: marquee-vertical 25s linear infinite;
-  --animate-marquee-vertical-reverse: marquee-vertical-reverse 25s linear infinite;
+  --animate-marquee-vertical: marquee-vertical 15s linear infinite;
+  --animate-marquee-vertical-reverse: marquee-vertical-reverse 15s linear infinite;
   --animate-spin-slow: spin-slow 10s linear infinite;
   --animate-logo-pulse: logo-pulse 2.5s ease-in-out infinite;
 
@@ -132,7 +132,7 @@
   .animate-marquee {
     display: flex;
     width: max-content;
-    animation: marquee 30s linear infinite;
+    animation: marquee 90s linear infinite;
     gap: 4rem;
   }
 
@@ -164,5 +164,34 @@
   .scrollbar-hide {
     -ms-overflow-style: none;
     scrollbar-width: none;
+  }
+}
+
+@media print {
+  body {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  @page {
+    margin: 1cm;
+    size: A4 portrait;
+  }
+
+  .print\:hidden {
+    display: none !important;
+  }
+
+  .print\:block {
+    display: block !important;
+  }
+
+  table {
+    page-break-inside: auto;
+  }
+
+  tr {
+    page-break-inside: avoid;
+    page-break-after: auto;
   }
 }
