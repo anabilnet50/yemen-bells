@@ -11,16 +11,8 @@ if (!fs.existsSync(uploadDir)) {
   fs.mkdirSync(uploadDir, { recursive: true });
 }
 
-// Multer configuration
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    cb(null, uploadDir);
-  },
-  filename: (req, file, cb) => {
-    const uniqueSuffix = Date.now() + "-" + Math.round(Math.random() * 1e9);
-    cb(null, uniqueSuffix + path.extname(file.originalname));
-  }
-});
+// Multer configuration using memory storage for direct DB upload
+const storage = multer.memoryStorage();
 const upload = multer({ storage });
 
 async function startServer() {
@@ -75,9 +67,13 @@ async function startServer() {
 
   app.get("/api/auth/me", requireAuth, async (req, res) => {
     try {
-      const { rows } = await db.query("SELECT id, username, full_name, role FROM system_users WHERE id = $1", [(req as any).user.id]);
+      const { rows } = await db.query("SELECT id, username, full_name, role, permissions FROM system_users WHERE id = $1", [(req as any).user.id]);
       if (rows.length > 0) {
-        res.json(rows[0]);
+        const user = rows[0];
+        if (user.permissions && typeof user.permissions === 'string') {
+          try { user.permissions = JSON.parse(user.permissions); } catch (e) { }
+        }
+        res.json(user);
       } else {
         res.status(404).json({ error: "User not found" });
       }
@@ -103,10 +99,10 @@ async function startServer() {
         [code, expiry, rows[0].id]
       );
 
-      // Simulated email sending
+      // Simulated email sending - returning the code to the frontend for practical testing/usage
       console.log(`[EMAIL SIMULATION] Verification Code for ${email}: ${code}`);
 
-      res.json({ message: "تم إرسال رمز التحقق إلى بريدك الإلكتروني" });
+      res.json({ message: "تم إرسال رمز التحقق إلى بريدك الإلكتروني", code });
     } catch (e) {
       res.status(500).json({ error: "حدث خطأ داخلي" });
     }
@@ -158,16 +154,23 @@ async function startServer() {
 
   // Admin Users
   app.get("/api/admin/users", requireAuth, async (req, res) => {
-    const { rows } = await db.query("SELECT id, username, full_name, role, created_at FROM system_users ORDER BY id DESC");
-    res.json(rows);
+    const { rows } = await db.query("SELECT id, username, full_name, role, permissions, created_at FROM system_users ORDER BY id DESC");
+    const users = rows.map(u => {
+      if (u.permissions && typeof u.permissions === 'string') {
+        try { u.permissions = JSON.parse(u.permissions); } catch (e) { }
+      }
+      return u;
+    });
+    res.json(users);
   });
 
   app.post("/api/admin/users", requireAuth, async (req, res) => {
-    const { username, password, full_name, role } = req.body;
+    const { username, password, full_name, role, permissions } = req.body;
     try {
+      const permsString = Array.isArray(permissions) ? JSON.stringify(permissions) : '[]';
       const { rows } = await db.query(
-        "INSERT INTO system_users (username, password, full_name, role) VALUES ($1, $2, $3, $4) RETURNING id",
-        [username, password, full_name, role || 'editor']
+        "INSERT INTO system_users (username, password, full_name, role, permissions) VALUES ($1, $2, $3, $4, $5) RETURNING id",
+        [username, password, full_name, role || 'editor', permsString]
       );
       await logAction((req as any).user.id, 'إضافة مستخدم', `تم إضافة المستخدم: ${username}`);
       res.json({ id: rows[0].id });
@@ -177,7 +180,7 @@ async function startServer() {
   });
 
   app.put("/api/admin/users/:id", requireAuth, async (req, res) => {
-    const { username, password, full_name, role } = req.body;
+    const { username, password, full_name, role, permissions } = req.body;
     const { id } = req.params;
 
     // Only admins can update users
@@ -187,15 +190,16 @@ async function startServer() {
     }
 
     try {
+      const permsString = Array.isArray(permissions) ? JSON.stringify(permissions) : '[]';
       if (password) {
         await db.query(
-          "UPDATE system_users SET username = $1, password = $2, full_name = $3, role = $4 WHERE id = $5",
-          [username, password, full_name, role, id]
+          "UPDATE system_users SET username = $1, password = $2, full_name = $3, role = $4, permissions = $5 WHERE id = $6",
+          [username, password, full_name, role, permsString, id]
         );
       } else {
         await db.query(
-          "UPDATE system_users SET username = $1, full_name = $2, role = $3 WHERE id = $4",
-          [username, full_name, role, id]
+          "UPDATE system_users SET username = $1, full_name = $2, role = $3, permissions = $4 WHERE id = $5",
+          [username, full_name, role, permsString, id]
         );
       }
       await logAction((req as any).user.id, 'تعديل مستخدم', `تم تعديل المستخدم رقم: ${id}`);
@@ -272,11 +276,46 @@ async function startServer() {
     }
   });
 
-  // Upload Route
-  app.post("/api/upload", requireAuth, upload.single("image"), (req, res) => {
+  // Upload Route (Database Storage)
+  app.post("/api/upload", requireAuth, upload.single("image"), async (req, res) => {
     if (!req.file) return res.status(400).json({ error: "No file uploaded" });
-    const imageUrl = `/uploads/${req.file.filename}`;
-    res.json({ imageUrl });
+
+    const uniqueSuffix = Date.now() + "-" + Math.round(Math.random() * 1e9);
+    const filename = uniqueSuffix + path.extname(req.file.originalname);
+
+    try {
+      await db.query(
+        "INSERT INTO media_storage (filename, mimetype, data) VALUES ($1, $2, $3)",
+        [filename, req.file.mimetype, req.file.buffer]
+      );
+
+      const imageUrl = `/api/media/${filename}`;
+      res.json({ imageUrl });
+    } catch (error) {
+      console.error("Error storing image:", error);
+      res.status(500).json({ error: "Failed to store image in database" });
+    }
+  });
+
+  // Serve Media from Database
+  app.get("/api/media/:filename", async (req, res) => {
+    try {
+      const { rows } = await db.query(
+        "SELECT mimetype, data FROM media_storage WHERE filename = $1",
+        [req.params.filename]
+      );
+
+      if (rows.length === 0) {
+        return res.status(404).json({ error: "File not found" });
+      }
+
+      res.setHeader('Content-Type', rows[0].mimetype);
+      res.setHeader('Cache-Control', 'public, max-age=31536000'); // Cache for 1 year
+      res.send(rows[0].data);
+    } catch (error) {
+      console.error("Error retrieving media:", error);
+      res.status(500).json({ error: "Internal server error" });
+    }
   });
 
   // Combined initialization endpoint for performance
@@ -595,28 +634,6 @@ async function startServer() {
     res.json({ success: true });
   });
 
-  // Subscribers
-  app.get("/api/subscribers", async (req, res) => {
-    const { rows } = await db.query("SELECT * FROM subscribers ORDER BY created_at DESC");
-    res.json(rows);
-  });
-
-  app.post("/api/subscribe", async (req, res) => {
-    const { email } = req.body;
-    try {
-      await db.query("INSERT INTO subscribers (email) VALUES ($1)", [email]);
-      res.json({ success: true });
-    } catch (e) {
-      res.status(400).json({ error: "Email already subscribed" });
-    }
-  });
-
-  app.delete("/api/subscribers/:id", requireAuth, async (req, res) => {
-    await db.query("DELETE FROM subscribers WHERE id = $1", [req.params.id]);
-    await logAction((req as any).user.id, 'حذف مشترك', `تم حذف المشترك رقم: ${req.params.id}`);
-    res.json({ success: true });
-  });
-
   // Settings
   app.get("/api/settings", async (req, res) => {
     const { rows } = await db.query("SELECT * FROM settings");
@@ -655,7 +672,6 @@ async function startServer() {
     const urgentNews = await db.query("SELECT count(*) as count FROM articles WHERE is_urgent = 1");
     const totalViews = await db.query("SELECT sum(views) as count FROM articles");
     const totalComments = await db.query("SELECT count(*) as count FROM comments");
-    const totalSubscribers = await db.query("SELECT count(*) as count FROM subscribers");
     const categoryStats = await db.query(`
       SELECT categories.name, count(articles.id) as count 
       FROM categories 
@@ -668,7 +684,6 @@ async function startServer() {
       urgentNews: Number(urgentNews.rows[0].count),
       totalViews: Number(totalViews.rows[0].count) || 0,
       totalComments: Number(totalComments.rows[0].count),
-      totalSubscribers: Number(totalSubscribers.rows[0].count),
       categoryStats: categoryStats.rows
     });
   });

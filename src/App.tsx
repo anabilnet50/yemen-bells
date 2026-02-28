@@ -42,7 +42,7 @@ function Home() {
   const smallArticlesPerPage = 3;
   const navigate = useNavigate();
 
-  const urgentArticles = articles.filter(a => a.is_urgent === 1);
+  const urgentArticles = articles.filter(a => a.is_urgent == 1 || a.is_urgent === true || a.is_urgent === '1');
   const mainArticle = urgentArticles[0] || articles[0];
 
   const [videoLoaded, setVideoLoaded] = useState(false);
@@ -168,9 +168,8 @@ function Home() {
           <div className="relative h-auto min-h-[280px] md:h-44 px-4 md:px-8 flex flex-col md:flex-row justify-between items-center overflow-hidden py-8 md:py-0">
             {/* Artistic Background Overlay - News Globe Animation */}
             <div className="absolute inset-0 z-0 bg-primary-navy">
-              {/* Spinning Globe Image - Fully Visible & Flush Left */}
               <div
-                className="absolute top-1/2 -left-20 md:-left-12 -translate-y-1/2 w-[300px] md:w-[600px] h-[300px] md:h-[600px] opacity-100 select-none pointer-events-none"
+                className="absolute top-1/2 -left-10 md:-left-12 -translate-y-1/2 w-[200px] md:w-[600px] h-[200px] md:h-[600px] opacity-100 select-none pointer-events-none"
               >
                 <img
                   src={settings.news_ball_image || "https://tse1.mm.bing.net/th/id/OIP.dKbPF3sk4Qg2vDcgN6jjxAHaB2?rs=1&pid=ImgDetMain&o=7&rm=3"}
@@ -353,13 +352,22 @@ function Home() {
                   onClick={() => navigate(`/article/${mainArticle.id}`)}
                   className="relative h-[250px] sm:h-[350px] md:h-[480px] bg-primary-navy rounded-none md:rounded-3xl overflow-hidden cursor-pointer shadow-none md:shadow-premium border-none md:border border-white/5 group"
                 >
+                  {/* Watermark Logo - Compact & Focused - Always visible over image or video */}
+                  <div className="absolute top-4 right-4 md:top-8 md:right-8 z-40 flex flex-col items-end pointer-events-none group-hover:scale-110 transition-transform duration-700">
+                    <div className="bg-black/30 backdrop-blur-lg px-3 md:px-4 py-1.5 md:py-2 rounded-xl border border-white/20 shadow-[0_10px_30px_rgba(0,0,0,0.5)] flex flex-col items-end">
+                      <span className="text-white font-black text-xl md:text-3xl tracking-tighter flex items-center gap-1 drop-shadow-2xl">
+                        <span className="text-primary-crimson">أ</span>جراس
+                      </span>
+                    </div>
+                  </div>
+
                   {mainArticle.video_url && videoLoaded ? (
                     (() => {
                       const ytUrl = getYoutubeEmbedUrl(mainArticle.video_url);
                       return ytUrl ? (
                         <iframe
                           src={ytUrl}
-                          className="w-full h-full pointer-events-none"
+                          className="w-full h-full pointer-events-none object-cover"
                           frameBorder="0"
                           allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                           allowFullScreen
@@ -380,25 +388,16 @@ function Home() {
                       animate={{ opacity: 1 }}
                       className="w-full h-full relative"
                     >
-                      {/* Watermark Logo - Compact & Focused */}
-                      <div className="absolute top-4 right-4 md:top-8 md:right-8 z-20 flex flex-col items-end pointer-events-none group-hover:scale-110 transition-transform duration-700">
-                        <div className="bg-black/30 backdrop-blur-lg px-3 md:px-4 py-1.5 md:py-2 rounded-xl border border-white/20 shadow-[0_10px_30px_rgba(0,0,0,0.5)] flex flex-col items-end">
-                          <span className="text-white font-black text-xl md:text-3xl tracking-tighter flex items-center gap-1 drop-shadow-2xl">
-                            <span className="text-primary-crimson">أ</span>جراس
-                          </span>
-                        </div>
-                      </div>
-
                       {mainArticle.image_url && (
                         <img
                           src={mainArticle.image_url || undefined}
                           alt={mainArticle.title}
-                          className="w-full h-full object-cover transition-transform duration-1000 scale-100 group-hover:scale-110"
+                          className="w-full h-full object-contain md:object-cover bg-black transition-transform duration-1000 scale-100 group-hover:scale-110"
                           referrerPolicy="no-referrer"
                         />
                       )}
                       {mainArticle.video_url && !videoLoaded && (
-                        <div className="absolute inset-0 flex items-center justify-center bg-black/20 backdrop-blur-sm">
+                        <div className="absolute inset-0 flex items-center justify-center bg-black/50 backdrop-blur-sm z-30">
                           <div className="w-16 h-16 bg-white/10 rounded-full flex items-center justify-center border border-white/30">
                             <Play className="w-8 h-8 text-white animate-pulse" />
                           </div>
@@ -416,45 +415,68 @@ function Home() {
                     </div>
 
                     {/* Scrolling Content - Center */}
-                    <div className="flex-1 overflow-hidden flex items-center bg-white px-4">
-                      <div className="animate-marquee whitespace-nowrap flex items-center gap-12 text-primary-navy font-black text-xs md:text-sm">
-                        {urgentArticles.length > 0 ? (
-                          <>
-                            {[...Array(2)].map((_, i) => (
-                              <React.Fragment key={`inv-rep-${i}`}>
-                                {urgentArticles.map(a => (
-                                  <Link key={`inv-${i}-${a.id}`} to={`/article/${a.id}`} className="flex items-center gap-4 hover:text-primary-crimson transition-colors group/tickeritem">
-                                    <span className="w-1.5 h-1.5 bg-primary-crimson rotate-45 group-hover/tickeritem:scale-125 transition-transform"></span>
-                                    {a.title}
-                                    {['opinion', 'studies'].includes(a.category_slug) && a.writer_name && (
-                                      <span className="text-primary-crimson mr-2"> - {a.writer_name}</span>
-                                    )}
-                                  </Link>
+                    <div className="flex-1 overflow-hidden flex items-center bg-white border-x border-gray-100 relative">
+                      <div className="whitespace-nowrap text-primary-navy font-black text-xs md:text-sm w-full" style={{ gap: 0 }}>
+                        {/* Build the base content block first to avoid massive inline repetition */}
+                        {(() => {
+                          const TickerItemContent = (
+                            <>
+                              {settings?.custom_ticker_text && settings.custom_ticker_text.trim() !== '' && (
+                                <span className="flex items-center gap-4 text-primary-crimson drop-shadow-sm font-black text-sm md:text-base group/tickeritem shrink-0">
+                                  <span className="w-2 h-2 rounded-full bg-primary-crimson animate-pulse shadow-[0_0_10px_rgba(225,29,72,0.8)]"></span>
+                                  {settings.custom_ticker_text}
+                                </span>
+                              )}
+                              {urgentArticles.map(a => (
+                                <Link key={`urgent-${a.id}`} to={`/article/${a.id}`} className="flex items-center gap-4 hover:text-primary-crimson transition-colors group/tickeritem shrink-0">
+                                  <span className="w-1.5 h-1.5 bg-primary-crimson rotate-45 group-hover/tickeritem:scale-125 transition-transform"></span>
+                                  {a.title}
+                                  {['opinion', 'studies'].includes(a.category_slug) && a.writer_name && (
+                                    <span className="text-primary-crimson mr-2"> - {a.writer_name}</span>
+                                  )}
+                                </Link>
+                              ))}
+                            </>
+                          );
+
+                          const FallbackContent = (
+                            <span className="text-gray-400 font-bold text-[10px] md:text-xs tracking-widest shrink-0 flex items-center gap-4">
+                              <span className="w-1 h-1 bg-gray-300 rounded-full"></span>
+                              أجراس اليمن .. تغطية حية ومستمرة لكل ما يدور في الساحة اليمنية والمنطقة
+                            </span>
+                          );
+
+                          const hasCustomText = settings?.custom_ticker_text && settings.custom_ticker_text.trim() !== '';
+                          const blocksToRender = (urgentArticles.length > 0 || hasCustomText) ? TickerItemContent : FallbackContent;
+
+                          const itemsCount = Math.max(1, urgentArticles.length) + (hasCustomText ? 1 : 0);
+                          const calculatedDuration = itemsCount * 8 * 15; // 15 seconds per distinct news item reading time
+
+                          return (
+                            <div className="flex animate-marquee hover:pause w-max" style={{ animationDuration: `${calculatedDuration}s` }}>
+                              {/* Half 1 */}
+                              <div className="flex items-center gap-12 px-6">
+                                {[...Array(8)].map((_, i) => (
+                                  <React.Fragment key={`h1-${i}`}>{blocksToRender}</React.Fragment>
                                 ))}
-                              </React.Fragment>
-                            ))}
-                          </>
-                        ) : (
-                          <>
-                            {[...Array(6)].map((_, i) => (
-                              <span key={`placeholder-${i}`} className="text-gray-400 font-bold text-[10px] md:text-xs tracking-widest flex-shrink-0 flex items-center gap-4">
-                                <span className="w-1 h-1 bg-gray-300 rounded-full"></span>
-                                أجراس اليمن .. تغطية حية ومستمرة لكل ما يدور في الساحة اليمنية والمنطقة
-                              </span>
-                            ))}
-                          </>
-                        )}
+                              </div>
+                              {/* Half 2 */}
+                              <div className="flex items-center gap-12 px-6" aria-hidden="true">
+                                {[...Array(8)].map((_, i) => (
+                                  <React.Fragment key={`h2-${i}`}>{blocksToRender}</React.Fragment>
+                                ))}
+                              </div>
+                            </div>
+                          );
+                        })()}
                       </div>
                     </div>
 
                     {/* Time Indicator - Left Side */}
-                    <div className="bg-primary-crimson text-white px-5 md:px-8 flex items-center justify-center shrink-0 z-30 border-l border-white/10 relative group/time shadow-[-5px_0_15px_rgba(225,29,72,0.3)]">
-                      <div className="flex flex-col items-center">
-                        <span className="text-[10px] md:text-base font-black tracking-tighter tabular-nums text-white">
-                          {currentTime.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false })}
-                        </span>
-                        <span className="text-[8px] font-black opacity-60 leading-none">PM</span>
-                      </div>
+                    <div className="bg-[#1a1a1a] text-white px-6 py-2 xl:py-0 flex items-center justify-center gap-3 shrink-0 relative overflow-hidden group/clock z-20 shadow-[-10px_0_20px_white]">
+                      <div className="absolute inset-0 bg-primary-crimson/5 group-hover/clock:bg-primary-crimson/20 transition-colors"></div>
+                      <Clock className="w-4 h-4 text-primary-crimson" />
+                      <span className="font-sans font-medium text-sm tracking-widest tabular-nums" style={{ direction: 'ltr' }}>{currentTime.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true })}</span>
                     </div>
                   </div>
 
@@ -536,7 +558,7 @@ function Home() {
               <div className="glass-card overflow-hidden flex-1 flex flex-col border border-primary-navy/5 bg-white/40 h-60">
                 <Link to="/category/opinion" className="bg-primary-navy p-4 text-center font-black text-white text-sm uppercase tracking-[0.2em] flex items-center justify-center gap-3 hover:bg-primary-navy/90 transition-all shrink-0">
                   <div className="w-1 h-3 bg-primary-crimson rounded-full shadow-glow"></div>
-                  مقالات
+                  {settings?.opinion_title || 'مقالات'}
                 </Link>
                 <div className="flex-1 overflow-hidden relative p-4">
                   <div className="animate-marquee-vertical flex flex-col space-y-4">
@@ -577,7 +599,7 @@ function Home() {
               <div className="glass-card overflow-hidden flex-1 flex flex-col border border-primary-navy/5 bg-white/40 h-60">
                 <Link to="/category/studies" className="bg-primary-navy p-4 text-center font-black text-white text-sm uppercase tracking-[0.2em] flex items-center justify-center gap-3 hover:bg-primary-navy/90 transition-all shrink-0">
                   <div className="w-1 h-3 bg-accent-gold rounded-full shadow-glow"></div>
-                  {settings?.research_title || 'أبحاث ودراسات ومقالات'}
+                  {settings?.research_title || 'أبحاث ودراسات'}
                 </Link>
                 <div className="flex-1 overflow-hidden relative p-4">
                   <div className="animate-marquee-vertical flex flex-col space-y-4">
@@ -588,10 +610,10 @@ function Home() {
                           to={`/article/${v.id}`}
                           className="flex items-center gap-4 group/vitem bg-white/50 p-3 rounded-2xl hover:bg-white/80 transition-all border border-gray-100 shadow-sm"
                         >
-                          <div className="w-20 h-14 rounded-lg overflow-hidden shrink-0 relative order-2">
+                          <div className="w-20 h-14 rounded-lg overflow-hidden shrink-0 relative order-1">
                             <img src={v.image_url || undefined} alt={v.title} className="w-full h-full object-cover group-hover/vitem:scale-110 transition-transform duration-500" />
                           </div>
-                          <div className="flex-1 text-right order-1">
+                          <div className="flex-1 text-right order-2">
                             <h4 className="text-primary-navy font-black text-xs line-clamp-2 leading-relaxed group-hover/vitem:text-primary-crimson transition-colors">{v.title}</h4>
                             <p className="text-[10px] text-gray-400 font-bold mt-1 flex items-center justify-end gap-1">
                               <span>{v.author || 'الباحث'}</span>
@@ -880,14 +902,14 @@ function Home() {
                 <motion.div
                   whileHover={{ y: -10 }}
                   key={i}
-                  className={`glass-card overflow-hidden h-72 relative group border-b-8 ${cat.color} transition-all duration-500`}
+                  className={`glass-card overflow-hidden h-72 relative group transition-all duration-500 flex flex-col border border-primary-navy/5`}
                 >
                   <div className="absolute inset-0">
                     <img src={cat.img} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-1000" />
-                    <div className="absolute inset-0 bg-primary-navy/40 group-hover:bg-primary-navy/20 transition-all duration-500"></div>
+                    <div className="absolute inset-0 bg-primary-navy/40 group-hover:bg-primary-navy/20 transition-all duration-500 z-0"></div>
                   </div>
-                  <div className="relative z-10 h-full p-8 flex flex-col items-center justify-end">
-                    <div className="h-48 overflow-hidden relative w-full mb-4">
+                  <div className="relative z-10 flex-1 p-6 flex flex-col items-center justify-end">
+                    <div className="h-44 overflow-hidden relative w-full mb-2">
                       <div className="animate-marquee-vertical flex flex-col space-y-6 text-white text-right font-black text-lg">
                         {articles.filter(a => a.category_slug === cat.slug).length > 0 ? (
                           <>
@@ -910,12 +932,11 @@ function Home() {
                         )}
                       </div>
                     </div>
-                    <Link to={`/category/${cat.slug}`} className="w-full z-20 relative cursor-pointer">
-                      <h3 className="text-white font-serif italic font-black text-3xl text-center drop-shadow-2xl group-hover:text-accent-gold transition-colors py-2 w-full uppercase tracking-widest leading-none">
-                        {cat.label}
-                      </h3>
-                    </Link>
                   </div>
+                  <Link to={`/category/${cat.slug}`} className="w-full z-20 relative cursor-pointer bg-primary-crimson/90 backdrop-blur-md p-4 text-center font-black text-white text-sm uppercase tracking-[0.2em] flex items-center justify-center gap-3 hover:bg-primary-crimson transition-all shrink-0">
+                    <div className="w-1 h-3 bg-white rounded-full shadow-glow"></div>
+                    {cat.label}
+                  </Link>
                 </motion.div>
               ))
             }

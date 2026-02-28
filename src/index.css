@@ -16,6 +16,16 @@
   --font-sans: "Tajawal", "Readex Pro", "Inter", ui-sans-serif, system-ui, sans-serif;
   --font-serif: "Tajawal", "Readex Pro", ui-serif, Georgia, serif;
 
+  /* Global Responsive Typography */
+  --text-base: clamp(1rem, 1.2vw + 0.5rem, 1.125rem);
+  --text-lg: clamp(1.125rem, 1.5vw + 0.5rem, 1.25rem);
+  --text-xl: clamp(1.25rem, 2vw + 0.5rem, 1.5rem);
+  --text-2xl: clamp(1.5rem, 2.5vw + 0.5rem, 1.875rem);
+  --text-3xl: clamp(1.75rem, 3vw + 0.5rem, 2.25rem);
+  --text-4xl: clamp(2rem, 4vw + 0.5rem, 2.75rem);
+  --text-5xl: clamp(2.25rem, 5vw + 0.5rem, 3.5rem);
+  --text-6xl: clamp(2.75rem, 6vw + 0.5rem, 4.5rem);
+
   --animate-marquee: marquee 60s linear infinite;
   --animate-marquee-vertical: marquee-vertical 15s linear infinite;
   --animate-marquee-vertical-reverse: marquee-vertical-reverse 15s linear infinite;
@@ -78,7 +88,8 @@
     }
 
     100% {
-      transform: translateX(-50%);
+      /* Positive translation pushes it RIGHT, meaning items enter from LEFT edge on RTL */
+      transform: translateX(50%);
     }
   }
 
@@ -132,8 +143,8 @@
   .animate-marquee {
     display: flex;
     width: max-content;
-    animation: marquee 90s linear infinite;
-    gap: 4rem;
+    /* Adjust speed: 60s is typical readable speed for wide elements */
+    animation: marquee 60s linear infinite;
   }
 
   .pause {

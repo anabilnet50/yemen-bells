@@ -124,6 +124,7 @@ export async function initDb() {
         password TEXT NOT NULL,
         full_name TEXT NOT NULL,
         role TEXT DEFAULT 'editor',
+        permissions TEXT DEFAULT '[]',
         email TEXT,
         reset_token TEXT,
         reset_token_expiry TIMESTAMPTZ,
@@ -131,12 +132,26 @@ export async function initDb() {
       );
     `);
 
+    // Ensure permissions column exists for older dbs
+    try {
+      await client.query("ALTER TABLE system_users ADD COLUMN IF NOT EXISTS permissions TEXT DEFAULT '[]'");
+    } catch (e) { /* ignore */ }
+
     await client.query(`
       CREATE TABLE IF NOT EXISTS audit_logs (
         id SERIAL PRIMARY KEY,
         user_id INTEGER REFERENCES system_users(id) ON DELETE SET NULL,
         action TEXT NOT NULL,
         details TEXT,
+        created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+      );
+    `);
+
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS media_storage (
+        filename TEXT PRIMARY KEY,
+        mimetype TEXT NOT NULL,
+        data BYTEA NOT NULL,
         created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
       );
     `);

@@ -7,7 +7,7 @@ import {
 } from 'lucide-react';
 
 export default function AdminDashboard() {
-  const [activeSection, setActiveSection] = useState<'dashboard' | 'news' | 'categories' | 'comments' | 'subscribers' | 'settings' | 'ads' | 'writers' | 'trash' | 'analytics' | 'history' | 'users'>('dashboard');
+  const [activeSection, setActiveSection] = useState<'dashboard' | 'news' | 'categories' | 'comments' | 'settings' | 'ads' | 'writers' | 'trash' | 'history' | 'users'>('dashboard');
   const [articles, setArticles] = useState<any[]>([]);
   const [trashArticles, setTrashArticles] = useState<any[]>([]);
   const [categories, setCategories] = useState<any[]>([]);
@@ -22,7 +22,10 @@ export default function AdminDashboard() {
   const [token, setToken] = useState<string | null>(localStorage.getItem('admin_token'));
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [loginData, setLoginData] = useState({ username: '', password: '' });
+  const [loginError, setLoginError] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
+  const [isEditingTicker, setIsEditingTicker] = useState(false);
   const [isEditingCategory, setIsEditingCategory] = useState(false);
   const [isEditingWriter, setIsEditingWriter] = useState(false);
   const [isEditingAd, setIsEditingAd] = useState(false);
@@ -63,7 +66,7 @@ export default function AdminDashboard() {
   const [currentCategory, setCurrentCategory] = useState<any>({ name: '', slug: '' });
   const [currentWriter, setCurrentWriter] = useState<any>({ name: '', bio: '', image_url: '' });
   const [currentAd, setCurrentAd] = useState<any>({ title: '', image_url: '', link_url: '', adsense_code: '', position: 'sidebar', is_active: 1, start_date: '', end_date: '' });
-  const [currentUserData, setCurrentUserData] = useState<any>({ username: '', password: '', full_name: '', role: 'editor' });
+  const [currentUserData, setCurrentUserData] = useState<any>({ username: '', password: '', full_name: '', role: 'editor', permissions: [] });
 
   // History Filters
   const [historyFilterUser, setHistoryFilterUser] = useState('');
@@ -131,7 +134,7 @@ export default function AdminDashboard() {
       .then(res => res.json())
       .then(data => {
         if (data.message) {
-          showNotification('تم إرسال رمز التحقق لبريدك');
+          showNotification(data.code ? `تم إرسال الرمز بنجاح. رمز التحقق هو: ${data.code}` : data.message);
           setAuthMode('verify');
         } else {
           showNotification(data.error || 'فشل في العملية', 'error');
@@ -178,6 +181,7 @@ export default function AdminDashboard() {
 
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
+    setLoginError('');
     fetch('/api/auth/login', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -191,7 +195,7 @@ export default function AdminDashboard() {
           setCurrentUser(data.user);
           showNotification('تم تسجيل الدخول بنجاح');
         } else {
-          showNotification('اسم المستخدم أو كلمة المرور غير صحيحة', 'error');
+          setLoginError('اسم المستخدم أو كلمة المرور غير صحيحة. يرجى المحاولة مرة أخرى.');
         }
       });
   };
@@ -510,7 +514,6 @@ export default function AdminDashboard() {
         <div className="w-full max-w-md bg-white rounded-[2.5rem] shadow-2xl p-8 lg:p-12 relative overflow-hidden">
           <div className="absolute top-0 right-0 w-32 h-32 bg-primary-crimson/5 rounded-full -mr-16 -mt-16"></div>
           <div className="text-center mb-10">
-            <div className="w-20 h-20 bg-primary-crimson rounded-3xl flex items-center justify-center text-white text-4xl font-black shadow-xl shadow-primary-crimson/30 mx-auto mb-6">أ</div>
             <h1 className="text-3xl font-black text-primary-navy">أجراس اليمن</h1>
             <p className="text-gray-400 font-bold mt-2">
               {authMode === 'login' ? 'بوابة الإدارة ونشر المحتوى' :
@@ -532,16 +535,31 @@ export default function AdminDashboard() {
                   required
                 />
               </div>
+              {loginError && (
+                <div className="bg-red-50 text-red-600 p-4 rounded-xl text-center text-sm font-bold border border-red-100 flex items-center justify-center gap-2">
+                  <AlertCircle className="w-5 h-5 flex-shrink-0" />
+                  <span>{loginError}</span>
+                </div>
+              )}
               <div className="space-y-2">
                 <label className="text-sm font-black text-gray-700 block mr-1">كلمة المرور</label>
-                <input
-                  type="password"
-                  value={loginData.password}
-                  onChange={e => setLoginData({ ...loginData, password: e.target.value })}
-                  className="w-full p-4 bg-gray-50 border-2 border-gray-100 rounded-2xl outline-none focus:border-primary-crimson focus:bg-white transition-all font-bold"
-                  placeholder="••••••••"
-                  required
-                />
+                <div className="relative">
+                  <input
+                    type={showPassword ? "text" : "password"}
+                    value={loginData.password}
+                    onChange={e => setLoginData({ ...loginData, password: e.target.value })}
+                    className="w-full p-4 pl-12 bg-gray-50 border-2 border-gray-100 rounded-2xl outline-none focus:border-primary-crimson focus:bg-white transition-all font-bold"
+                    placeholder="••••••••"
+                    required
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-primary-crimson transition-colors"
+                  >
+                    <Eye className="w-5 h-5" />
+                  </button>
+                </div>
               </div>
               <button
                 type="submit"
@@ -629,14 +647,23 @@ export default function AdminDashboard() {
             <form onSubmit={handleResetPassword} className="space-y-6">
               <div className="space-y-2">
                 <label className="text-sm font-black text-gray-700 block mr-1">كلمة المرور الجديدة</label>
-                <input
-                  type="password"
-                  value={newPassword}
-                  onChange={e => setNewPassword(e.target.value)}
-                  className="w-full p-4 bg-gray-50 border-2 border-gray-100 rounded-2xl outline-none focus:border-primary-crimson focus:bg-white transition-all font-bold"
-                  placeholder="••••••••"
-                  required
-                />
+                <div className="relative">
+                  <input
+                    type={showPassword ? "text" : "password"}
+                    value={newPassword}
+                    onChange={e => setNewPassword(e.target.value)}
+                    className="w-full p-4 pl-12 bg-gray-50 border-2 border-gray-100 rounded-2xl outline-none focus:border-primary-crimson focus:bg-white transition-all font-bold"
+                    placeholder="••••••••"
+                    required
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-primary-crimson transition-colors"
+                  >
+                    <Eye className="w-5 h-5" />
+                  </button>
+                </div>
               </div>
               <button
                 type="submit"
@@ -681,39 +708,45 @@ export default function AdminDashboard() {
         <nav className="flex-1 p-6 space-y-2 overflow-y-auto custom-scrollbar">
           <p className="text-xs font-bold text-gray-500 uppercase tracking-widest mb-4">القائمة الرئيسية</p>
           {[
-            { id: 'dashboard', icon: LayoutDashboard, label: 'لوحة التحكم' },
-            { id: 'news', icon: FileText, label: 'إدارة الأخبار' },
-            { id: 'writers', icon: Users, label: 'الكتاب' },
-            { id: 'categories', icon: Filter, label: 'إدارة الأقسام' },
-            { id: 'ads', icon: DollarSign, label: 'إدارة الإعلانات' },
-            { id: 'trash', icon: Trash, label: 'سلة المحذوفات' },
-            { id: 'comments', icon: MessageCircle, label: 'التعليقات' },
-            { id: 'subscribers', icon: User, label: 'المشتركون' },
-          ].map(item => (
-            <button
-              key={item.id}
-              onClick={() => { setActiveSection(item.id as any); setIsSidebarOpen(false); }}
-              className={`flex items-center gap-4 w-full p-4 rounded-xl font-bold border transition-all ${activeSection === item.id ? 'bg-primary-crimson text-white border-primary-crimson shadow-lg shadow-primary-crimson/20' : 'hover:bg-white/5 text-gray-400 hover:text-white border-transparent'}`}
-            >
-              <item.icon className="w-5 h-5" /> {item.label}
-            </button>
-          ))}
+            { id: 'dashboard', icon: LayoutDashboard, label: 'لوحة التحكم', permission: null },
+            { id: 'news', icon: FileText, label: 'إدارة الأخبار', permission: 'news' },
+            { id: 'writers', icon: Users, label: 'الكتاب', permission: 'writers' },
+            { id: 'categories', icon: Filter, label: 'إدارة الأقسام', permission: 'categories' },
+            { id: 'ads', icon: DollarSign, label: 'إدارة الإعلانات', permission: 'ads' },
+            { id: 'trash', icon: Trash, label: 'سلة المحذوفات', permission: 'trash' },
+            { id: 'comments', icon: MessageCircle, label: 'التعليقات', permission: 'comments' },
+          ].map(item => {
+            const hasAccess = currentUser?.role === 'admin' || !item.permission || (Array.isArray(currentUser?.permissions) && currentUser.permissions.includes(item.permission));
+            if (!hasAccess) return null;
+            return (
+              <button
+                key={item.id}
+                onClick={() => { setActiveSection(item.id as any); setIsSidebarOpen(false); }}
+                className={`flex items-center gap-4 w-full p-4 rounded-xl font-bold border transition-all ${activeSection === item.id ? 'bg-primary-crimson text-white border-primary-crimson shadow-lg shadow-primary-crimson/20' : 'hover:bg-white/5 text-gray-400 hover:text-white border-transparent'}`}
+              >
+                <item.icon className="w-5 h-5" /> {item.label}
+              </button>
+            )
+          })}
 
-          <p className="text-xs font-bold text-gray-500 uppercase tracking-widest mt-8 mb-4">الإعدادات والرقابة</p>
-          {[
-            { id: 'analytics', icon: BarChart2, label: 'إحصائيات الزوار' },
-            { id: 'history', icon: RotateCcw, label: 'سجل الأنشطة' },
-            { id: 'users', icon: Users, label: 'إدارة المستخدمين' },
-            { id: 'settings', icon: Settings, label: 'إعدادات الموقع' },
-          ].map(item => (
-            <button
-              key={item.id}
-              onClick={() => { setActiveSection(item.id as any); setIsSidebarOpen(false); }}
-              className={`flex items-center gap-4 w-full p-4 rounded-xl font-bold border transition-all ${activeSection === item.id ? 'bg-primary-crimson text-white border-primary-crimson shadow-lg shadow-primary-crimson/20' : 'hover:bg-white/5 text-gray-400 hover:text-white border-transparent'}`}
-            >
-              <item.icon className="w-5 h-5" /> {item.label}
-            </button>
-          ))}
+          {currentUser?.role === 'admin' && (
+            <>
+              <p className="text-xs font-bold text-gray-500 uppercase tracking-widest mt-8 mb-4">الإعدادات والرقابة</p>
+              {[
+                { id: 'history', icon: RotateCcw, label: 'سجل الأنشطة' },
+                { id: 'users', icon: Users, label: 'إدارة المستخدمين' },
+                { id: 'settings', icon: Settings, label: 'إعدادات الموقع' },
+              ].map(item => (
+                <button
+                  key={item.id}
+                  onClick={() => { setActiveSection(item.id as any); setIsSidebarOpen(false); }}
+                  className={`flex items-center gap-4 w-full p-4 rounded-xl font-bold border transition-all ${activeSection === item.id ? 'bg-primary-crimson text-white border-primary-crimson shadow-lg shadow-primary-crimson/20' : 'hover:bg-white/5 text-gray-400 hover:text-white border-transparent'}`}
+                >
+                  <item.icon className="w-5 h-5" /> {item.label}
+                </button>
+              ))}
+            </>
+          )}
 
 
           <div className="pt-4 mt-4 border-t border-white/5">
@@ -803,13 +836,6 @@ export default function AdminDashboard() {
                           <p className="text-2xl font-black">{stats.totalComments}</p>
                         </div>
                       </div>
-                      <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 flex items-center gap-5">
-                        <div className="w-14 h-14 bg-purple-50 text-purple-600 rounded-2xl flex items-center justify-center"><User className="w-7 h-7" /></div>
-                        <div>
-                          <p className="text-sm text-gray-500 font-bold">المشتركون</p>
-                          <p className="text-2xl font-black">{stats.totalSubscribers}</p>
-                        </div>
-                      </div>
                     </div>
                   )}
 
@@ -872,15 +898,57 @@ export default function AdminDashboard() {
                         </div>
                       </div>
                     </div>
-                    <button
-                      onClick={() => { setIsEditing(true); setCurrentArticle({ title: '', content: '', category_id: 1, image_url: '', is_urgent: false, tags: '', writer_id: '' }); }}
-                      className="bg-red-600 text-white px-8 py-4 rounded-xl font-bold flex items-center gap-3 shadow-xl shadow-primary-crimson/20 hover:bg-primary-crimson/80 transition-all transform hover:-translate-y-1"
-                    >
-                      <Plus className="w-6 h-6" /> إضافة خبر جديد
-                    </button>
+                    <div className="flex gap-4">
+                      <button
+                        onClick={() => { setIsEditing(false); setIsEditingTicker(true); }}
+                        className="bg-orange-500 text-white px-6 py-4 rounded-xl font-bold flex items-center gap-3 shadow-md hover:bg-orange-600 transition-all transform hover:-translate-y-1"
+                      >
+                        <MessageCircle className="w-5 h-5" /> نص شريط الأخبار
+                      </button>
+                      <button
+                        onClick={() => { setIsEditingTicker(false); setIsEditing(true); setCurrentArticle({ title: '', content: '', category_id: 1, image_url: '', is_urgent: false, tags: '', writer_id: '' }); }}
+                        className="bg-red-600 text-white px-8 py-4 rounded-xl font-bold flex items-center gap-3 shadow-xl shadow-primary-crimson/20 hover:bg-primary-crimson/80 transition-all transform hover:-translate-y-1"
+                      >
+                        <Plus className="w-6 h-6" /> إضافة خبر جديد
+                      </button>
+                    </div>
                   </div>
 
-                  {isEditing ? (
+                  {isEditingTicker ? (
+                    <div className="bg-white p-8 lg:p-12 rounded-3xl shadow-xl border border-gray-100 max-w-2xl mx-auto mb-10">
+                      <div className="flex justify-between items-center mb-8 border-b pb-6">
+                        <h2 className="text-2xl font-black text-gray-900">إضافة نص لشريط الأخبار</h2>
+                        <button onClick={() => setIsEditingTicker(false)} className="text-gray-400 hover:text-gray-600 font-bold">إغلاق</button>
+                      </div>
+                      <div className="space-y-6">
+                        <p className="text-gray-500 font-bold text-sm">أدخل رسالة مخصصة للظهور كخبر عاجل في الشريط المتحرك أعلى الموقع. لإخفائه، اترك الحقل فارغاً.</p>
+                        <input
+                          type="text"
+                          value={settings.custom_ticker_text || ''}
+                          onChange={e => setSettings(prev => ({ ...prev, custom_ticker_text: e.target.value }))}
+                          placeholder="مثال: عاجل - بدء الفعالية..."
+                          className="w-full p-4 bg-gray-50 border-2 border-gray-100 rounded-2xl focus:border-orange-500 transition-all outline-none font-bold text-lg"
+                        />
+                        <button
+                          onClick={() => {
+                            authenticatedFetch('/api/settings', {
+                              method: 'POST',
+                              headers: { 'Content-Type': 'application/json' },
+                              body: JSON.stringify({ custom_ticker_text: settings.custom_ticker_text })
+                            })
+                              .then(() => {
+                                showNotification('تم تحديث الشريط بنجاح');
+                                setIsEditingTicker(false);
+                              })
+                              .catch(() => showNotification('حدث خطأ', 'error'));
+                          }}
+                          className="bg-orange-500 text-white px-8 py-4 rounded-2xl font-black shadow-xl w-full hover:bg-orange-600 transition"
+                        >
+                          تحديث ونشر في الشريط
+                        </button>
+                      </div>
+                    </div>
+                  ) : isEditing ? (
                     <div className="bg-white p-8 lg:p-12 rounded-3xl shadow-xl border border-gray-100 max-w-5xl mx-auto">
                       <div className="flex justify-between items-center mb-10 border-b pb-6">
                         <h2 className="text-2xl font-black text-gray-900">{currentArticle.id ? 'تعديل الخبر' : 'إنشاء خبر جديد'}</h2>
@@ -1026,26 +1094,26 @@ export default function AdminDashboard() {
                         </div>
                       </div>
                       <div className="overflow-x-auto overflow-y-visible">
-                        <table className="w-full text-right border-collapse">
-                          <thead>
-                            <tr className="bg-gray-50 border-b border-gray-100">
-                              <th className="p-10 text-xl font-black text-gray-400 uppercase tracking-widest text-center">
+                        <table className="w-full text-center border-collapse border border-[#cfdce9]">
+                          <thead className="bg-[#5b9bd5] text-white">
+                            <tr className="divide-x divide-x-reverse divide-[#ffffff]">
+                              <th className="p-4 sm:p-6 text-sm font-black uppercase text-center whitespace-nowrap">
                                 <div className="flex items-center gap-2 justify-center"><Hash className="w-5 h-5" /> الرقم</div>
                               </th>
-                              <th className="p-10 text-xl font-black text-gray-400 uppercase tracking-widest text-center">الوسائط</th>
-                              <th className="p-10 text-xl font-black text-gray-400 uppercase tracking-widest">عنوان الخبر</th>
-                              <th className="p-10 text-xl font-black text-gray-400 uppercase tracking-widest text-center">القسم</th>
-                              <th className="p-10 text-xl font-black text-gray-400 uppercase tracking-widest text-center">تاريخ النشر</th>
-                              <th className="p-10 text-xl font-black text-gray-400 uppercase tracking-widest text-center">وقت النشر</th>
-                              <th className="p-10 text-xl font-black text-gray-400 uppercase tracking-widest text-center">إجمالي الزيارات</th>
-                              <th className="p-10 text-xl font-black text-gray-400 uppercase tracking-widest">المستخدم (الناشر)</th>
-                              <th className="p-10 text-xl font-black text-gray-400 uppercase tracking-widest text-center">الحالة</th>
-                              <th className="p-10 text-xl font-black text-gray-400 uppercase tracking-widest text-center">الإجراءات</th>
+                              <th className="p-4 sm:p-6 text-sm font-black uppercase text-center whitespace-nowrap">الوسائط</th>
+                              <th className="p-4 sm:p-6 text-sm font-black uppercase text-center whitespace-nowrap max-w-[200px]">عنوان الخبر</th>
+                              <th className="p-4 sm:p-6 text-sm font-black uppercase text-center whitespace-nowrap">القسم</th>
+                              <th className="p-4 sm:p-6 text-sm font-black uppercase text-center whitespace-nowrap">تاريخ النشر</th>
+                              <th className="p-4 sm:p-6 text-sm font-black uppercase text-center whitespace-nowrap">وقت النشر</th>
+                              <th className="p-4 sm:p-6 text-sm font-black uppercase text-center whitespace-nowrap">إجمالي الزيارات</th>
+                              <th className="p-4 sm:p-6 text-sm font-black uppercase text-center whitespace-nowrap">المستخدم (الناشر)</th>
+                              <th className="p-4 sm:p-6 text-sm font-black uppercase text-center whitespace-nowrap">الحالة</th>
+                              <th className="p-4 sm:p-6 text-sm font-black uppercase text-center whitespace-nowrap">الإجراءات</th>
                             </tr>
                           </thead>
-                          <tbody className="divide-y divide-gray-50">
+                          <tbody className="divide-y divide-[#cfdce9]">
                             {filteredArticles.map(article => (
-                              <tr key={article.id} className="hover:bg-primary-navy/[0.02] transition-colors group">
+                              <tr key={article.id} className="even:bg-[#e9f0f8] odd:bg-white hover:bg-blue-50 transition-colors divide-x divide-x-reverse divide-[#cfdce9] text-center">
                                 <td className="p-6 font-mono text-sm text-gray-400 font-black text-center">#{article.id}</td>
                                 <td className="p-6 text-center">
                                   <div className="w-24 h-16 rounded-xl overflow-hidden shadow-sm border border-gray-100 mx-auto relative group/img">
@@ -1208,22 +1276,22 @@ export default function AdminDashboard() {
                     </div>
                   ) : (
                     <div className="bg-white rounded-3xl shadow-xl overflow-hidden border border-gray-100">
-                      <table className="w-full text-right">
-                        <thead className="bg-gray-50/50 border-b">
+                      <table className="w-full text-center border-collapse">
+                        <thead className="bg-[#5b9bd5] text-white">
                           <tr>
-                            <th className="p-6 font-black text-gray-600">الاسم</th>
-                            <th className="p-6 font-black text-gray-600">الرابط (Slug)</th>
-                            <th className="p-6 font-black text-gray-600 text-center">الإجراءات</th>
+                            <th className="p-4 sm:p-6 font-black border-l border-white last:border-l-0 text-center">الاسم</th>
+                            <th className="p-4 sm:p-6 font-black border-l border-white last:border-l-0 text-center">الرابط (Slug)</th>
+                            <th className="p-4 sm:p-6 font-black border-l border-white last:border-l-0 text-center">الإجراءات</th>
                           </tr>
                         </thead>
-                        <tbody className="divide-y divide-gray-100">
+                        <tbody className="divide-y divide-[#cfdce9] border-b border-x border-[#cfdce9]">
                           {categories.map(cat => (
-                            <tr key={cat.id} className="hover:bg-gray-50/80 transition-colors">
-                              <td className="p-6 font-bold">{cat.name}</td>
-                              <td className="p-6 font-mono text-sm text-gray-500">{cat.slug}</td>
-                              <td className="p-6">
+                            <tr key={cat.id} className="even:bg-[#e9f0f8] odd:bg-white hover:bg-blue-50 transition-colors text-center border-b border-[#cfdce9]">
+                              <td className="p-4 sm:p-6 font-bold border-l border-[#cfdce9] last:border-l-0">{cat.name}</td>
+                              <td className="p-4 sm:p-6 font-mono text-sm text-gray-600 border-l border-[#cfdce9] last:border-l-0">{cat.slug}</td>
+                              <td className="p-4 sm:p-6 border-l border-[#cfdce9] last:border-l-0">
                                 <div className="flex justify-center gap-3">
-                                  <button onClick={() => { setCurrentCategory(cat); setIsEditingCategory(true); }} className="p-3 text-blue-600 hover:bg-blue-50 rounded-xl transition-all"><Edit2 className="w-5 h-5" /></button>
+                                  <button onClick={() => { setCurrentCategory(cat); setIsEditingCategory(true); }} className="p-3 text-blue-600 hover:bg-blue-100/50 rounded-xl transition-all"><Edit2 className="w-5 h-5" /></button>
                                   <button onClick={() => handleCategoryDelete(cat.id)} className="p-3 text-primary-crimson hover:bg-red-50 rounded-xl transition-all"><Trash2 className="w-5 h-5" /></button>
                                 </div>
                               </td>
@@ -1240,23 +1308,23 @@ export default function AdminDashboard() {
                 <div className="space-y-10">
                   <h1 className="text-3xl font-black text-gray-900">إدارة التعليقات</h1>
                   <div className="bg-white rounded-3xl shadow-xl overflow-hidden border border-gray-100">
-                    <table className="w-full text-right">
-                      <thead className="bg-gray-50/50 border-b">
+                    <table className="w-full text-center border-collapse">
+                      <thead className="bg-[#5b9bd5] text-white">
                         <tr>
-                          <th className="p-6 font-black text-gray-600">المعلق</th>
-                          <th className="p-6 font-black text-gray-600">التعليق</th>
-                          <th className="p-6 font-black text-gray-600">الخبر</th>
-                          <th className="p-6 font-black text-gray-600 text-center">الإجراءات</th>
+                          <th className="p-4 sm:p-6 font-black border-l border-white last:border-l-0 text-center">المعلق</th>
+                          <th className="p-4 sm:p-6 font-black border-l border-white last:border-l-0 text-center">التعليق</th>
+                          <th className="p-4 sm:p-6 font-black border-l border-white last:border-l-0 text-center">الخبر</th>
+                          <th className="p-4 sm:p-6 font-black border-l border-white last:border-l-0 text-center">الإجراءات</th>
                         </tr>
                       </thead>
-                      <tbody className="divide-y divide-gray-100">
+                      <tbody className="divide-y divide-[#cfdce9] border-b border-x border-[#cfdce9]">
                         {comments.map(comment => (
-                          <tr key={comment.id} className="hover:bg-gray-50/80 transition-colors">
-                            <td className="p-6 font-bold">{comment.name}</td>
-                            <td className="p-6 text-sm text-gray-600 leading-relaxed">{comment.content}</td>
-                            <td className="p-6 font-bold text-blue-600">{comment.article_title}</td>
-                            <td className="p-6">
-                              <div className="flex justify-center">
+                          <tr key={comment.id} className="even:bg-[#e9f0f8] odd:bg-white hover:bg-blue-50 transition-colors text-center border-b border-[#cfdce9]">
+                            <td className="p-4 sm:p-6 font-bold border-l border-[#cfdce9] last:border-l-0">{comment.name}</td>
+                            <td className="p-4 sm:p-6 text-sm text-gray-700 leading-relaxed border-l border-[#cfdce9] last:border-l-0">{comment.content}</td>
+                            <td className="p-4 sm:p-6 font-bold text-blue-700 border-l border-[#cfdce9] last:border-l-0">{comment.article_title}</td>
+                            <td className="p-4 sm:p-6 border-l border-[#cfdce9] last:border-l-0">
+                              <div className="flex justify-center border-l border-[#cfdce9] last:border-l-0">
                                 <button onClick={() => handleCommentDelete(comment.id)} className="p-3 text-primary-crimson hover:bg-red-50 rounded-xl transition-all"><Trash2 className="w-5 h-5" /></button>
                               </div>
                             </td>
@@ -1268,37 +1336,7 @@ export default function AdminDashboard() {
                 </div>
               )}
 
-              {activeSection === 'subscribers' && (
-                <div className="space-y-10">
-                  <h1 className="text-3xl font-black text-gray-900">المشتركون في النشرة</h1>
-                  <div className="bg-white rounded-3xl shadow-xl overflow-hidden border border-gray-100">
-                    <table className="w-full text-right">
-                      <thead className="bg-gray-50/50 border-b">
-                        <tr>
-                          <th className="p-6 font-black text-gray-600">البريد الإلكتروني</th>
-                          <th className="p-6 font-black text-gray-600">تاريخ الاشتراك</th>
-                          <th className="p-6 font-black text-gray-600 text-center">الإجراءات</th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-gray-100">
-                        {subscribers.map(sub => (
-                          <tr key={sub.id} className="hover:bg-gray-50/80 transition-colors">
-                            <td className="p-6 font-bold">{sub.email}</td>
-                            <td className="p-6 text-gray-500 font-bold text-sm">{new Date(sub.created_at).toLocaleDateString('ar-YE')}</td>
-                            <td className="p-6">
-                              <div className="flex justify-center">
-                                <button onClick={() => handleSubscriberDelete(sub.id)} className="p-3 text-primary-crimson hover:bg-red-50 rounded-xl transition-all"><Trash2 className="w-5 h-5" /></button>
-                              </div>
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                </div>
-              )}
-
-              {activeSection === 'settings' && (
+              {activeSection === 'settings' && currentUser?.role === 'admin' && (
                 <div className="space-y-10 max-w-4xl">
                   <div>
                     <h1 className="text-3xl font-black text-gray-900">إعدادات الموقع</h1>
@@ -1334,6 +1372,16 @@ export default function AdminDashboard() {
                           type="text"
                           value={settings.youtube_section_title}
                           onChange={e => setSettings(prev => ({ ...prev, youtube_section_title: e.target.value }))}
+                          className="w-full p-4 bg-gray-50 border-2 border-gray-100 rounded-2xl focus:border-red-500 focus:bg-white transition-all outline-none font-bold"
+                        />
+                      </div>
+                      <div className="space-y-3">
+                        <label className="block text-sm font-black text-gray-700">نص شريط الأخبار المخصص (عاجل)</label>
+                        <input
+                          type="text"
+                          value={settings.custom_ticker_text || ''}
+                          onChange={e => setSettings(prev => ({ ...prev, custom_ticker_text: e.target.value }))}
+                          placeholder="أدخل رسالة مخصصة لتظهر في الشريط الإخباري..."
                           className="w-full p-4 bg-gray-50 border-2 border-gray-100 rounded-2xl focus:border-red-500 focus:bg-white transition-all outline-none font-bold"
                         />
                       </div>
@@ -1511,9 +1559,28 @@ export default function AdminDashboard() {
                         </div>
                       </div>
 
+                      {/* Opinion Section */}
+                      <div className="bg-gray-50/50 p-6 rounded-2xl border border-gray-100 mb-6">
+                        <h4 className="font-black text-gray-900 mb-4">قسم المقالات</h4>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                          <div className="space-y-3">
+                            <label className="block text-sm font-black text-gray-700">عنوان القسم</label>
+                            <input type="text" value={settings.opinion_title} onChange={e => setSettings(prev => ({ ...prev, opinion_title: e.target.value }))} className="w-full p-3 bg-white border border-gray-200 rounded-xl focus:border-red-500 transition-all font-bold" />
+                          </div>
+                          <div className="space-y-3">
+                            <label className="block text-sm font-black text-gray-700">رابط صورة الخلفية</label>
+                            <input type="text" value={settings.opinion_bg} onChange={e => setSettings(prev => ({ ...prev, opinion_bg: e.target.value }))} className="w-full p-3 bg-white border border-gray-200 rounded-xl focus:border-red-500 transition-all font-bold" />
+                          </div>
+                          <div className="space-y-3 md:col-span-2">
+                            <label className="block text-sm font-black text-gray-700">أو رفع من الجهاز</label>
+                            <input type="file" accept="image/*" onChange={e => e.target.files?.[0] && handleImageUpload(e.target.files[0], 'opinion_bg')} className="w-full p-2 bg-white border border-gray-200 rounded-xl focus:border-red-500 transition-all font-bold" />
+                          </div>
+                        </div>
+                      </div>
+
                       {/* Research Section */}
                       <div className="bg-gray-50/50 p-6 rounded-2xl border border-gray-100 mb-6">
-                        <h4 className="font-black text-gray-900 mb-4">قسم أبحاث ودراسات ومقالات</h4>
+                        <h4 className="font-black text-gray-900 mb-4">قسم دراسات وأبحاث</h4>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                           <div className="space-y-3">
                             <label className="block text-sm font-black text-gray-700">عنوان القسم</label>
@@ -1754,10 +1821,10 @@ export default function AdminDashboard() {
                   </div>
 
                   <div className="bg-white rounded-3xl shadow-xl overflow-hidden border border-gray-100">
-                    <table className="w-full text-right">
-                      <thead className="bg-gray-50/50 border-b">
-                        <tr>
-                          <th className="p-6 w-10">
+                    <table className="w-full text-center border-collapse border border-[#cfdce9]">
+                      <thead className="bg-[#5b9bd5] text-white">
+                        <tr className="divide-x divide-x-reverse divide-white">
+                          <th className="p-4 sm:p-6 w-10 text-center">
                             <input
                               type="checkbox"
                               className="w-5 h-5 accent-red-600"
@@ -1768,15 +1835,15 @@ export default function AdminDashboard() {
                               }}
                             />
                           </th>
-                          <th className="p-6 font-black text-gray-600">الخبر</th>
-                          <th className="p-6 font-black text-gray-600">تاريخ الحذف</th>
-                          <th className="p-6 font-black text-gray-600 text-center">الإجراءات</th>
+                          <th className="p-4 sm:p-6 text-sm font-black uppercase text-center whitespace-nowrap">الخبر</th>
+                          <th className="p-4 sm:p-6 text-sm font-black uppercase text-center whitespace-nowrap">تاريخ الحذف</th>
+                          <th className="p-4 sm:p-6 text-sm font-black uppercase text-center whitespace-nowrap">الإجراءات</th>
                         </tr>
                       </thead>
-                      <tbody className="divide-y divide-gray-100">
+                      <tbody className="divide-y divide-[#cfdce9]">
                         {trashArticles.map(article => (
-                          <tr key={article.id} className={`hover:bg-gray-50/80 transition-colors ${selectedTrashIds.includes(article.id) ? 'bg-red-50/30' : ''}`}>
-                            <td className="p-6">
+                          <tr key={article.id} className={`divide-x divide-x-reverse divide-[#cfdce9] text-center transition-colors ${selectedTrashIds.includes(article.id) ? 'bg-red-50/50' : 'even:bg-[#e9f0f8] odd:bg-white hover:bg-blue-50/50'}`}>
+                            <td className="p-4 sm:p-6 align-middle">
                               <input
                                 type="checkbox"
                                 className="w-5 h-5 accent-red-600"
@@ -1790,14 +1857,14 @@ export default function AdminDashboard() {
                                 }}
                               />
                             </td>
-                            <td className="p-6 font-bold">{article.title}</td>
-                            <td className="p-6 text-sm text-gray-500">{new Date(article.created_at).toLocaleDateString('ar-YE')}</td>
-                            <td className="p-6">
+                            <td className="p-4 sm:p-6 font-bold align-middle">{article.title}</td>
+                            <td className="p-4 sm:p-6 text-sm text-gray-700 align-middle">{new Date(article.created_at).toLocaleDateString('ar-YE')}</td>
+                            <td className="p-4 sm:p-6 align-middle">
                               <div className="flex justify-center gap-3">
-                                <button onClick={() => handleRestoreArticle(article.id)} className="p-2 text-green-600 hover:bg-green-50 rounded-xl transition-all">
+                                <button onClick={() => handleRestoreArticle(article.id)} className="p-3 text-green-600 hover:bg-green-100/50 rounded-xl transition-all">
                                   <RotateCcw className="w-5 h-5" />
                                 </button>
-                                <button onClick={() => handlePermanentDelete(article.id)} className="p-2 text-red-600 hover:bg-red-50 rounded-xl transition-all">
+                                <button onClick={() => handlePermanentDelete(article.id)} className="p-3 text-red-600 hover:bg-red-50 rounded-xl transition-all">
                                   <Trash2 className="w-5 h-5" />
                                 </button>
                               </div>
@@ -1813,7 +1880,7 @@ export default function AdminDashboard() {
                 </div>
               )}
 
-              {activeSection === 'history' && (
+              {activeSection === 'history' && currentUser?.role === 'admin' && (
                 <div className="space-y-10">
                   <div className="flex justify-between items-center print:hidden">
                     <h1 className="text-3xl font-black text-gray-900">سجل الأنشطة الرقابي</h1>
@@ -1893,34 +1960,34 @@ export default function AdminDashboard() {
                   </div>
 
                   <div className="bg-white rounded-3xl shadow-xl overflow-hidden border border-gray-100 print:shadow-none print:border-none print:rounded-none">
-                    <table className="w-full text-right">
-                      <thead className="bg-gray-50/50 border-b print:bg-gray-100">
-                        <tr>
-                          <th className="p-6 font-black text-gray-600 print:py-3">المسؤول</th>
-                          <th className="p-6 font-black text-gray-600 print:py-3">الإجراء</th>
-                          <th className="p-6 font-black text-gray-600 print:py-3">التفاصيل</th>
-                          <th className="p-6 font-black text-gray-600 print:py-3">التاريخ والوقت</th>
+                    <table className="w-full text-center border-collapse border border-[#cfdce9]">
+                      <thead className="bg-[#5b9bd5] text-white print:bg-gray-100 print:text-black">
+                        <tr className="divide-x divide-x-reverse divide-[#ffffff]">
+                          <th className="p-4 sm:p-6 text-sm font-black uppercase text-center whitespace-nowrap print:py-3">المسؤول</th>
+                          <th className="p-4 sm:p-6 text-sm font-black uppercase text-center whitespace-nowrap print:py-3">الإجراء</th>
+                          <th className="p-4 sm:p-6 text-sm font-black uppercase text-center whitespace-nowrap print:py-3">التفاصيل</th>
+                          <th className="p-4 sm:p-6 text-sm font-black uppercase text-center whitespace-nowrap print:py-3">التاريخ والوقت</th>
                         </tr>
                       </thead>
-                      <tbody className="divide-y divide-gray-100 print:divide-gray-300">
+                      <tbody className="divide-y divide-[#cfdce9] print:divide-gray-300">
                         {history.map((log: any) => (
-                          <tr key={log.id} className="hover:bg-gray-50 transition-colors">
-                            <td className="p-6 font-black text-primary-navy print:py-3">{log.user_name || 'نظام آلي'}</td>
-                            <td className="p-6 print:py-3">
-                              <span className={`px-3 py-1 rounded-full text-[10px] font-black uppercase print:border print:border-gray-300 ${log.action.includes('حذف') ? 'bg-red-50 text-red-600' :
-                                log.action.includes('إضافة') ? 'bg-green-50 text-green-600' : 'bg-blue-50 text-blue-600'
+                          <tr key={log.id} className="even:bg-[#e9f0f8] odd:bg-white hover:bg-blue-50 transition-colors divide-x divide-x-reverse divide-[#cfdce9] text-center">
+                            <td className="p-4 sm:p-6 font-black text-primary-navy print:py-3 align-middle">{log.user_name || 'نظام آلي'}</td>
+                            <td className="p-4 sm:p-6 print:py-3 align-middle">
+                              <span className={`px-4 py-2 rounded-full text-xs font-black uppercase print:border print:border-gray-300 shadow-sm ${log.action.includes('حذف') ? 'bg-red-50 text-red-600 border border-red-100' :
+                                log.action.includes('إضافة') ? 'bg-green-50 text-green-600 border border-green-100' : 'bg-blue-50 text-blue-600 border border-blue-100'
                                 }`}>
                                 {log.action}
                               </span>
                             </td>
-                            <td className="p-6 text-sm text-gray-500 font-bold print:py-3 print:text-gray-900">{log.details}</td>
-                            <td className="p-6 text-xs text-gray-400 font-mono print:py-3 print:text-gray-900">
-                              {new Date(log.created_at).toLocaleString('ar-YE')}
+                            <td className="p-4 sm:p-6 text-sm text-gray-700 font-bold print:py-3 print:text-gray-900 align-middle leading-relaxed max-w-sm">{log.details}</td>
+                            <td className="p-4 sm:p-6 text-base md:text-lg text-gray-900 font-bold print:py-3 print:text-gray-900 align-middle" dir="rtl">
+                              {new Date(log.created_at).toLocaleString('ar-YE', { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', hour12: true })}
                             </td>
                           </tr>
                         ))}
                         {history.length === 0 && (
-                          <tr><td colSpan={4} className="p-20 text-center text-gray-400 font-black">لا توجد سجلات تطابق الفلتر</td></tr>
+                          <tr><td colSpan={4} className="p-20 text-center text-gray-500 font-black text-lg">لا توجد سجلات تطابق الفلتر</td></tr>
                         )}
                       </tbody>
                     </table>
@@ -1928,7 +1995,7 @@ export default function AdminDashboard() {
                 </div>
               )}
 
-              {activeSection === 'users' && (
+              {activeSection === 'users' && currentUser?.role === 'admin' && (
                 <div className="space-y-10">
                   <div className="flex justify-between items-center">
                     <div>
@@ -1936,7 +2003,7 @@ export default function AdminDashboard() {
                       <p className="text-gray-500 font-bold">إدارة صلاحيات الوصول للوحة التحكم</p>
                     </div>
                     <button
-                      onClick={() => { setIsEditingUser(true); setCurrentUserData({ username: '', password: '', full_name: '', role: 'editor' }); }}
+                      onClick={() => { setIsEditingUser(true); setCurrentUserData({ username: '', password: '', full_name: '', role: 'editor', permissions: [] }); }}
                       className="bg-primary-crimson text-white px-8 py-4 rounded-xl font-bold flex items-center gap-3 shadow-xl shadow-primary-crimson/20"
                     >
                       <Plus className="w-6 h-6" /> إضافة مسؤول جديد
@@ -1974,7 +2041,16 @@ export default function AdminDashboard() {
                           </div>
                           <div className="space-y-2">
                             <label className="text-sm font-black text-gray-700">كلمة المرور {currentUserData.id && '(اتركها فارغة لعدم التغيير)'}</label>
-                            <input type="password" value={currentUserData.password} onChange={e => setCurrentUserData({ ...currentUserData, password: e.target.value })} className="w-full p-4 bg-gray-50 rounded-2xl border-2 border-transparent focus:border-primary-crimson outline-none font-bold" required={!currentUserData.id} />
+                            <div className="relative">
+                              <input type={showPassword ? "text" : "password"} value={currentUserData.password} onChange={e => setCurrentUserData({ ...currentUserData, password: e.target.value })} className="w-full p-4 pl-12 bg-gray-50 rounded-2xl border-2 border-transparent focus:border-primary-crimson outline-none font-bold" required={!currentUserData.id} />
+                              <button
+                                type="button"
+                                onClick={() => setShowPassword(!showPassword)}
+                                className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-primary-crimson transition-colors"
+                              >
+                                <Eye className="w-5 h-5" />
+                              </button>
+                            </div>
                           </div>
                           <div className="space-y-2">
                             <label className="text-sm font-black text-gray-700">الصلاحية</label>
@@ -1984,6 +2060,39 @@ export default function AdminDashboard() {
                             </select>
                           </div>
                         </div>
+
+                        {currentUserData.role === 'editor' && (
+                          <div className="mt-6 border-t pt-6 border-gray-100">
+                            <h3 className="font-black text-lg mb-4 text-gray-900">صلاحيات المحرر المخصصة</h3>
+                            <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                              {[
+                                { id: 'news', label: 'إدارة الأخبار' },
+                                { id: 'categories', label: 'إدارة الأقسام' },
+                                { id: 'writers', label: 'إدارة الكتاب' },
+                                { id: 'comments', label: 'إدارة التعليقات' },
+                                { id: 'ads', label: 'إدارة الإعلانات' },
+                                { id: 'trash', label: 'سلة المحذوفات' }
+                              ].map(perm => (
+                                <label key={perm.id} className="flex items-center gap-3 cursor-pointer bg-gray-50 p-3 rounded-xl border border-gray-100 hover:border-primary-crimson transition-colors">
+                                  <input
+                                    type="checkbox"
+                                    className="w-5 h-5 rounded text-primary-crimson focus:ring-primary-crimson border-gray-300"
+                                    checked={(currentUserData.permissions || []).includes(perm.id)}
+                                    onChange={e => {
+                                      const perms = currentUserData.permissions || [];
+                                      if (e.target.checked) {
+                                        setCurrentUserData({ ...currentUserData, permissions: [...perms, perm.id] });
+                                      } else {
+                                        setCurrentUserData({ ...currentUserData, permissions: perms.filter((p: string) => p !== perm.id) });
+                                      }
+                                    }}
+                                  />
+                                  <span className="font-bold text-gray-700">{perm.label}</span>
+                                </label>
+                              ))}
+                            </div>
+                          </div>
+                        )}
                         <div className="flex gap-4 pt-4">
                           <button type="submit" className="bg-primary-crimson text-white px-10 py-4 rounded-xl font-black">حفظ المستخدم</button>
                           <button type="button" onClick={() => setIsEditingUser(false)} className="bg-gray-100 text-gray-500 px-10 py-4 rounded-xl font-black">إلغاء</button>

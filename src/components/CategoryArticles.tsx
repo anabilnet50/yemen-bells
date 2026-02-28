@@ -65,8 +65,8 @@ export default function CategoryArticles() {
                         initial={{ opacity: 0, y: 20 }}
                         animate={{ opacity: 1, y: 0 }}
                     >
-                        <h1 className="text-4xl md:text-6xl font-black text-white mb-6">
-                            قسم: <span className="text-accent-gold">{category?.name || 'الأخبار'}</span>
+                        <h1 className="text-4xl md:text-6xl font-black text-white mb-6 drop-shadow-lg">
+                            <span className="text-accent-gold">{category?.name || 'الأخبار'}</span>
                         </h1>
                         <div className="h-1.5 w-24 bg-primary-crimson mx-auto rounded-full shadow-glow"></div>
                     </motion.div>
