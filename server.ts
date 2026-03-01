@@ -3,7 +3,43 @@ import { createServer as createViteServer } from "vite";
 import multer from "multer";
 import path from "path";
 import fs from "fs";
+import crypto from "crypto";
 import db, { initDb } from "./db.ts";
+
+// --- Security Helpers ---
+const hashPassword = (password: string) => {
+  const salt = crypto.randomBytes(16).toString('hex');
+  const hash = crypto.pbkdf2Sync(password, salt, 1000, 64, 'sha512').toString('hex');
+  return `${salt}:${hash}`;
+};
+
+const verifyPassword = (password: string, storedHash: string) => {
+  const [salt, hash] = storedHash.split(':');
+  if (!salt || !hash) return password === storedHash; // Fallback for old plain-text passwords
+  const verifyHash = crypto.pbkdf2Sync(password, salt, 1000, 64, 'sha512').toString('hex');
+  return hash === verifyHash;
+};
+
+// --- Auth Secret ---
+const AUTH_SECRET = process.env.AUTH_SECRET || crypto.randomBytes(32).toString('hex');
+
+const signToken = (payload: any) => {
+  const data = JSON.stringify(payload);
+  const signature = crypto.createHmac('sha256', AUTH_SECRET).update(data).digest('hex');
+  return Buffer.from(`${data}.${signature}`).toString('base64');
+};
+
+const verifyToken = (token: string) => {
+  try {
+    const decoded = Buffer.from(token, 'base64').toString();
+    const [data, signature] = decoded.split('.');
+    const expectedSignature = crypto.createHmac('sha256', AUTH_SECRET).update(data).digest('hex');
+    if (signature !== expectedSignature) return null;
+    return JSON.parse(data);
+  } catch (e) {
+    return null;
+  }
+};
 
 // Ensure uploads directory exists
 const uploadDir = process.env.UPLOADS_PATH || path.join(process.cwd(), "public", "uploads");
@@ -39,15 +75,34 @@ async function startServer() {
     if (!authHeader || !authHeader.startsWith("Bearer ")) {
       return res.status(401).json({ error: "Unauthorized" });
     }
-    // Simple demo auth: token is "userID:username" base64
+    // Secure token verification
     try {
-      const token = Buffer.from(authHeader.split(" ")[1], 'base64').toString();
-      const [userId, username] = token.split(":");
-      req.user = { id: Number(userId), username };
+      const token = authHeader.split(" ")[1];
+      const decodedUser = verifyToken(token);
+      if (!decodedUser) return res.status(401).json({ error: "Invalid token" });
+      req.user = decodedUser;
       next();
     } catch (e) {
       res.status(401).json({ error: "Invalid token" });
     }
+  };
+
+  const normalizePermissions = (perms: any): string[] => {
+    if (!perms) return [];
+    if (Array.isArray(perms)) return perms;
+    if (typeof perms === 'string') {
+      try {
+        const parsed = JSON.parse(perms);
+        return Array.isArray(parsed) ? parsed : [];
+      } catch (e) {
+        // Fallback for comma-separated strings
+        if (perms.includes(',')) {
+          return perms.split(',').map(p => p.trim()).filter(Boolean);
+        }
+        return perms.trim() ? [perms.trim()] : [];
+      }
+    }
+    return [];
   };
 
   // --- API Routes ---
@@ -55,11 +110,13 @@ async function startServer() {
   // Auth
   app.post("/api/auth/login", async (req, res) => {
     const { username, password } = req.body;
-    const { rows } = await db.query("SELECT id, username, full_name, role FROM system_users WHERE username = $1 AND password = $2", [username, password]);
+    const { rows } = await db.query("SELECT id, username, password, full_name, role, permissions FROM system_users WHERE username = $1", [username]);
     const user = rows[0];
-    if (user) {
-      const token = Buffer.from(`${user.id}:${user.username}`).toString('base64');
-      res.json({ token, user });
+    if (user && verifyPassword(password, user.password)) {
+      const { password: _, ...userWithoutPassword } = user;
+      userWithoutPassword.permissions = normalizePermissions(userWithoutPassword.permissions);
+      const token = signToken({ id: user.id, username: user.username });
+      res.json({ token, user: userWithoutPassword });
     } else {
       res.status(401).json({ error: "Invalid credentials" });
     }
@@ -70,9 +127,7 @@ async function startServer() {
       const { rows } = await db.query("SELECT id, username, full_name, role, permissions FROM system_users WHERE id = $1", [(req as any).user.id]);
       if (rows.length > 0) {
         const user = rows[0];
-        if (user.permissions && typeof user.permissions === 'string') {
-          try { user.permissions = JSON.parse(user.permissions); } catch (e) { }
-        }
+        user.permissions = normalizePermissions(user.permissions);
         res.json(user);
       } else {
         res.status(404).json({ error: "User not found" });
@@ -83,6 +138,7 @@ async function startServer() {
   });
 
   // Forgot Password
+  // ... (rest of forgot password routes)
   app.post("/api/auth/forgot-password", async (req, res) => {
     const { email } = req.body;
     try {
@@ -140,7 +196,7 @@ async function startServer() {
         return res.status(400).json({ error: "رمز التحقق غير صحيح أو انتهت صلاحيته" });
       }
 
-      const hashedPassword = newPassword; // Using plain text for now as requested/seen in current implementation, but should be hashed
+      const hashedPassword = hashPassword(newPassword);
       await db.query(
         "UPDATE system_users SET password = $1, reset_token = NULL, reset_token_expiry = NULL WHERE id = $2",
         [hashedPassword, rows[0].id]
@@ -156,9 +212,7 @@ async function startServer() {
   app.get("/api/admin/users", requireAuth, async (req, res) => {
     const { rows } = await db.query("SELECT id, username, full_name, role, permissions, created_at FROM system_users ORDER BY id DESC");
     const users = rows.map(u => {
-      if (u.permissions && typeof u.permissions === 'string') {
-        try { u.permissions = JSON.parse(u.permissions); } catch (e) { }
-      }
+      u.permissions = normalizePermissions(u.permissions);
       return u;
     });
     res.json(users);
@@ -168,9 +222,10 @@ async function startServer() {
     const { username, password, full_name, role, permissions } = req.body;
     try {
       const permsString = Array.isArray(permissions) ? JSON.stringify(permissions) : '[]';
+      const hashedPassword = hashPassword(password);
       const { rows } = await db.query(
         "INSERT INTO system_users (username, password, full_name, role, permissions) VALUES ($1, $2, $3, $4, $5) RETURNING id",
-        [username, password, full_name, role || 'editor', permsString]
+        [username, hashedPassword, full_name, role || 'editor', permsString]
       );
       await logAction((req as any).user.id, 'إضافة مستخدم', `تم إضافة المستخدم: ${username}`);
       res.json({ id: rows[0].id });
@@ -192,9 +247,10 @@ async function startServer() {
     try {
       const permsString = Array.isArray(permissions) ? JSON.stringify(permissions) : '[]';
       if (password) {
+        const hashedPassword = hashPassword(password);
         await db.query(
           "UPDATE system_users SET username = $1, password = $2, full_name = $3, role = $4, permissions = $5 WHERE id = $6",
-          [username, password, full_name, role, permsString, id]
+          [username, hashedPassword, full_name, role, permsString, id]
         );
       } else {
         await db.query(
@@ -461,6 +517,15 @@ async function startServer() {
   });
 
   // Bulk Trash Operations
+  app.post("/api/articles/bulk/trash", requireAuth, async (req, res) => {
+    const { ids } = req.body;
+    if (!Array.isArray(ids) || ids.length === 0) return res.status(400).json({ error: "No IDs provided" });
+
+    await db.query("UPDATE articles SET is_deleted = 1 WHERE id = ANY($1)", [ids]);
+    await logAction((req as any).user.id, 'نقل مجموعة أخبار للمحذوفات', `تم نقل عدد ${ids.length} أخبار إلى سلة المحذوفات`);
+    res.json({ success: true });
+  });
+
   app.post("/api/articles/bulk/restore", requireAuth, async (req, res) => {
     const { ids } = req.body;
     if (!Array.isArray(ids) || ids.length === 0) return res.status(400).json({ error: "No IDs provided" });
@@ -668,14 +733,19 @@ async function startServer() {
 
   // Stats
   app.get("/api/stats", async (req, res) => {
-    const totalArticles = await db.query("SELECT count(*) as count FROM articles");
-    const urgentNews = await db.query("SELECT count(*) as count FROM articles WHERE is_urgent = 1");
-    const totalViews = await db.query("SELECT sum(views) as count FROM articles");
-    const totalComments = await db.query("SELECT count(*) as count FROM comments");
+    const totalArticles = await db.query("SELECT count(*) as count FROM articles WHERE is_deleted = 0");
+    const urgentNews = await db.query("SELECT count(*) as count FROM articles WHERE is_urgent = 1 AND is_deleted = 0");
+    const totalViews = await db.query("SELECT sum(views) as count FROM articles WHERE is_deleted = 0");
+    const totalComments = await db.query(`
+      SELECT count(comments.id) as count 
+      FROM comments 
+      JOIN articles ON comments.article_id = articles.id 
+      WHERE articles.is_deleted = 0
+    `);
     const categoryStats = await db.query(`
       SELECT categories.name, count(articles.id) as count 
       FROM categories 
-      LEFT JOIN articles ON categories.id = articles.category_id 
+      LEFT JOIN articles ON categories.id = articles.category_id AND articles.is_deleted = 0
       GROUP BY categories.id, categories.name
     `);
 

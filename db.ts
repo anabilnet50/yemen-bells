@@ -59,7 +59,11 @@ export async function initDb() {
 
     // Add foreign key and background_url if not exists
     try {
-      await client.query('ALTER TABLE articles ADD COLUMN IF NOT EXISTS writer_id INTEGER REFERENCES writers(id)');
+      await client.query('ALTER TABLE articles ADD COLUMN IF NOT EXISTS writer_id INTEGER');
+      try {
+        await client.query('ALTER TABLE articles DROP CONSTRAINT IF EXISTS articles_writer_id_fkey');
+        await client.query('ALTER TABLE articles ADD CONSTRAINT articles_writer_id_fkey FOREIGN KEY (writer_id) REFERENCES writers(id) ON DELETE SET NULL');
+      } catch (e) { /* ignore constraint issues */ }
       await client.query('ALTER TABLE articles ADD COLUMN IF NOT EXISTS is_deleted INTEGER DEFAULT 0');
       await client.query('ALTER TABLE articles ADD COLUMN IF NOT EXISTS is_active INTEGER DEFAULT 1');
       await client.query('ALTER TABLE categories ADD COLUMN IF NOT EXISTS background_url TEXT');
@@ -161,13 +165,13 @@ export async function initDb() {
       { name: 'أخبار دولية', slug: 'intl' },
       { name: 'عام', slug: 'general' },
       { name: 'اقتصاد', slug: 'economy' },
-      { name: 'سياحة', slug: 'tourism' },
       { name: 'رياضة', slug: 'sports' },
       { name: 'تكنولوجيا', slug: 'tech' },
       { name: 'حقوق وحريات', slug: 'rights' },
       { name: 'مقالات', slug: 'opinion' },
       { name: 'أبحاث ودراسات', slug: 'studies' },
       { name: 'يوتيوب', slug: 'youtube' },
+      { name: 'مجتمع', slug: 'society' },
     ];
 
     for (const cat of ensureCategories) {
@@ -177,8 +181,11 @@ export async function initDb() {
       );
     }
 
-    // Ensure 'hashtag' is removed if it exists
-    await client.query("DELETE FROM categories WHERE slug = 'hashtag'");
+    // Ensure 'hashtag' and 'tourism' are removed if they exist
+    // First delete articles referencing these categories to satisfy foreign key constraints
+    await client.query("DELETE FROM articles WHERE category_id IN (SELECT id FROM categories WHERE slug IN ('hashtag', 'tourism'))");
+    await client.query("DELETE FROM categories WHERE slug IN ('hashtag', 'tourism')");
+    await client.query("DELETE FROM settings WHERE key = 'tourism_title'");
 
     // Initial Settings
     const defaultSettings = [
@@ -189,7 +196,6 @@ export async function initDb() {
       { key: 'rights_title', value: 'حقوق وحريات' },
       { key: 'tech_title', value: 'تـكنولوجيا' },
       { key: 'economy_title', value: 'اقتصاد' },
-      { key: 'tourism_title', value: 'سياحة' },
       { key: 'sports_title', value: 'رياضة' },
       { key: 'facebook_url', value: 'https://facebook.com' },
       { key: 'twitter_url', value: 'https://twitter.com' },
@@ -239,14 +245,6 @@ export async function initDb() {
         tags: 'اقتصاد، عملة، يمن'
       },
       {
-        title: 'السياحة في سقطرى: لؤلؤة المحيط التي لا تنام',
-        content: 'سقطرى تواصل جذب الزوار بتنوعها الحيوي ومناظرها الخلابة.',
-        category_slug: 'tourism',
-        image_url: 'https://picsum.photos/seed/tourism/800/600',
-        is_urgent: 1,
-        tags: 'سياحة، سقطرى، طبيعة'
-      },
-      {
         title: 'المنتخب الوطني في معسكر تدريبي مكثف',
         content: 'المنتخب الوطني يكثف استعداداته للبطولات القادمة بمعسكر خارجي.',
         category_slug: 'sports',
@@ -269,14 +267,6 @@ export async function initDb() {
         image_url: 'https://picsum.photos/seed/vision/800/600',
         is_urgent: 1,
         tags: 'مقالات، آراء، شباب'
-      },
-      {
-        title: 'اكتشافات أثرية جديدة في مأرب تعود لعهد سبأ',
-        content: 'اكتشاف نقوش فريدة تسلط الضوء على تاريخ الحضارة السبئية.',
-        category_slug: 'tourism',
-        image_url: 'https://images.unsplash.com/photo-1543852786-1cf6624b9987',
-        is_urgent: 1,
-        tags: 'آثار، مأرب، سياحة'
       },
       {
         title: 'افتتاح أكبر محطة طاقة شمسية في اليمن بقدرة 100 ميجاوات في محافظة عدن',
@@ -320,14 +310,6 @@ export async function initDb() {
         tags: 'صحة، إنجاز طبي، عدن'
       },
       {
-        title: 'إطلاق حملة تشجير واسعة لزراعة مائة ألف غصن في الميادين العامة والطرقات',
-        content: 'حملة مجتمعية تهدف لترقية الغطاء النباتي وتجميل الميادين.',
-        category_slug: 'tourism',
-        image_url: 'https://images.unsplash.com/photo-1528183429752-a97d0bf99b5a',
-        is_urgent: 1,
-        tags: 'بيئة، تشجير، سياحة'
-      },
-      {
         title: 'دراسة: أهمية الموقع الجيوسياسي لليمن في تأمين الملاحة الدولية',
         content: 'خبراء يؤكدون قدرة الموانئ على تحويل اليمن لمركز لوجستي.',
         category_slug: 'studies',
@@ -368,14 +350,6 @@ export async function initDb() {
         tags: 'تكنولوجيا، ذكاء اصطناعي، شباب'
       },
       {
-        title: 'جولة سياحية في أعماق الطبيعة: من جبال صيرة إلى شواطئ المهرة ووديان حضرموت',
-        content: 'تنوع طبيعي مذهل يجعل اليمن وجهة مثالية لعشاق الاستكشاف.',
-        category_slug: 'tourism',
-        image_url: 'https://images.unsplash.com/photo-1469854523086-cc02fe5d8800',
-        is_urgent: 1,
-        tags: 'سياحة، طبيعة، جمال'
-      },
-      {
         title: 'توقعات باستقرار أسعار السلع الغذائية مع وصول شحنات تجارية جديدة إلى الموانئ',
         content: 'تنسيق مستمر لتسهيل دخول السلع الأساسية وضمان ثبات الأسعار.',
         category_slug: 'economy',
@@ -391,22 +365,6 @@ export async function initDb() {
         is_urgent: 1,
         tags: 'تعليم، تطوير، مناهج'
       },
-      {
-        title: 'افتتاح معرض الكتاب الدولي بمشاركة واسعة من دور النشر العربية والعالمية في العاصمة',
-        content: 'إقبال كبير على المعرض الذي يضم آلاف العناوين الجديدة.',
-        category_slug: 'tourism',
-        image_url: 'https://images.unsplash.com/photo-1524334220913-2ebd6da7340d',
-        is_urgent: 1,
-        tags: 'ثقافة، كتب، معرض'
-      },
-      {
-        title: 'مؤتمر الاستثمار السياحي يوصي بتسهيل إجراءات منح التأشيرات للزوار الأجانب والمغتربين',
-        content: 'توصيات بتحديث التشريعات السياحية لجذب الاستثمارات الخارجية.',
-        category_slug: 'tourism',
-        image_url: 'https://images.unsplash.com/photo-1533105079780-92b9be482077',
-        is_urgent: 1,
-        tags: 'سياحة، استثمار، مؤتمر'
-      }
     ];
 
     for (const art of demoArticles) {
