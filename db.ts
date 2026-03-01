@@ -152,6 +152,15 @@ export async function initDb() {
     `);
 
     await client.query(`
+      CREATE TABLE IF NOT EXISTS blocked_ips (
+        id SERIAL PRIMARY KEY,
+        ip_address TEXT NOT NULL UNIQUE,
+        reason TEXT,
+        created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+      );
+    `);
+
+    await client.query(`
       CREATE TABLE IF NOT EXISTS media_storage (
         filename TEXT PRIMARY KEY,
         mimetype TEXT NOT NULL,

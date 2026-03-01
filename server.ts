@@ -88,37 +88,91 @@ async function startServer() {
   };
 
   const normalizePermissions = (perms: any): string[] => {
-    if (!perms) return [];
-    if (Array.isArray(perms)) return perms;
-    if (typeof perms === 'string') {
-      try {
-        const parsed = JSON.parse(perms);
-        return Array.isArray(parsed) ? parsed : [];
-      } catch (e) {
-        // Fallback for comma-separated strings
-        if (perms.includes(',')) {
-          return perms.split(',').map(p => p.trim()).filter(Boolean);
-        }
-        return perms.trim() ? [perms.trim()] : [];
-      }
+    try {
+      if (Array.isArray(perms)) return perms;
+      if (typeof perms === 'string') return JSON.parse(perms);
+      return [];
+    } catch (e) {
+      return [];
     }
-    return [];
+  };
+
+  const checkBlockedIp = async (req: any, res: any, next: any) => {
+    const clientIp = req.ip || req.headers['x-forwarded-for'] || req.socket.remoteAddress;
+    const ipStr = String(clientIp);
+    const { rows } = await db.query("SELECT * FROM blocked_ips WHERE ip_address = $1", [ipStr]);
+    if (rows.length > 0) {
+      return res.status(403).json({ error: "تم حظر عنوان الـ IP الخاص بك لأسباب أمنية. يرجى التواصل مع الإدارة." });
+    }
+    next();
   };
 
   // --- API Routes ---
 
+  // --- Failed Login Tracker (In-memory) ---
+  const failedAttempts = new Map<string, number>();
+
   // Auth
-  app.post("/api/auth/login", async (req, res) => {
+  app.post("/api/auth/login", checkBlockedIp, async (req, res) => {
     const { username, password } = req.body;
+    const clientIp = req.ip || req.headers['x-forwarded-for'] || req.socket.remoteAddress;
+    const ipStr = String(clientIp);
+
     const { rows } = await db.query("SELECT id, username, password, full_name, role, permissions FROM system_users WHERE username = $1", [username]);
     const user = rows[0];
+
     if (user && verifyPassword(password, user.password)) {
       const { password: _, ...userWithoutPassword } = user;
       userWithoutPassword.permissions = normalizePermissions(userWithoutPassword.permissions);
       const token = signToken({ id: user.id, username: user.username });
+
+      // Reset failed attempts on success
+      failedAttempts.delete(ipStr);
+
+      await logAction(user.id, 'تسجيل دخول', `تم تسجيل الدخول بنجاح من IP: ${clientIp}`);
       res.json({ token, user: userWithoutPassword });
     } else {
+      // Increment failed attempts
+      const attempts = (failedAttempts.get(ipStr) || 0) + 1;
+      failedAttempts.set(ipStr, attempts);
+
+      await logAction(null, 'محاولة دخول فاشلة', `محاولة دخول باسم المستخدم: ${username} من IP: ${clientIp}`);
+
+      // Raise a high-priority security alert if threshold reached
+      if (attempts >= 5) {
+        await logAction(null, 'تنبيه أمني', `⚠️ محاولات دخول متكررة فاشلة (${attempts}) من عنوان IP: ${clientIp}. يرجى التحقق من الأمان.`);
+      }
+
       res.status(401).json({ error: "Invalid credentials" });
+    }
+  });
+
+  // --- IP Banning Management ---
+  app.get("/api/admin/blocked-ips", requireAuth, async (req, res) => {
+    const { rows } = await db.query("SELECT * FROM blocked_ips ORDER BY created_at DESC");
+    res.json(rows);
+  });
+
+  app.post("/api/admin/blocked-ips", requireAuth, async (req, res) => {
+    const { ip_address, reason } = req.body;
+    try {
+      await db.query("INSERT INTO blocked_ips (ip_address, reason) VALUES ($1, $2)", [ip_address, reason]);
+      await logAction((req as any).user.id, 'حظر IP', `تم حظر العنوان: ${ip_address} | السبب: ${reason}`);
+      res.json({ success: true });
+    } catch (e) {
+      res.status(500).json({ error: "IP address already blocked or invalid" });
+    }
+  });
+
+  app.delete("/api/admin/blocked-ips/:id", requireAuth, async (req, res) => {
+    const { id } = req.params;
+    const { rows: existing } = await db.query("SELECT ip_address FROM blocked_ips WHERE id = $1", [id]);
+    if (existing.length > 0) {
+      await db.query("DELETE FROM blocked_ips WHERE id = $1", [id]);
+      await logAction((req as any).user.id, 'إلغاء حظر IP', `تم إلغاء حظر العنوان: ${existing[0].ip_address}`);
+      res.json({ success: true });
+    } else {
+      res.status(404).json({ error: "IP not found" });
     }
   });
 

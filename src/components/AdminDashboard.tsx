@@ -17,11 +17,12 @@ import TrashManagement from './admin/TrashManagement.tsx';
 import AuditLog from './admin/AuditLog.tsx';
 import SettingsManagement from './admin/SettingsManagement.tsx';
 import UserManagement from './admin/UserManagement.tsx';
+import IPManagement from './admin/IPManagement.tsx';
 
 // --- Rest of imports and component logic ---
 
 export default function AdminDashboard() {
-  const [activeSection, setActiveSection] = useState<'dashboard' | 'news' | 'categories' | 'comments' | 'settings' | 'ads' | 'writers' | 'trash' | 'history' | 'users'>('dashboard');
+  const [activeSection, setActiveSection] = useState<'dashboard' | 'news' | 'categories' | 'comments' | 'settings' | 'ads' | 'writers' | 'trash' | 'history' | 'users' | 'security'>('dashboard');
   const [articles, setArticles] = useState<any[]>([]);
   const [trashArticles, setTrashArticles] = useState<any[]>([]);
   const [categories, setCategories] = useState<any[]>([]);
@@ -832,6 +833,7 @@ export default function AdminDashboard() {
               {[
                 { id: 'history', icon: RotateCcw, label: 'سجل الأنشطة' },
                 { id: 'users', icon: Users, label: 'إدارة المستخدمين' },
+                { id: 'security', icon: Shield, label: 'الأمان والحظر' },
                 { id: 'settings', icon: Settings, label: 'إعدادات الموقع' },
               ].map(item => (
                 <button
@@ -1060,6 +1062,10 @@ export default function AdminDashboard() {
                     authenticatedFetch={authenticatedFetch}
                     showNotification={showNotification}
                   />
+                )}
+
+                {activeSection === 'security' && currentUser?.role === 'admin' && (
+                  <IPManagement />
                 )}
               </>
             );

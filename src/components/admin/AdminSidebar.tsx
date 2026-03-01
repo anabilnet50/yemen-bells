@@ -2,7 +2,7 @@ import React from 'react';
 import {
     LayoutDashboard, FileText, Settings, LogOut, Users,
     MessageCircle, ExternalLink, Hash, Image, Play, TrendingUp,
-    Trash2, User, Globe
+    Trash2, User, Globe, Shield
 } from 'lucide-react';
 
 interface SidebarProps {
@@ -89,6 +89,14 @@ const AdminSidebar: React.FC<SidebarProps> = ({
                         >
                             <Users className="w-5 h-5" />
                             <span className="text-sm">المستخدمين</span>
+                        </button>
+                        <button
+                            onClick={() => { setActiveSection('security'); setIsSidebarOpen(false); }}
+                            className={`w-full flex items-center gap-3 px-4 py-3 md:px-5 md:py-4 rounded-xl md:rounded-2xl font-black transition-all ${activeSection === 'security' ? 'bg-gray-900 text-white shadow-xl' : 'text-gray-500 hover:bg-gray-50'
+                                }`}
+                        >
+                            <Shield className="w-5 h-5" />
+                            <span className="text-sm">الأمان والحظر</span>
                         </button>
                         <button
                             onClick={() => { setActiveSection('settings'); setIsSidebarOpen(false); }}
