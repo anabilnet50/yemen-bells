@@ -103,8 +103,8 @@ const UserManagement: React.FC<UserManagementProps> = ({
                         )}
 
                         <div className="flex gap-4 pt-8">
-                            <button type="submit" className="bg-primary-navy text-white px-12 py-4 rounded-2xl font-black shadow-xl shadow-primary-navy/20 hover:bg-black transition-all">حفظ البيانات</button>
-                            <button type="button" onClick={() => setIsEditingUser(false)} className="bg-gray-100 text-gray-600 px-12 py-4 rounded-2xl font-black hover:bg-gray-200 transition-all text-sm">إلغاء</button>
+                            <button type="submit" className="bg-primary-navy text-white px-6 py-3 md:px-8 md:py-3 rounded-xl md:rounded-2xl font-black shadow-xl shadow-primary-navy/20 hover:bg-black transition-all text-sm md:text-base">حفظ البيانات</button>
+                            <button type="button" onClick={() => setIsEditingUser(false)} className="bg-gray-100 text-gray-600 px-6 py-3 md:px-8 md:py-3 rounded-xl md:rounded-2xl font-black hover:bg-gray-200 transition-all text-sm md:text-base">إلغاء</button>
                         </div>
                     </form>
                 </div>

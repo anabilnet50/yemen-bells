@@ -457,7 +457,7 @@ async function startServer() {
     await db.query("UPDATE articles SET views = views + 1 WHERE id = $1", [req.params.id]);
 
     const { rows } = await db.query(`
-      SELECT articles.*, categories.name as category_name, writers.name as writer_name, writers.bio as writer_bio, writers.image_url as writer_image
+      SELECT articles.*, categories.name as category_name, categories.slug as category_slug, writers.name as writer_name, writers.bio as writer_bio, writers.image_url as writer_image
       FROM articles 
       LEFT JOIN categories ON articles.category_id = categories.id 
       LEFT JOIN writers ON articles.writer_id = writers.id

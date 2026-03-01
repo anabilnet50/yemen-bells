@@ -136,21 +136,23 @@ export default function ArticleDetail() {
         <div className="bg-white rounded-[2rem] shadow-premium overflow-hidden border border-gray-100">
           {/* Article Image - Now Inside Card */}
           {article.image_url && (
-            <div className="p-4 md:p-8 pb-0">
+            <div className="p-4 md:p-8 pb-0 relative group">
               <img
                 src={article.image_url}
                 className="w-full h-auto rounded-3xl shadow-sm border border-gray-100"
                 alt={article.title}
                 referrerPolicy="no-referrer"
               />
+              <div className="absolute top-8 right-8 md:top-12 md:right-12 z-10">
+                <Link to={`/category/${article.category_slug}`} className="bg-primary-crimson text-white px-6 py-2 rounded-xl text-sm md:text-base font-black uppercase tracking-widest shadow-xl border-2 border-white/20 backdrop-blur-sm hover:scale-105 transition-transform block">
+                  {article.category_name}
+                </Link>
+              </div>
             </div>
           )}
           {/* Header Metadata */}
           <div className="p-8 md:p-12 border-b border-gray-50">
             <div className="flex flex-wrap items-center gap-3 mb-6">
-              <span className="bg-primary-crimson text-white px-4 py-1.5 rounded-lg text-xs font-black uppercase tracking-widest">
-                {article.category_name}
-              </span>
               {article.is_urgent === 1 && (
                 <span className="bg-accent-gold text-primary-navy px-4 py-1.5 rounded-lg text-xs font-black flex items-center gap-2">
                   <TrendingUp className="w-3 h-3" /> عاجل

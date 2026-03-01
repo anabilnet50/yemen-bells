@@ -26,23 +26,23 @@ const AuditLog: React.FC<AuditLogProps> = ({
 }) => {
     return (
         <div className="space-y-10">
-            <div className="flex justify-between items-center print:hidden">
-                <div>
+            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 print:hidden">
+                <div className="mb-4 md:mb-0">
                     <h1 className="text-3xl font-black text-gray-900">سجل الأنشطة الرقابي</h1>
-                    <p className="text-gray-500 font-bold">تتبع كافة الإجراءات والعمليات التي تمت على لوحة التحكم</p>
+                    <p className="text-gray-500 font-bold mt-2">تتبع كافة الإجراءات والعمليات التي تمت على لوحة التحكم</p>
                 </div>
-                <div className="flex items-center gap-4">
+                <div className="flex flex-wrap items-center gap-4 w-full md:w-auto">
                     <button
                         onClick={() => window.print()}
-                        className="p-3 bg-white border-2 border-gray-100 text-primary-navy hover:bg-gray-50 rounded-2xl flex items-center gap-3 font-black transition-all shadow-sm"
+                        className="flex-1 md:flex-none p-2 md:p-3 bg-white border-2 border-gray-100 text-primary-navy hover:bg-gray-50 rounded-xl md:rounded-2xl flex justify-center items-center gap-2 md:gap-3 font-black transition-all shadow-sm text-sm md:text-base"
                     >
-                        <FileText className="w-5 h-5" /> طباعة التقرير
+                        <FileText className="w-4 h-4 md:w-5 md:h-5" /> طباعة التقرير
                     </button>
                     <button
                         onClick={fetchHistory}
-                        className="p-3 bg-red-50 text-primary-crimson hover:bg-red-600 hover:text-white rounded-2xl flex items-center gap-3 font-black transition-all shadow-sm"
+                        className="flex-1 md:flex-none p-2 md:p-3 bg-red-50 text-primary-crimson hover:bg-red-600 hover:text-white rounded-xl md:rounded-2xl flex justify-center items-center gap-2 md:gap-3 font-black transition-all shadow-sm text-sm md:text-base"
                     >
-                        <RotateCcw className="w-5 h-5" /> تحديث السجل
+                        <RotateCcw className="w-4 h-4 md:w-5 md:h-5" /> تحديث السجل
                     </button>
                 </div>
             </div>
@@ -89,9 +89,9 @@ const AuditLog: React.FC<AuditLogProps> = ({
                     <div>
                         <button
                             onClick={fetchHistory}
-                            className="w-full p-4 bg-gray-900 text-white rounded-2xl font-black hover:bg-primary-navy transition-all flex justify-center items-center gap-3 shadow-xl"
+                            className="w-full p-3 md:p-4 bg-gray-900 text-white rounded-xl md:rounded-2xl font-black hover:bg-primary-navy transition-all flex justify-center items-center gap-2 md:gap-3 shadow-xl text-sm md:text-base"
                         >
-                            <Search className="w-5 h-5" /> تطبيق التصفية
+                            <Search className="w-4 h-4 md:w-5 md:h-5" /> تطبيق التصفية
                         </button>
                     </div>
                 </div>
@@ -108,8 +108,8 @@ const AuditLog: React.FC<AuditLogProps> = ({
                 </div>
             </div>
 
-            <div className="bg-white rounded-[2.5rem] shadow-premium overflow-hidden border border-gray-100 print:shadow-none print:border-none print:rounded-none">
-                <div className="overflow-x-auto">
+            <div className="bg-white rounded-[2.5rem] shadow-premium border border-gray-100 w-full overflow-hidden print:shadow-none print:border-none print:rounded-none">
+                <div className="overflow-x-auto w-full">
                     <table className="w-full text-center border-collapse border border-[#cfdce9] min-w-[1000px]">
                         <thead className="bg-[#5b9bd5] text-white print:bg-gray-100 print:text-black">
                             <tr className="divide-x divide-x-reverse divide-[#ffffff]">
@@ -125,8 +125,8 @@ const AuditLog: React.FC<AuditLogProps> = ({
                                     <td className="p-6 font-black text-primary-navy print:py-4 align-middle">{log.user_name || 'نظام آلي'}</td>
                                     <td className="p-6 print:py-4 align-middle">
                                         <span className={`px-5 py-2.5 rounded-2xl text-[11px] font-black uppercase shadow-sm border ${log.action.includes('حذف') ? 'bg-red-50 text-red-600 border-red-100' :
-                                                log.action.includes('إضافة') ? 'bg-green-50 text-green-600 border-green-100' :
-                                                    'bg-blue-50 text-blue-600 border-blue-100'
+                                            log.action.includes('إضافة') ? 'bg-green-50 text-green-600 border-green-100' :
+                                                'bg-blue-50 text-blue-600 border-blue-100'
                                             }`}>
                                             {log.action}
                                         </span>

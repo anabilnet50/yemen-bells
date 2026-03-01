@@ -28,9 +28,9 @@ const CategoryManagement: React.FC<CategoryManagementProps> = ({
                 <h1 className="text-3xl font-black text-gray-900">إدارة الأقسام</h1>
                 <button
                     onClick={() => { setIsEditingCategory(true); setCurrentCategory({ name: '', slug: '', background_url: '' }); }}
-                    className="bg-red-600 text-white px-8 py-4 rounded-2xl font-black flex items-center gap-3 shadow-xl shadow-primary-crimson/20 hover:bg-primary-crimson/80 transition-all"
+                    className="bg-red-600 text-white px-6 py-3 md:px-8 md:py-3 rounded-xl md:rounded-2xl text-sm md:text-base font-black flex items-center gap-2 shadow-xl shadow-primary-crimson/20 hover:bg-primary-crimson/80 transition-all"
                 >
-                    <Plus className="w-6 h-6" /> إضافة قسم جديد
+                    <Plus className="w-5 h-5 md:w-6 md:h-6" /> إضافة قسم جديد
                 </button>
             </div>
 
@@ -61,8 +61,8 @@ const CategoryManagement: React.FC<CategoryManagementProps> = ({
                             </div>
                         </div>
                         <div className="flex gap-4 pt-6">
-                            <button type="submit" className="bg-red-600 text-white px-12 py-4 rounded-2xl font-black shadow-xl shadow-primary-crimson/20 hover:bg-primary-crimson/80 transition-all">حفظ القسم</button>
-                            <button type="button" onClick={() => setIsEditingCategory(false)} className="bg-gray-100 text-gray-600 px-12 py-4 rounded-2xl font-black hover:bg-gray-200 transition-all">إلغاء</button>
+                            <button type="submit" className="bg-red-600 text-white px-6 py-3 md:px-8 md:py-3 rounded-xl md:rounded-2xl text-sm md:text-base font-black shadow-xl shadow-primary-crimson/20 hover:bg-primary-crimson/80 transition-all">حفظ القسم</button>
+                            <button type="button" onClick={() => setIsEditingCategory(false)} className="bg-gray-100 text-gray-600 px-6 py-3 md:px-8 md:py-3 rounded-xl md:rounded-2xl text-sm md:text-base font-black hover:bg-gray-200 transition-all">إلغاء</button>
                         </div>
                     </form>
                 </div>

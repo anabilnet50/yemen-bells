@@ -306,10 +306,10 @@ const SettingsManagement: React.FC<SettingsManagementProps> = ({
                 </div>
 
                 <div className="flex justify-end gap-4 pt-10 border-t border-gray-100">
-                    <button type="button" onClick={fetchSettings} className="bg-gray-100 text-gray-600 px-12 py-5 rounded-[2rem] font-black text-lg hover:bg-gray-200 transition-all">
+                    <button type="button" onClick={fetchSettings} className="bg-gray-100 text-gray-600 px-6 py-3 md:px-12 md:py-5 rounded-xl md:rounded-[2rem] font-black text-sm md:text-lg hover:bg-gray-200 transition-all">
                         إلغاء
                     </button>
-                    <button type="submit" className="bg-primary-navy text-white px-16 py-5 rounded-[2rem] font-black text-xl shadow-2xl shadow-primary-navy/20 hover:scale-105 active:scale-95 transition-all">
+                    <button type="submit" className="bg-primary-navy text-white px-6 py-3 md:px-16 md:py-5 rounded-xl md:rounded-[2rem] font-black text-sm md:text-xl shadow-2xl shadow-primary-navy/20 hover:scale-105 active:scale-95 transition-all">
                         حفظ الإعدادات بالكامل
                     </button>
                 </div>

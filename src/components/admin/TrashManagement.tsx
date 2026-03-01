@@ -32,24 +32,24 @@ const TrashManagement: React.FC<TrashManagementProps> = ({
                         <>
                             <button
                                 onClick={() => handleBulkTrashAction('restore')}
-                                className="bg-green-600 text-white px-6 py-3 rounded-2xl font-black flex items-center gap-2 shadow-xl shadow-green-600/20 hover:bg-green-700 transition-all scale-in"
+                                className="bg-green-600 text-white px-6 py-3 rounded-xl md:rounded-2xl text-sm md:text-base font-black flex items-center gap-2 shadow-xl shadow-green-600/20 hover:bg-green-700 transition-all scale-in"
                             >
-                                <RotateCcw className="w-5 h-5" /> استعادة المحدد ({selectedTrashIds.length})
+                                <RotateCcw className="w-4 h-4 md:w-5 md:h-5" /> استعادة ({selectedTrashIds.length})
                             </button>
                             <button
                                 onClick={() => handleBulkTrashAction('delete')}
-                                className="bg-red-600 text-white px-6 py-3 rounded-2xl font-black flex items-center gap-2 shadow-xl shadow-primary-crimson/20 hover:bg-red-700 transition-all scale-in"
+                                className="bg-red-600 text-white px-6 py-3 rounded-xl md:rounded-2xl text-sm md:text-base font-black flex items-center gap-2 shadow-xl shadow-primary-crimson/20 hover:bg-red-700 transition-all scale-in"
                             >
-                                <Trash2 className="w-5 h-5" /> حذف المحدد ({selectedTrashIds.length})
+                                <Trash2 className="w-4 h-4 md:w-5 md:h-5" /> حذف ({selectedTrashIds.length})
                             </button>
                         </>
                     )}
                     {trashArticles.length > 0 && (
                         <button
                             onClick={handleEmptyTrash}
-                            className="bg-primary-navy text-white px-8 py-3 rounded-2xl font-black flex items-center gap-3 hover:bg-black transition-all"
+                            className="bg-primary-navy text-white px-6 py-3 md:px-8 md:py-3 rounded-xl md:rounded-2xl text-sm md:text-base font-black flex items-center gap-2 hover:bg-black transition-all"
                         >
-                            <Trash className="w-5 h-5" /> تفريغ السلة بالكامل
+                            <Trash className="w-4 h-4 md:w-5 md:h-5" /> تفريغ السلة بالكامل
                         </button>
                     )}
                 </div>

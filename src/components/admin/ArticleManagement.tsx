@@ -90,55 +90,55 @@ const ArticleManagement: React.FC<ArticleManagementProps> = ({
 
     return (
         <div className="space-y-8">
-            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+            <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6">
                 <div>
-                    <h1 className="text-5xl font-black text-gray-900 mb-2">إدارة الأخبار</h1>
-                    <div className="flex items-center gap-4 mt-2">
-                        <p className="text-gray-500 font-bold text-lg">تحكم في جميع أخبار ومقالات الموقع من هنا</p>
-                        <div className="h-8 w-px bg-gray-200"></div>
-                        <div className="flex items-center gap-3 px-6 py-3 bg-primary-navy/5 rounded-2xl border border-primary-navy/10">
-                            <div className="w-10 h-10 bg-primary-navy/10 rounded-xl flex items-center justify-center">
-                                <FileText className="w-6 h-6 text-primary-navy" />
-                            </div>
+                    <h1 className="text-4xl lg:text-5xl font-black text-gray-900 mb-2">إدارة الأخبار</h1>
+                    <p className="text-gray-500 font-bold text-lg">تحكم في جميع أخبار ومقالات الموقع من هنا</p>
+                </div>
+
+                <div className="flex flex-col xl:flex-row items-start xl:items-center gap-4 w-full lg:w-auto">
+                    {/* Stats */}
+                    <div className="flex items-center gap-3 bg-white p-2 rounded-2xl border border-gray-100 shadow-sm w-full sm:w-auto overflow-x-auto custom-scrollbar">
+                        <div className="flex items-center gap-3 px-6 py-3 bg-primary-navy/5 rounded-xl shrink-0">
+                            <FileText className="w-6 h-6 text-primary-navy" />
                             <div className="flex flex-col">
-                                <span className="text-2xl font-black text-primary-navy">{articles.length}</span>
+                                <span className="text-xs text-gray-500 font-bold">إجمالي الأخبار</span>
+                                <span className="text-2xl font-black text-primary-navy leading-none">{articles.length}</span>
                             </div>
                         </div>
-                        <div className="h-8 w-px bg-gray-200"></div>
-                        <div className="flex items-center gap-3 px-6 py-3 bg-red-50 rounded-2xl border border-red-100">
-                            <div className="w-10 h-10 bg-red-100 rounded-xl flex items-center justify-center">
-                                <AlertCircle className="w-6 h-6 text-primary-crimson" />
-                            </div>
+                        <div className="flex items-center gap-3 px-6 py-3 bg-red-50 rounded-xl shrink-0">
+                            <AlertCircle className="w-6 h-6 text-primary-crimson" />
                             <div className="flex flex-col">
-                                <span className="text-xs font-black text-red-500 uppercase leading-none mb-1">أخبار عاجلة</span>
-                                <span className="text-2xl font-black text-primary-crimson">{totalUrgent}</span>
+                                <span className="text-xs text-red-500 font-bold">أخبار عاجلة</span>
+                                <span className="text-2xl font-black text-primary-crimson leading-none">{totalUrgent}</span>
                             </div>
                         </div>
                     </div>
-                </div>
 
-                <div className="flex items-center gap-4">
-                    {selectedIds.length > 0 && (
+                    {/* Buttons */}
+                    <div className="flex flex-wrap items-center gap-3 w-full sm:w-auto">
                         <button
-                            onClick={onBulkTrash}
-                            className="bg-red-50 text-red-600 px-8 py-4 rounded-2xl font-black flex items-center gap-3 border-2 border-red-100 hover:bg-red-600 hover:text-white transition-all shadow-lg shadow-red-100"
+                            onClick={() => { setIsEditing(true); setCurrentArticle({ title: '', content: '', category_id: categories[0]?.id || 1, image_url: '', video_url: '', is_urgent: false, writer_id: '', is_active: true }); }}
+                            className="flex-1 sm:flex-none bg-primary-navy text-white px-4 py-3 md:px-6 md:py-4 mt-2 mb-2 rounded-xl text-sm md:text-base font-black flex items-center justify-center gap-2 shadow-lg shadow-primary-navy/20 hover:bg-black transition-all"
                         >
-                            <Trash2 className="w-6 h-6" /> نقل المحدود للمحذوفات ({selectedIds.length})
+                            <Plus className="w-4 h-4 md:w-5 md:h-5" /> إضافة خبر
                         </button>
-                    )}
-                    <button
-                        onClick={() => setFilterUrgent(!filterUrgent)}
-                        className={`px-8 py-4 rounded-2xl font-black transition-all border-2 flex items-center gap-2 ${filterUrgent ? 'bg-red-600 text-white border-red-600 shadow-lg shadow-red-200' : 'bg-white text-gray-700 border-gray-100 hover:border-red-500 hover:bg-red-50'}`}
-                    >
-                        <Filter className="w-5 h-5" />
-                        {filterUrgent ? 'عرض الكل' : 'عرض العاجل فقط'}
-                    </button>
-                    <button
-                        onClick={() => { setIsEditing(true); setCurrentArticle({ title: '', content: '', category_id: categories[0]?.id || 1, image_url: '', video_url: '', is_urgent: false, writer_id: '', is_active: true }); }}
-                        className="bg-primary-navy text-white px-8 py-4 rounded-2xl font-black flex items-center gap-3 shadow-xl shadow-primary-navy/20 hover:bg-black transition-all"
-                    >
-                        <Plus className="w-6 h-6" /> إضافة خبر جديد
-                    </button>
+                        <button
+                            onClick={() => setFilterUrgent(!filterUrgent)}
+                            className={`flex-1 sm:flex-none px-4 py-3 md:px-6 md:py-4 mt-2 mb-2 rounded-xl text-sm md:text-base font-black transition-all border-2 flex items-center justify-center gap-2 ${filterUrgent ? 'bg-red-600 text-white border-red-600 shadow-lg shadow-red-200' : 'bg-white text-gray-700 border-gray-100 hover:border-red-500 hover:bg-red-50'}`}
+                        >
+                            <Filter className="w-4 h-4 md:w-5 md:h-5" />
+                            {filterUrgent ? 'عرض الكل' : 'العاجل'}
+                        </button>
+                        {selectedIds.length > 0 && (
+                            <button
+                                onClick={onBulkTrash}
+                                className="flex-1 sm:flex-none bg-red-50 text-red-600 px-4 py-3 md:px-6 md:py-4 mt-2 mb-2 rounded-xl text-sm md:text-base font-black flex items-center justify-center gap-2 border-2 border-red-100 hover:bg-red-600 hover:text-white transition-all shadow-lg shadow-red-100"
+                            >
+                                <Trash2 className="w-4 h-4 md:w-5 md:h-5" /> حذف ({selectedIds.length})
+                            </button>
+                        )}
+                    </div>
                 </div>
             </div>
 
@@ -260,8 +260,8 @@ const ArticleManagement: React.FC<ArticleManagementProps> = ({
                         </div>
 
                         <div className="flex gap-4 pt-6">
-                            <button type="submit" className="bg-red-600 text-white px-12 py-4 rounded-2xl font-black shadow-xl shadow-primary-crimson/20 hover:bg-primary-crimson/80 transition-all">حفظ ونشر الخبر</button>
-                            <button type="button" onClick={() => setIsEditing(false)} className="bg-gray-100 text-gray-600 px-12 py-4 rounded-2xl font-black hover:bg-gray-200 transition-all">إلغاء</button>
+                            <button type="submit" className="bg-red-600 text-white px-6 py-3 md:px-12 md:py-4 rounded-xl md:rounded-2xl text-sm md:text-base font-black shadow-xl shadow-primary-crimson/20 hover:bg-primary-crimson/80 transition-all">حفظ ونشر الخبر</button>
+                            <button type="button" onClick={() => setIsEditing(false)} className="bg-gray-100 text-gray-600 px-6 py-3 md:px-12 md:py-4 rounded-xl md:rounded-2xl text-sm md:text-base font-black hover:bg-gray-200 transition-all">إلغاء</button>
                         </div>
                     </form>
                 </div>

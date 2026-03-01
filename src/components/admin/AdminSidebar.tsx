@@ -60,9 +60,9 @@ const AdminSidebar: React.FC<SidebarProps> = ({
                         <button
                             key={item.id}
                             onClick={() => { setActiveSection(item.id); setIsSidebarOpen(false); }}
-                            className={`w-full flex items-center gap-4 px-5 py-4 rounded-2xl font-black transition-all group ${activeSection === item.id
-                                    ? 'bg-primary-crimson text-white shadow-xl shadow-primary-crimson/20 translate-x-1'
-                                    : 'text-gray-500 hover:bg-red-50 hover:text-primary-crimson'
+                            className={`w-full flex items-center gap-3 px-4 py-3 md:px-5 md:py-4 rounded-xl md:rounded-2xl font-black transition-all group ${activeSection === item.id
+                                ? 'bg-primary-crimson text-white shadow-xl shadow-primary-crimson/20 translate-x-1'
+                                : 'text-gray-500 hover:bg-red-50 hover:text-primary-crimson'
                                 }`}
                         >
                             <Icon className={`w-5 h-5 ${activeSection === item.id ? 'animate-pulse' : 'group-hover:scale-110'}`} />
@@ -76,7 +76,7 @@ const AdminSidebar: React.FC<SidebarProps> = ({
                         <p className="px-5 text-[10px] text-gray-400 font-black uppercase tracking-widest mb-4">النظام</p>
                         <button
                             onClick={() => { setActiveSection('history'); setIsSidebarOpen(false); }}
-                            className={`w-full flex items-center gap-4 px-5 py-4 rounded-2xl font-black transition-all ${activeSection === 'history' ? 'bg-gray-900 text-white shadow-xl' : 'text-gray-500 hover:bg-gray-50'
+                            className={`w-full flex items-center gap-3 px-4 py-3 md:px-5 md:py-4 rounded-xl md:rounded-2xl font-black transition-all ${activeSection === 'history' ? 'bg-gray-900 text-white shadow-xl' : 'text-gray-500 hover:bg-gray-50'
                                 }`}
                         >
                             <FileText className="w-5 h-5" />
@@ -84,7 +84,7 @@ const AdminSidebar: React.FC<SidebarProps> = ({
                         </button>
                         <button
                             onClick={() => { setActiveSection('users'); setIsSidebarOpen(false); }}
-                            className={`w-full flex items-center gap-4 px-5 py-4 rounded-2xl font-black transition-all ${activeSection === 'users' ? 'bg-gray-900 text-white shadow-xl' : 'text-gray-500 hover:bg-gray-50'
+                            className={`w-full flex items-center gap-3 px-4 py-3 md:px-5 md:py-4 rounded-xl md:rounded-2xl font-black transition-all ${activeSection === 'users' ? 'bg-gray-900 text-white shadow-xl' : 'text-gray-500 hover:bg-gray-50'
                                 }`}
                         >
                             <Users className="w-5 h-5" />
@@ -92,7 +92,7 @@ const AdminSidebar: React.FC<SidebarProps> = ({
                         </button>
                         <button
                             onClick={() => { setActiveSection('settings'); setIsSidebarOpen(false); }}
-                            className={`w-full flex items-center gap-4 px-5 py-4 rounded-2xl font-black transition-all ${activeSection === 'settings' ? 'bg-gray-900 text-white shadow-xl' : 'text-gray-500 hover:bg-gray-50'
+                            className={`w-full flex items-center gap-3 px-4 py-3 md:px-5 md:py-4 rounded-xl md:rounded-2xl font-black transition-all ${activeSection === 'settings' ? 'bg-gray-900 text-white shadow-xl' : 'text-gray-500 hover:bg-gray-50'
                                 }`}
                         >
                             <Settings className="w-5 h-5" />
@@ -114,7 +114,7 @@ const AdminSidebar: React.FC<SidebarProps> = ({
                 </div>
                 <button
                     onClick={handleLogout}
-                    className="w-full flex items-center justify-center gap-3 px-5 py-4 bg-white border-2 border-gray-100 text-gray-400 rounded-2xl font-black hover:bg-red-50 hover:text-primary-crimson hover:border-red-100 transition-all group"
+                    className="w-full flex items-center justify-center gap-2 px-4 py-3 md:px-5 md:py-4 bg-white border-2 border-gray-100 text-gray-400 rounded-xl md:rounded-2xl font-black hover:bg-red-50 hover:text-primary-crimson hover:border-red-100 transition-all group"
                 >
                     <LogOut className="w-5 h-5 group-hover:-translate-x-1" />
                     <span className="text-sm">تسجيل الخروج</span>

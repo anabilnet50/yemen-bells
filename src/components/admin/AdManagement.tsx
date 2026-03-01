@@ -32,9 +32,9 @@ const AdManagement: React.FC<AdManagementProps> = ({
                 <h1 className="text-3xl font-black text-gray-900">إدارة الإعلانات</h1>
                 <button
                     onClick={() => { setIsEditingAd(true); setCurrentAd({ title: '', image_url: '', link_url: '', adsense_code: '', position: 'sidebar', is_active: 1, start_date: '', end_date: '' }); }}
-                    className="bg-red-600 text-white px-8 py-4 rounded-2xl font-black flex items-center gap-3 shadow-xl shadow-red-600/20 hover:bg-red-700 transition-all font-bold"
+                    className="bg-red-600 text-white px-6 py-3 md:px-8 md:py-4 rounded-xl md:rounded-2xl text-sm md:text-base font-black flex items-center gap-2 shadow-xl shadow-red-600/20 hover:bg-red-700 transition-all font-bold"
                 >
-                    <Plus className="w-6 h-6" /> إضافة إعلان جديد
+                    <Plus className="w-5 h-5 md:w-6 md:h-6" /> إضافة إعلان جديد
                 </button>
             </div>
 
@@ -103,8 +103,8 @@ const AdManagement: React.FC<AdManagementProps> = ({
                             <textarea placeholder="<ins class='adsbygoogle' ...></ins>" value={currentAd.adsense_code} onChange={e => setCurrentAd({ ...currentAd, adsense_code: e.target.value })} className="w-full p-5 bg-orange-50/20 border-2 border-orange-100 rounded-2xl font-mono text-sm focus:border-orange-400 outline-none" rows={4}></textarea>
                         </div>
                         <div className="flex gap-4 pt-4">
-                            <button type="submit" className="bg-red-600 text-white px-12 py-4 rounded-2xl font-black shadow-xl shadow-red-600/20 hover:bg-red-700 transition-all font-bold">حفظ الإعلان</button>
-                            <button type="button" onClick={() => setIsEditingAd(false)} className="bg-gray-100 text-gray-600 px-12 py-4 rounded-2xl font-black hover:bg-gray-200 transition-all font-bold">إلغاء</button>
+                            <button type="submit" className="bg-red-600 text-white px-6 py-3 md:px-12 md:py-4 rounded-xl md:rounded-2xl text-sm md:text-base font-black shadow-xl shadow-red-600/20 hover:bg-red-700 transition-all font-bold">حفظ الإعلان</button>
+                            <button type="button" onClick={() => setIsEditingAd(false)} className="bg-gray-100 text-gray-600 px-6 py-3 md:px-12 md:py-4 rounded-xl md:rounded-2xl text-sm md:text-base font-black hover:bg-gray-200 transition-all font-bold">إلغاء</button>
                         </div>
                     </form>
                 </div>

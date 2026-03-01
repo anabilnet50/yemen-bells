@@ -32,9 +32,9 @@ const WriterManagement: React.FC<WriterManagementProps> = ({
                 <h1 className="text-3xl font-black text-gray-900">إدارة الكتاب</h1>
                 <button
                     onClick={() => { setIsEditingWriter(true); setCurrentWriter({ name: '', bio: '', image_url: '' }); }}
-                    className="bg-red-600 text-white px-8 py-4 rounded-2xl font-black flex items-center gap-3 shadow-xl shadow-primary-crimson/20 hover:bg-primary-crimson/80 transition-all"
+                    className="bg-red-600 text-white px-6 py-3 md:px-8 md:py-3 rounded-xl md:rounded-2xl text-sm md:text-base font-black flex items-center gap-2 shadow-xl shadow-primary-crimson/20 hover:bg-primary-crimson/80 transition-all"
                 >
-                    <Plus className="w-6 h-6" /> إضافة كاتب جديد
+                    <Plus className="w-5 h-5 md:w-6 md:h-6" /> إضافة كاتب جديد
                 </button>
             </div>
 
@@ -72,8 +72,8 @@ const WriterManagement: React.FC<WriterManagementProps> = ({
                             <textarea value={currentWriter.bio} onChange={e => setCurrentWriter({ ...currentWriter, bio: e.target.value })} className="w-full p-4 bg-gray-50 border-2 border-gray-100 rounded-2xl outline-none font-bold focus:border-red-500" rows={4}></textarea>
                         </div>
                         <div className="flex gap-4 pt-4">
-                            <button type="submit" className="bg-red-600 text-white px-12 py-4 rounded-2xl font-black shadow-xl shadow-red-600/20">حفظ الكاتب</button>
-                            <button type="button" onClick={() => setIsEditingWriter(false)} className="bg-gray-100 text-gray-600 px-12 py-4 rounded-2xl font-black">إلغاء</button>
+                            <button type="submit" className="bg-red-600 text-white px-6 py-3 md:px-8 md:py-3 rounded-xl md:rounded-2xl text-sm md:text-base font-black shadow-xl shadow-red-600/20">حفظ الكاتب</button>
+                            <button type="button" onClick={() => setIsEditingWriter(false)} className="bg-gray-100 text-gray-600 px-6 py-3 md:px-8 md:py-3 rounded-xl md:rounded-2xl text-sm md:text-base font-black">إلغاء</button>
                         </div>
                     </form>
                 </div>
