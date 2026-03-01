@@ -416,14 +416,14 @@ function Home() {
 
                     {/* Scrolling Content - Center */}
                     <div className="flex-1 overflow-hidden flex items-center bg-white border-x border-gray-100 relative">
-                      <div className="whitespace-nowrap text-primary-navy font-black text-xs md:text-sm w-full" style={{ gap: 0 }}>
+                      <div className="whitespace-nowrap text-primary-navy font-black text-sm md:text-base w-full" style={{ gap: 0 }}>
                         {/* Build the base content block first to avoid massive inline repetition */}
                         {(() => {
                           const TickerItemContent = (
                             <>
                               {settings?.custom_ticker_text && settings.custom_ticker_text.trim() !== '' && (
-                                <span className="flex items-center gap-4 text-primary-crimson drop-shadow-sm font-black text-sm md:text-base group/tickeritem shrink-0">
-                                  <span className="w-2 h-2 rounded-full bg-primary-crimson animate-pulse shadow-[0_0_10px_rgba(225,29,72,0.8)]"></span>
+                                <span className="flex items-center gap-4 text-primary-navy drop-shadow-sm font-black text-sm md:text-base group/tickeritem shrink-0">
+                                  <span className="w-2 h-2 rounded-full bg-primary-crimson shadow-[0_0_10px_rgba(225,29,72,0.8)]"></span>
                                   {settings.custom_ticker_text}
                                 </span>
                               )}
@@ -432,7 +432,7 @@ function Home() {
                                   <span className="w-1.5 h-1.5 bg-primary-crimson rotate-45 group-hover/tickeritem:scale-125 transition-transform"></span>
                                   {a.title}
                                   {['opinion', 'studies'].includes(a.category_slug) && a.writer_name && (
-                                    <span className="text-primary-crimson mr-2"> - {a.writer_name}</span>
+                                    <span className="text-primary-crimson/80 mr-2"> - {a.writer_name}</span>
                                   )}
                                 </Link>
                               ))}
@@ -473,10 +473,9 @@ function Home() {
                     </div>
 
                     {/* Time Indicator - Left Side */}
-                    <div className="bg-[#1a1a1a] text-white px-6 py-2 xl:py-0 flex items-center justify-center gap-3 shrink-0 relative overflow-hidden group/clock z-20 shadow-[-10px_0_20px_white]">
-                      <div className="absolute inset-0 bg-primary-crimson/5 group-hover/clock:bg-primary-crimson/20 transition-colors"></div>
-                      <Clock className="w-4 h-4 text-primary-crimson" />
-                      <span className="font-sans font-medium text-sm tracking-widest tabular-nums" style={{ direction: 'ltr' }}>{currentTime.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true })}</span>
+                    <div className="bg-primary-crimson text-white px-3 md:px-4 flex items-center justify-center shrink-0 relative overflow-hidden group/clock z-20 shadow-[-10px_0_20px_white]">
+                      <div className="absolute inset-0 bg-white/10 animate-pulse"></div>
+                      <span className="font-sans font-black text-xs md:text-sm tracking-widest tabular-nums" style={{ direction: 'ltr' }}>{currentTime.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true })}</span>
                     </div>
                   </div>
 
@@ -488,7 +487,7 @@ function Home() {
                       </span>
                     </div>
 
-                    <h2 className="text-white text-2xl md:text-3xl font-black leading-[1.15] mb-4 group-hover:text-accent-gold transition-colors duration-500 drop-shadow-2xl line-clamp-2">
+                    <h2 className="text-white text-xl md:text-2xl font-black leading-[1.2] mb-4 group-hover:text-accent-gold transition-colors duration-500 drop-shadow-2xl line-clamp-2">
                       {mainArticle.title}
                     </h2>
 
@@ -555,12 +554,16 @@ function Home() {
             <div className="lg:col-span-1 order-1 lg:order-1 flex flex-col gap-6">
 
               {/* Articles Section (Redesigned from Opinion) */}
-              <div className="glass-card overflow-hidden flex-1 flex flex-col border border-primary-navy/5 bg-white/40 h-60">
-                <Link to="/category/opinion" className="bg-primary-navy p-4 text-center font-black text-white text-sm uppercase tracking-[0.2em] flex items-center justify-center gap-3 hover:bg-primary-navy/90 transition-all shrink-0">
+              <div className="glass-card overflow-hidden flex-1 flex flex-col border border-primary-navy/5 relative group h-60">
+                <div className="absolute inset-0">
+                  <img src={settings?.opinion_bg || "https://picsum.photos/seed/opinions/600/800"} alt="Opinions" className="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-110 opacity-30" referrerPolicy="no-referrer" />
+                  <div className="absolute inset-0 bg-white/40"></div>
+                </div>
+                <Link to="/category/opinion" className="bg-primary-navy p-4 text-center font-black text-white text-sm uppercase tracking-[0.2em] flex items-center justify-center gap-3 hover:bg-primary-navy/90 transition-all shrink-0 relative z-10">
                   <div className="w-1 h-3 bg-primary-crimson rounded-full shadow-glow"></div>
                   {settings?.opinion_title || 'مقالات'}
                 </Link>
-                <div className="flex-1 overflow-hidden relative p-4">
+                <div className="flex-1 overflow-hidden relative p-4 z-10">
                   <div className="animate-marquee-vertical flex flex-col space-y-4">
                     {opinionArticles.length > 0 ? (
                       [...opinionArticles.slice(0, 2), ...opinionArticles.slice(0, 2)].map((v, i) => (
@@ -596,12 +599,16 @@ function Home() {
                 </div>
               </div>
 
-              <div className="glass-card overflow-hidden flex-1 flex flex-col border border-primary-navy/5 bg-white/40 h-60">
-                <Link to="/category/studies" className="bg-primary-navy p-4 text-center font-black text-white text-sm uppercase tracking-[0.2em] flex items-center justify-center gap-3 hover:bg-primary-navy/90 transition-all shrink-0">
+              <div className="glass-card overflow-hidden flex-1 flex flex-col border border-primary-navy/5 relative group h-60">
+                <div className="absolute inset-0">
+                  <img src={settings?.research_bg || "https://picsum.photos/seed/research/600/800"} alt="Research" className="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-110 opacity-30" referrerPolicy="no-referrer" />
+                  <div className="absolute inset-0 bg-white/40"></div>
+                </div>
+                <Link to="/category/studies" className="bg-primary-navy p-4 text-center font-black text-white text-sm uppercase tracking-[0.2em] flex items-center justify-center gap-3 hover:bg-primary-navy/90 transition-all shrink-0 z-10 relative">
                   <div className="w-1 h-3 bg-accent-gold rounded-full shadow-glow"></div>
                   {settings?.research_title || 'أبحاث ودراسات'}
                 </Link>
-                <div className="flex-1 overflow-hidden relative p-4">
+                <div className="flex-1 overflow-hidden relative p-4 z-10">
                   <div className="animate-marquee-vertical flex flex-col space-y-4">
                     {studiesArticles.length > 0 ? (
                       [...studiesArticles.slice(0, 2), ...studiesArticles.slice(0, 2)].map((v, i) => (
@@ -701,7 +708,7 @@ function Home() {
                           <div className="w-1 h-1 bg-gray-200 rounded-full"></div>
                           <span className="text-sm text-gray-400 font-black uppercase tracking-widest">{new Date(article.created_at).toLocaleDateString('ar-YE', { day: '2-digit', month: 'short' })}</span>
                         </div>
-                        <h5 className="text-primary-navy font-black text-xl md:text-2xl mb-5 group-hover/item:text-primary-crimson premium-transition leading-[1.2] drop-shadow-sm">
+                        <h5 className="text-primary-navy font-black text-lg md:text-xl mb-4 group-hover/item:text-primary-crimson premium-transition leading-[1.3] drop-shadow-sm">
                           {article.title}
                         </h5>
                         <p className="text-gray-500 font-bold leading-relaxed text-base line-clamp-2 mb-6 opacity-80 group-hover/item:opacity-100 transition-opacity">
@@ -810,16 +817,7 @@ function Home() {
                             </Link>
                           ))}
                         </>
-                      ) : (
-                        <>
-                          {[1, 2, 3, 4].map((_, i) => (
-                            <div key={i} className="text-white/70 flex items-center gap-4 pr-4">
-                              <div className="w-2.5 h-2.5 bg-white/40 rounded-sm shrink-0"></div>
-                              <span className="line-clamp-1">رصد شامل للانتهاكات وحماية الحريات المدنية في اليمن</span>
-                            </div>
-                          ))}
-                        </>
-                      )}
+                      ) : null}
                     </div>
                   </div>
                   <Link to="/category/rights" className="bg-primary-crimson/90 backdrop-blur-md text-center py-4 font-black text-white text-xl rounded-2xl border border-white/10 shadow-xl uppercase tracking-widest hover:bg-primary-crimson transition-all block">
@@ -871,16 +869,7 @@ function Home() {
                             </Link>
                           ))}
                         </>
-                      ) : (
-                        <>
-                          {[1, 2, 3, 4].map((_, i) => (
-                            <div key={i} className="text-white/70 flex items-center gap-4 pr-4">
-                              <div className="w-2.5 h-2.5 bg-primary-crimson/40 rounded-sm shrink-0"></div>
-                              <span className="line-clamp-1">عالم الذكاء الاصطناعي: كيف سيغير وجه اليمن الرقمي؟</span>
-                            </div>
-                          ))}
-                        </>
-                      )}
+                      ) : null}
                     </div>
                   </div>
                   <Link to="/category/tech" className="bg-primary-crimson/90 backdrop-blur-md text-center py-4 font-black text-white text-xl rounded-2xl border border-white/10 shadow-xl uppercase tracking-widest hover:bg-primary-crimson transition-all block">
@@ -920,16 +909,7 @@ function Home() {
                               </Link>
                             ))}
                           </>
-                        ) : (
-                          <>
-                            {[1, 2, 3].map((_, i) => (
-                              <div key={i} className="text-white/70 flex items-center gap-4 pr-4">
-                                <div className="w-2.5 h-2.5 bg-white/40 rounded-sm shrink-0"></div>
-                                <span className="line-clamp-1">تغطية شاملة وحصرية لأهم مستجدات الـ {cat.label}</span>
-                              </div>
-                            ))}
-                          </>
-                        )}
+                        ) : null}
                       </div>
                     </div>
                   </div>
@@ -962,7 +942,7 @@ function Home() {
 
               <div className="flex-1 overflow-hidden relative p-4">
                 <div className="animate-marquee-vertical flex flex-col space-y-4">
-                  {(articles.filter(a => a.video_url).length > 0 ? articles.filter(a => a.video_url) : articles.slice(0, 5)).map((v, i) => {
+                  {articles.filter(a => a.video_url && (a.video_url.includes('youtube.com') || a.video_url.includes('youtu.be'))).map((v, i) => {
                     const videoId = v.video_url ? v.video_url.match(/(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|watch\?.+&v=))([^&?]+)/)?.[1] : null;
                     const thumb = videoId ? `https://img.youtube.com/vi/${videoId}/mqdefault.jpg` : v.image_url;
 
@@ -989,7 +969,7 @@ function Home() {
                     );
                   })}
                   {/* Repeat for seamless loop */}
-                  {(articles.filter(a => a.video_url).length > 0 ? articles.filter(a => a.video_url) : articles.slice(0, 5)).map((v, i) => {
+                  {articles.filter(a => a.video_url && (a.video_url.includes('youtube.com') || a.video_url.includes('youtu.be'))).map((v, i) => {
                     const videoId = v.video_url ? v.video_url.match(/(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|watch\?.+&v=))([^&?]+)/)?.[1] : null;
                     const thumb = videoId ? `https://img.youtube.com/vi/${videoId}/mqdefault.jpg` : v.image_url;
 
