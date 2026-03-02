@@ -114,6 +114,33 @@ const SettingsManagement: React.FC<SettingsManagementProps> = ({
                             </div>
                         </div>
                         <div className="space-y-3">
+                            <label className="block text-sm font-black text-gray-700 mr-1">خلفية الهيدر (Header Background)</label>
+                            <div className="flex gap-4 items-center">
+                                {settings.header_background_url && (
+                                    <div className="w-12 h-12 rounded-xl overflow-hidden border border-gray-200 shrink-0 bg-white">
+                                        <img src={settings.header_background_url} alt="Header BG" className="w-full h-full object-cover" onError={(e) => (e.currentTarget.style.display = 'none')} />
+                                    </div>
+                                )}
+                                <input
+                                    type="text"
+                                    value={settings.header_background_url || ''}
+                                    onChange={e => setSettings((prev: any) => ({ ...prev, header_background_url: e.target.value }))}
+                                    className="flex-1 p-4 bg-gray-50 border-2 border-gray-100 rounded-2xl focus:border-red-500 focus:bg-white transition-all outline-none font-bold text-xs"
+                                    placeholder="رابط خلفية الهيدر..."
+                                />
+                                <input
+                                    type="file"
+                                    accept="image/*"
+                                    onChange={e => e.target.files?.[0] && handleImageUpload(e.target.files[0], 'header_background_url')}
+                                    className="hidden"
+                                    id="header-bg-upload"
+                                />
+                                <label htmlFor="header-bg-upload" className="bg-gray-100 p-4 rounded-2xl cursor-pointer hover:bg-gray-200 transition-all flex items-center justify-center border-2 border-transparent w-14 h-14 shrink-0">
+                                    <Play className="w-5 h-5 text-gray-500" />
+                                </label>
+                            </div>
+                        </div>
+                        <div className="space-y-3">
                             <label className="block text-sm font-black text-gray-700 mr-1">نص حقوق الطبع</label>
                             <input
                                 type="text"

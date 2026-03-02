@@ -215,6 +215,7 @@ export async function initDb() {
       { key: 'news_ball_image', value: '/logo.png' },
       { key: 'copyright_text', value: 'جميع الحقوق محفوظة © 2024 هـدس' },
       { key: 'site_tagline', value: 'الأقرب للأحدث - موقع إخباري شامل' },
+      { key: 'header_background_url', value: '/header_bg_new.jpg' },
     ];
 
     for (const s of defaultSettings) {

@@ -52,34 +52,7 @@ export default function AdminDashboard() {
   const [resetCode, setResetCode] = useState('');
   const [resetEmail, setResetEmail] = useState('');
   const [newPassword, setNewPassword] = useState('');
-  const [settings, setSettings] = useState<any>({
-    site_name: '𐩠𐩵𐩪 هـدس',
-    contact_email: '',
-    youtube_url: '',
-    facebook_url: '',
-    twitter_url: '',
-    linkedin_url: '',
-    telegram_url: '',
-    youtube_section_title: 'هـدس',
-    news_ball_image: 'https://tse1.mm.bing.net/th/id/OIP.dKbPF3sk4Qg2vDcgN6jjxAHaB2?rs=1&pid=ImgDetMain&o=7&rm=3',
-    copyright_text: 'جميع الحقوق محفوظة لدى موقع هـدس',
-    rights_title: 'حقوق وحريات',
-    rights_bg: 'https://picsum.photos/seed/unicef-rights/600/800',
-    opinion_title: 'مقالات',
-    opinion_bg: 'https://picsum.photos/seed/opinions/600/800',
-    tech_title: 'تـكنولوجيا',
-    tech_bg: 'https://picsum.photos/seed/future-tech/600/800',
-    economy_title: 'اقتصاد',
-    economy_bg: 'https://picsum.photos/seed/economy-gold/600/400',
-    society_title: 'مجتمع',
-    society_bg: 'https://picsum.photos/seed/society/600/400',
-    sports_title: 'رياضة',
-    sports_bg: 'https://picsum.photos/seed/sports-action/600/400',
-    research_title: 'أبحاث ودراسات ومقالات',
-    research_bg: 'https://picsum.photos/seed/research/600/400',
-    custom_ticker_text: '',
-    site_tagline: 'الأقرب للأحدث - موقع إخباري شامل',
-  });
+  const [settings, setSettings] = useState<any>(null);
   const [currentArticle, setCurrentArticle] = useState<any>({
     title: '', content: '', category_id: 1, image_url: '', video_url: '', is_urgent: false, writer_id: ''
   });
@@ -98,6 +71,99 @@ export default function AdminDashboard() {
     setTimeout(() => setNotification(null), 5000);
   };
 
+  const authenticatedFetch = (url: string, options: any = {}) => {
+    const headers = {
+      ...options.headers,
+      'Authorization': `Bearer ${token}`
+    };
+    return fetch(url, { ...options, headers }).then(res => {
+      if (res.status === 401) {
+        localStorage.removeItem('admin_token');
+        setToken(null);
+        setCurrentUser(null);
+        throw new Error('Unauthorized');
+      }
+      return res.json();
+    });
+  };
+
+  const fetchHistory = () => {
+    let url = '/api/admin/audit-logs?';
+    if (historyFilterUser) url += `user_id=${historyFilterUser}&`;
+    if (historyStartDate) url += `startDate=${historyStartDate}&`;
+    if (historyEndDate) url += `endDate=${historyEndDate}&`;
+
+    authenticatedFetch(url).then(setHistory).catch(() => { });
+  };
+
+  const fetchUsers = () => {
+    authenticatedFetch('/api/admin/users').then(setUsers).catch(() => { });
+  };
+
+  const fetchWriters = () => {
+    authenticatedFetch('/api/writers').then(setWriters).catch(() => { });
+  };
+
+  const fetchAds = () => {
+    authenticatedFetch('/api/ads').then(setAds).catch(() => { });
+  };
+
+  const fetchTrashArticles = () => {
+    authenticatedFetch('/api/articles?includeDeleted=true')
+      .then(data => setTrashArticles(data.filter((a: any) => a.is_deleted === 1)))
+      .catch(() => { });
+  };
+
+  const fetchComments = () => {
+    authenticatedFetch('/api/comments').then(setComments).catch(() => { });
+  };
+
+  const fetchSubscribers = () => {
+    authenticatedFetch('/api/subscribers').then(setSubscribers).catch(() => { });
+  };
+
+  const fetchArticles = () => {
+    authenticatedFetch('/api/articles').then(setArticles).catch(() => { });
+  };
+
+  const fetchCategories = () => {
+    authenticatedFetch('/api/categories').then(setCategories).catch(() => { });
+  };
+
+  const fetchStats = () => {
+    authenticatedFetch('/api/stats').then(setStats).catch(() => { });
+  };
+
+  const fetchSettings = () => {
+    fetch('/api/settings')
+      .then(res => res.json())
+      .then(data => {
+        if (Object.keys(data).length > 0) {
+          setSettings(prev => ({ ...prev, ...data }));
+        }
+      });
+  };
+
+  const fetchAllData = () => {
+    fetchArticles();
+    fetchTrashArticles();
+    fetchCategories();
+    fetchComments();
+    fetchSubscribers();
+    fetchStats();
+    fetchSettings();
+    fetchWriters();
+    fetchAds();
+    fetchHistory();
+    fetchUsers();
+  };
+
+  useEffect(() => {
+    fetch('/api/init')
+      .then(res => res.json())
+      .then(data => setSettings(data.settings));
+  }, []);
+
   useEffect(() => {
     if (token) {
       // Fetch actual user data including role for RBAC
@@ -114,35 +180,21 @@ export default function AdminDashboard() {
     }
   }, [token]);
 
-  const fetchAllData = () => {
-    fetchArticles();
-    fetchTrashArticles();
-    fetchCategories();
-    fetchComments();
-    fetchSubscribers();
-    fetchStats();
-    fetchSettings();
-    fetchWriters();
-    fetchAds();
-    fetchHistory();
-    fetchUsers();
-  };
+  if (!settings) {
+    return (
+      <div className="min-h-screen bg-primary-navy flex flex-col items-center justify-center bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')]">
+        <div className="relative w-24 h-24">
+          <div className="absolute inset-0 border-4 border-white/5 rounded-full"></div>
+          <div className="absolute inset-0 border-4 border-primary-crimson border-t-transparent rounded-full animate-spin"></div>
+        </div>
+        <p className="mt-8 font-black text-white/40 uppercase tracking-[0.4em] animate-pulse">
+          جاري التحميل...
+        </p>
+      </div>
+    );
+  }
 
-  const authenticatedFetch = (url: string, options: any = {}) => {
-    const headers = {
-      ...options.headers,
-      'Authorization': `Bearer ${token}`
-    };
-    return fetch(url, { ...options, headers }).then(res => {
-      if (res.status === 401) {
-        localStorage.removeItem('admin_token');
-        setToken(null);
-        setCurrentUser(null);
-        throw new Error('Unauthorized');
-      }
-      return res.json();
-    });
-  };
+
 
   const handleForgotPassword = (e: React.FormEvent) => {
     e.preventDefault();
@@ -216,63 +268,6 @@ export default function AdminDashboard() {
           showNotification('تم تسجيل الدخول بنجاح');
         } else {
           setLoginError('اسم المستخدم أو كلمة المرور غير صحيحة. يرجى المحاولة مرة أخرى.');
-        }
-      });
-  };
-
-  const fetchHistory = () => {
-    let url = '/api/admin/audit-logs?';
-    if (historyFilterUser) url += `user_id=${historyFilterUser}&`;
-    if (historyStartDate) url += `startDate=${historyStartDate}&`;
-    if (historyEndDate) url += `endDate=${historyEndDate}&`;
-
-    authenticatedFetch(url).then(setHistory).catch(() => { });
-  };
-
-  const fetchUsers = () => {
-    authenticatedFetch('/api/admin/users').then(setUsers).catch(() => { });
-  };
-
-  const fetchWriters = () => {
-    authenticatedFetch('/api/writers').then(setWriters).catch(() => { });
-  };
-
-  const fetchAds = () => {
-    authenticatedFetch('/api/ads').then(setAds).catch(() => { });
-  };
-
-  const fetchTrashArticles = () => {
-    authenticatedFetch('/api/articles?includeDeleted=true')
-      .then(data => setTrashArticles(data.filter((a: any) => a.is_deleted === 1)))
-      .catch(() => { });
-  };
-
-  const fetchComments = () => {
-    authenticatedFetch('/api/comments').then(setComments).catch(() => { });
-  };
-
-  const fetchSubscribers = () => {
-    authenticatedFetch('/api/subscribers').then(setSubscribers).catch(() => { });
-  };
-
-  const fetchArticles = () => {
-    authenticatedFetch('/api/articles').then(setArticles).catch(() => { });
-  };
-
-  const fetchCategories = () => {
-    authenticatedFetch('/api/categories').then(setCategories).catch(() => { });
-  };
-
-  const fetchStats = () => {
-    authenticatedFetch('/api/stats').then(setStats).catch(() => { });
-  };
-
-  const fetchSettings = () => {
-    fetch('/api/settings')
-      .then(res => res.json())
-      .then(data => {
-        if (Object.keys(data).length > 0) {
-          setSettings(prev => ({ ...prev, ...data }));
         }
       });
   };
@@ -616,9 +611,9 @@ export default function AdminDashboard() {
           <div className="text-center mb-10">
             <div className="text-center mb-6">
               <h1 className="text-3xl font-black text-primary-navy flex flex-col items-center gap-2">
-                <span>{settings.site_name || '𐩠𐩵𐩪 هـدس'}</span>
+                <span>{(settings && settings.site_name) || '𐩠𐩵𐩪 هـدس'}</span>
               </h1>
-              <p className="text-primary-crimson font-black text-sm mt-2 uppercase tracking-widest">{settings.site_tagline || 'الأقرب للأحدث - موقع إخباري شامل'}</p>
+              <p className="text-primary-crimson font-black text-sm mt-2 uppercase tracking-widest">{(settings && settings.site_tagline) || 'الأقرب للأحدث - موقع إخباري شامل'}</p>
             </div>
             <p className="text-gray-400 font-bold mt-2">
               {authMode === 'login' ? 'بوابة الإدارة ونشر المحتوى' :

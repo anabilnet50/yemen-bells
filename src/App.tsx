@@ -25,10 +25,7 @@ function Home() {
   const [articles, setArticles] = useState<any[]>([]);
   const [categories, setCategories] = useState<any[]>([]);
   const [ads, setAds] = useState<any[]>([]);
-  const [settings, setSettings] = useState<any>({
-    site_name: '𐩠𐩵𐩪 هـدس',
-    site_tagline: 'الأقرب للأحدث - موقع إخباري شامل'
-  });
+  const [settings, setSettings] = useState<any>(null);
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [searchResults, setSearchResults] = useState<any[]>([]);
@@ -146,6 +143,20 @@ function Home() {
   const opinionArticles = articles.filter(a => a.category_slug === 'opinion');
   const studiesArticles = articles.filter(a => a.category_slug === 'studies');
 
+  if (!settings) {
+    return (
+      <div className="flex flex-col justify-center items-center h-screen bg-black">
+        <div className="relative w-24 h-24">
+          <div className="absolute inset-0 border-4 border-white/5 rounded-full"></div>
+          <div className="absolute inset-0 border-4 border-accent-gold border-t-transparent rounded-full animate-spin"></div>
+        </div>
+        <p className="mt-8 font-black text-white/40 uppercase tracking-[0.4em] animate-pulse">
+          جاري تجهيز التجربة الفاخرة...
+        </p>
+      </div>
+    );
+  }
+
   return (
     <div className="font-sans bg-surface-soft min-h-screen text-primary-navy">
       <div className="max-w-7xl mx-auto bg-white/80 backdrop-blur-xl shadow-premium relative z-10">
@@ -173,7 +184,7 @@ function Home() {
             {/* Artistic Background Overlay - Premium Stone Texture */}
             <div className="absolute inset-0 z-0">
               <img
-                src="/header_bg.jpg"
+                src={settings.header_background_url || "/header_bg.jpg"}
                 alt="Header Background"
                 className="w-full h-full object-cover object-center opacity-100 scale-100 pointer-events-none select-none"
               />
@@ -227,9 +238,9 @@ function Home() {
                     </div>
 
                     {/* Integrated Chief Editor Info - Positioned Below */}
-                    <div className="flex flex-col items-center bg-black/40 backdrop-blur-md border border-white/10 px-4 py-1.5 rounded-2xl shadow-2xl group/editor hover:bg-black/60 transition-all duration-300">
-                      <p className="text-accent-gold font-black text-[9px] uppercase tracking-[0.3em] opacity-90 mb-0.5 drop-shadow-sm">رئـيس التـحرير</p>
-                      <div className="text-white font-serif italic text-lg md:text-xl font-black tracking-wider drop-shadow-md">
+                    <div className="flex flex-col items-center bg-black/40 backdrop-blur-md border border-white/10 px-5 py-2 rounded-2xl shadow-2xl group/editor hover:bg-black/60 transition-all duration-300">
+                      <p className="text-accent-gold font-black text-[11px] uppercase tracking-[0.3em] opacity-90 mb-1 drop-shadow-sm">رئـيس التـحرير</p>
+                      <div className="text-white font-serif italic text-xl md:text-2xl font-black tracking-wider drop-shadow-md">
                         {settings.chief_editor || 'صلاح حيدرة'}
                       </div>
                     </div>
