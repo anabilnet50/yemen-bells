@@ -271,7 +271,7 @@ export default function ArticleDetail() {
             <ArrowRight className="w-5 h-5" />
             العودة للرئيسية
           </Link>
-          <div className="opacity-20 font-black italic text-primary-navy tracking-tighter">AGRAS</div>
+          <div className="opacity-20 font-black italic text-primary-navy tracking-tighter">HADS</div>
         </div>
       </div>
     </div>

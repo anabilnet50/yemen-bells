@@ -53,15 +53,16 @@ export default function AdminDashboard() {
   const [resetEmail, setResetEmail] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [settings, setSettings] = useState<any>({
+    site_name: '𐩠𐩵𐩪 هـدس',
     contact_email: '',
     youtube_url: '',
     facebook_url: '',
     twitter_url: '',
     linkedin_url: '',
     telegram_url: '',
-    youtube_section_title: 'أجراس اليمن',
+    youtube_section_title: 'هـدس',
     news_ball_image: 'https://tse1.mm.bing.net/th/id/OIP.dKbPF3sk4Qg2vDcgN6jjxAHaB2?rs=1&pid=ImgDetMain&o=7&rm=3',
-    copyright_text: 'جميع الحقوق محفوظة لدى موقع أجراس اليمن',
+    copyright_text: 'جميع الحقوق محفوظة لدى موقع هـدس',
     rights_title: 'حقوق وحريات',
     rights_bg: 'https://picsum.photos/seed/unicef-rights/600/800',
     opinion_title: 'مقالات',
@@ -77,6 +78,7 @@ export default function AdminDashboard() {
     research_title: 'أبحاث ودراسات ومقالات',
     research_bg: 'https://picsum.photos/seed/research/600/400',
     custom_ticker_text: '',
+    site_tagline: 'الأقرب للأحدث - موقع إخباري شامل',
   });
   const [currentArticle, setCurrentArticle] = useState<any>({
     title: '', content: '', category_id: 1, image_url: '', video_url: '', is_urgent: false, writer_id: ''
@@ -612,7 +614,12 @@ export default function AdminDashboard() {
         <div className="w-full max-w-md bg-white rounded-[2.5rem] shadow-2xl p-8 lg:p-12 relative overflow-hidden">
           <div className="absolute top-0 right-0 w-32 h-32 bg-primary-crimson/5 rounded-full -mr-16 -mt-16"></div>
           <div className="text-center mb-10">
-            <h1 className="text-3xl font-black text-primary-navy">أجراس اليمن</h1>
+            <div className="text-center mb-6">
+              <h1 className="text-3xl font-black text-primary-navy flex flex-col items-center gap-2">
+                <span>{settings.site_name || '𐩠𐩵𐩪 هـدس'}</span>
+              </h1>
+              <p className="text-primary-crimson font-black text-sm mt-2 uppercase tracking-widest">{settings.site_tagline || 'الأقرب للأحدث - موقع إخباري شامل'}</p>
+            </div>
             <p className="text-gray-400 font-bold mt-2">
               {authMode === 'login' ? 'بوابة الإدارة ونشر المحتوى' :
                 authMode === 'forgot' ? 'استعادة كلمة المرور' :
@@ -798,8 +805,8 @@ export default function AdminDashboard() {
       `}>
         <div className="p-8 text-3xl font-black border-b border-white/5 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-primary-crimson rounded-lg flex items-center justify-center">أ</div>
-            أجراس اليمن
+            <div className="w-10 h-10 bg-primary-crimson rounded-lg flex items-center justify-center font-black text-xl text-white shadow-lg">هـ</div>
+            <span className="tracking-tighter">هـدس</span>
           </div>
           <button onClick={() => setIsSidebarOpen(false)} className="lg:hidden text-gray-400 hover:text-white">✕</button>
         </div>

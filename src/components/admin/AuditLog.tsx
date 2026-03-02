@@ -98,7 +98,7 @@ const AuditLog: React.FC<AuditLogProps> = ({
             </div>
 
             <div className="hidden print:block text-center mb-12 pb-8 border-b-2 border-gray-200">
-                <h1 className="text-4xl font-black text-gray-900 mb-6">تقرير سجل الأنشطة الرقابي - أجراس اليمن</h1>
+                <h1 className="text-4xl font-black text-gray-900 mb-6">تقرير سجل الأنشطة الرقابي - هـدس</h1>
                 <div className="flex justify-center gap-12 text-lg font-bold text-gray-600">
                     <span>تاريخ التقرير: {new Date().toLocaleDateString('ar-YE')}</span>
                     {historyFilterUser && <span>المسؤول المستهدف: {users.find(u => u.id === Number(historyFilterUser))?.full_name}</span>}

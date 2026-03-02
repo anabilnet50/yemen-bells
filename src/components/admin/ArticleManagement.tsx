@@ -223,7 +223,7 @@ const ArticleManagement: React.FC<ArticleManagementProps> = ({
                                     onChange={e => setCurrentArticle({ ...currentArticle, writer_id: e.target.value })}
                                     className="w-full p-4 bg-gray-50 border-2 border-gray-100 rounded-2xl focus:border-red-500 focus:bg-white transition-all outline-none font-bold appearance-none"
                                 >
-                                    <option value="">أجراس اليمن (افتراضي)</option>
+                                    <option value="">هـدس (افتراضي)</option>
                                     {writers.map(writer => <option key={writer.id} value={writer.id}>{writer.name}</option>)}
                                 </select>
                             </div>

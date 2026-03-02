@@ -46,7 +46,7 @@ const AdminSidebar: React.FC<SidebarProps> = ({
                         <Globe className="w-6 h-6" />
                     </div>
                     <div>
-                        <h1 className="text-xl font-black text-primary-navy">أجراس اليمن</h1>
+                        <h1 className="text-xl font-black text-primary-navy">هـدس</h1>
                         <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest">Control Panel</p>
                     </div>
                 </div>

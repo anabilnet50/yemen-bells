@@ -37,7 +37,17 @@ const SettingsManagement: React.FC<SettingsManagementProps> = ({
                                 value={settings.site_name}
                                 onChange={e => setSettings((prev: any) => ({ ...prev, site_name: e.target.value }))}
                                 className="w-full p-4 bg-gray-50 border-2 border-gray-100 rounded-2xl focus:border-red-500 focus:bg-white transition-all outline-none font-black"
-                                placeholder="أجراس اليمن"
+                                placeholder="هـدس"
+                            />
+                        </div>
+                        <div className="space-y-3">
+                            <label className="block text-sm font-black text-gray-700 mr-1">وصف الموقع (Tagline)</label>
+                            <input
+                                type="text"
+                                value={settings.site_tagline}
+                                onChange={e => setSettings((prev: any) => ({ ...prev, site_tagline: e.target.value }))}
+                                className="w-full p-4 bg-gray-50 border-2 border-gray-100 rounded-2xl focus:border-red-500 focus:bg-white transition-all outline-none font-black"
+                                placeholder="الأقرب للأحدث - موقع إخباري متكامل"
                             />
                         </div>
                         <div className="space-y-3">

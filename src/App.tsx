@@ -25,7 +25,10 @@ function Home() {
   const [articles, setArticles] = useState<any[]>([]);
   const [categories, setCategories] = useState<any[]>([]);
   const [ads, setAds] = useState<any[]>([]);
-  const [settings, setSettings] = useState<any>({});
+  const [settings, setSettings] = useState<any>({
+    site_name: '𐩠𐩵𐩪 هـدس',
+    site_tagline: 'الأقرب للأحدث - موقع إخباري شامل'
+  });
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [searchResults, setSearchResults] = useState<any[]>([]);
@@ -147,9 +150,9 @@ function Home() {
     <div className="font-sans bg-surface-soft min-h-screen text-primary-navy">
       <div className="max-w-7xl mx-auto bg-white/80 backdrop-blur-xl shadow-premium relative z-10">
         {/* Header */}
-        <header className="relative bg-primary-navy overflow-hidden">
+        <header className="relative bg-black overflow-hidden">
           {/* Top Bar - Elite Thin Line */}
-          <div className="bg-primary-navy/50 backdrop-blur-sm text-white py-2 px-8 border-b border-white/5 relative z-30">
+          <div className="bg-black/30 backdrop-blur-sm text-white py-2 px-8 border-b border-white/5 relative z-30">
             <div className="flex justify-between items-center text-xs md:text-sm font-black uppercase tracking-[0.2em]">
               <div className="flex items-center gap-6">
                 <span className="flex items-center gap-2 text-accent-gold transition-all hover:scale-105 cursor-default"><Calendar className="w-3.5 h-3.5" /> {new Date().toLocaleDateString('ar-YE', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</span>
@@ -167,9 +170,17 @@ function Home() {
           {/* Luxury Header Content */}
           <div className="relative h-auto min-h-[280px] md:h-44 px-4 md:px-8 flex flex-col md:flex-row justify-between items-center overflow-hidden py-8 md:py-0">
             {/* Artistic Background Overlay - News Globe Animation */}
-            <div className="absolute inset-0 z-0 bg-primary-navy">
+            {/* Artistic Background Overlay - Premium Stone Texture */}
+            <div className="absolute inset-0 z-0">
+              <img
+                src="/header_bg.jpg"
+                alt="Header Background"
+                className="w-full h-full object-cover object-center opacity-100 scale-100 pointer-events-none select-none"
+              />
+
+              {/* Restored News Globe Animation - Enhanced Visibility */}
               <div
-                className="absolute top-1/2 -left-10 md:-left-12 -translate-y-1/2 w-[200px] md:w-[600px] h-[200px] md:h-[600px] opacity-100 select-none pointer-events-none"
+                className="absolute top-1/2 -left-10 md:-left-12 -translate-y-1/2 w-[200px] md:w-[600px] h-[200px] md:h-[600px] opacity-60 select-none pointer-events-none mix-blend-lighten"
               >
                 <img
                   src={settings.news_ball_image || "https://tse1.mm.bing.net/th/id/OIP.dKbPF3sk4Qg2vDcgN6jjxAHaB2?rs=1&pid=ImgDetMain&o=7&rm=3"}
@@ -178,16 +189,15 @@ function Home() {
                   referrerPolicy="no-referrer"
                 />
               </div>
-              <div className="absolute inset-0 bg-gradient-to-t from-primary-navy via-transparent to-primary-navy/80"></div>
-              {/* Extra Dynamic Overlays */}
-              <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_50%,rgba(225,29,72,0.12),transparent)] animate-pulse"></div>
-              <div className="absolute top-0 right-0 w-1/3 h-full bg-gradient-to-l from-primary-navy to-transparent opacity-60"></div>
-              <div className="absolute top-0 left-0 w-1/3 h-full bg-gradient-to-r from-primary-navy to-transparent opacity-60"></div>
+
+              <div className="absolute inset-0 bg-black/5"></div>
+              {/* Extra Dynamic Overlays for depth - Static Subtle Shift */}
+              <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(251,191,36,0.05),transparent)] pointer-events-none"></div>
             </div>
 
             {/* Left Side: Dynamic Logo - Eye-Catching Visual Identity */}
             <div className="relative z-20 flex flex-col items-end">
-              <Link to="/" onClick={() => setSelectedCategory(null)} className="group flex flex-col items-end">
+              <Link to="/" onClick={() => setSelectedCategory(null)} className="group flex flex-col items-center md:items-start ml-auto">
                 <motion.div
                   initial={{ opacity: 0, x: -30 }}
                   animate={{ opacity: 1, x: 0 }}
@@ -195,49 +205,42 @@ function Home() {
                 >
                   {/* Glow Aura Behind Logo */}
                   <div className="absolute inset-0 blur-3xl opacity-30 bg-primary-crimson rounded-full scale-150 group-hover:opacity-60 transition-opacity duration-700"></div>
-                  <h1 className="relative text-5xl md:text-6xl font-black font-serif tracking-tighter leading-tight"
-                    style={{
-                      background: 'linear-gradient(to right, #ffffff, #fbbf24, #e11d48, #fbbf24, #ffffff)',
-                      backgroundSize: '200% auto',
-                      WebkitBackgroundClip: 'text',
-                      WebkitTextFillColor: 'transparent',
-                      backgroundClip: 'text',
-                      animation: 'logo-pulse 2.5s ease-in-out infinite, logo-gif-shimmer 3s linear infinite'
-                    }}
-                  >
-                    أجراس
-                  </h1>
-                </motion.div>
-                <motion.div
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  transition={{ delay: 0.4 }}
-                  className="mt-2 flex items-center gap-3"
-                >
-                  <div className="h-[2px] w-8 bg-primary-crimson shadow-[0_0_8px_rgba(225,29,72,1)]"></div>
-                  <span className="text-lg md:text-xl font-black text-accent-gold/80 tracking-[0.15em] uppercase italic drop-shadow-md">
-                    مستقل - شامل
-                  </span>
+                  <div className="flex flex-col items-center gap-4">
+                    {/* Logo & Tagline Stack */}
+                    <div className="flex flex-col items-center">
+                      <h1 className="relative text-3xl md:text-4xl font-black tracking-tight flex items-center gap-3 whitespace-nowrap"
+                        style={{
+                          background: 'linear-gradient(to right, #fefce8, #f59e0b, #d97706, #f59e0b, #fefce8)',
+                          backgroundSize: '200% auto',
+                          WebkitBackgroundClip: 'text',
+                          WebkitTextFillColor: 'transparent',
+                          backgroundClip: 'text',
+                          animation: 'logo-pulse 2.5s ease-in-out infinite, logo-gif-shimmer 3s linear infinite',
+                          filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.8))'
+                        }}
+                      >
+                        <span>{settings.site_name || '𐩠𐩵𐩪 هدس'}</span>
+                      </h1>
+                      <div className="mt-1 text-white font-black text-sm md:text-base tracking-[0.2em] uppercase italic bg-black/40 px-4 py-1 rounded-full border border-white/10 backdrop-blur-md whitespace-nowrap shadow-lg">
+                        {settings.site_tagline || 'الأقرب للأحدث - موقع إخباري شامل'}
+                      </div>
+                    </div>
+
+                    {/* Integrated Chief Editor Info - Positioned Below */}
+                    <div className="flex flex-col items-center bg-black/40 backdrop-blur-md border border-white/10 px-4 py-1.5 rounded-2xl shadow-2xl group/editor hover:bg-black/60 transition-all duration-300">
+                      <p className="text-accent-gold font-black text-[9px] uppercase tracking-[0.3em] opacity-90 mb-0.5 drop-shadow-sm">رئـيس التـحرير</p>
+                      <div className="text-white font-serif italic text-lg md:text-xl font-black tracking-wider drop-shadow-md">
+                        {settings.chief_editor || 'صلاح حيدرة'}
+                      </div>
+                    </div>
+                  </div>
                 </motion.div>
               </Link>
             </div>
 
-            {/* Center: Prestige Editorial Info */}
-            <motion.div
-              initial={{ opacity: 0, y: 30 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.6 }}
-              className="relative z-20 flex flex-col items-center mt-4 md:mt-0"
-            >
-              <div className="glass-card bg-white/5 backdrop-blur-xl border border-white/10 p-5 md:p-7 text-center shadow-2xl relative overflow-hidden group">
-                <div className="absolute inset-0 bg-gradient-to-br from-white/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-700"></div>
-                <p className="text-accent-gold font-black text-[10px] md:text-xs uppercase tracking-[0.5em] mb-2 opacity-80">رئـيس التـحرير</p>
-                <div className="text-white font-serif italic text-2xl md:text-3xl font-black drop-shadow-[0_5px_15px_rgba(0,0,0,0.5)] tracking-widest mb-2">
-                  {settings.chief_editor || 'صلاح حيدرة'}
-                </div>
-                <div className="h-1 w-20 bg-primary-crimson mx-auto rounded-full shadow-[0_0_20px_rgba(225,29,72,0.8)]"></div>
-              </div>
-            </motion.div>
+            {/* Right Spacer to preserve layout balance */}
+            {/* Right Spacer - visible only on desktop */}
+            <div className="hidden lg:block w-1/4"></div>
 
             {/* Right Spacer to preserve layout balance */}
             {/* Right Spacer - visible only on desktop */}
@@ -315,7 +318,7 @@ function Home() {
                   className={`cursor-pointer px-5 md:px-6 py-2.5 md:py-2 rounded-xl transition-all duration-500 relative group overflow-hidden shrink-0 ${selectedCategory === item.slug ? 'text-white bg-primary-crimson shadow-glow-sm' : 'text-primary-navy/70 bg-primary-navy/5 hover:text-primary-navy hover:bg-primary-navy/10 border border-primary-navy/5'}`}
                   onClick={() => {
                     if (item.slug === 'contact') {
-                      window.location.href = `mailto:${settings.contact_email || 'info@ajras-yemen.com'}`;
+                      window.location.href = `mailto:${settings.contact_email || 'info@hads-news.com'}`;
                     } else {
                       setSelectedCategory(item.slug);
                       setTimeout(() => {
@@ -354,9 +357,9 @@ function Home() {
                 >
                   {/* Watermark Logo - Compact & Focused - Always visible over image or video */}
                   <div className="absolute top-4 right-4 md:top-8 md:right-8 z-40 flex flex-col items-end pointer-events-none group-hover:scale-110 transition-transform duration-700">
-                    <div className="bg-black/30 backdrop-blur-lg px-3 md:px-4 py-1.5 md:py-2 rounded-xl border border-white/20 shadow-[0_10px_30px_rgba(0,0,0,0.5)] flex flex-col items-end">
+                    <div className="bg-black/30 backdrop-blur-lg px-3 md:px-4 py-1.5 md:py-2 rounded-xl border border-white/20 shadow-[0_10px_30px_rgba(0,0,0,0.5)] flex flex-col items-center">
                       <span className="text-white font-black text-xl md:text-3xl tracking-tighter flex items-center gap-1 drop-shadow-2xl">
-                        <span className="text-primary-crimson">أ</span>جراس
+                        <span className="text-primary-crimson">𐩠</span>𐩵𐩪 <span className="mr-1">هـدس</span>
                       </span>
                     </div>
                   </div>
@@ -409,9 +412,9 @@ function Home() {
                   {/* Professional TV-Style News Ticker (Al Hadath/Al Jazeera Style) */}
                   <div className="absolute bottom-0 left-0 right-0 bg-white border-t-2 border-primary-crimson z-20 flex items-stretch h-10 md:h-12 overflow-hidden shadow-[0_-5px_20px_rgba(0,0,0,0.2)]">
                     {/* Urgent Indicator - Right Side */}
-                    <div className="bg-primary-crimson text-white px-5 md:px-8 flex items-center justify-center font-black text-xs md:text-sm uppercase tracking-widest relative group/urgent shrink-0 z-30 shadow-[5px_0_15px_rgba(225,29,72,0.3)]">
+                    <div className="bg-primary-crimson text-white px-3 md:px-8 flex items-center justify-center font-black text-xs md:text-sm uppercase tracking-widest relative group/urgent shrink-0 z-30 shadow-[5px_0_15px_rgba(225,29,72,0.3)]">
                       <div className="absolute inset-0 bg-white/10 animate-pulse"></div>
-                      عـــاجل
+                      عاجل
                     </div>
 
                     {/* Scrolling Content - Center */}
@@ -442,7 +445,7 @@ function Home() {
                           const FallbackContent = (
                             <span className="text-gray-400 font-bold text-[10px] md:text-xs tracking-widest shrink-0 flex items-center gap-4">
                               <span className="w-1 h-1 bg-gray-300 rounded-full"></span>
-                              أجراس اليمن .. تغطية حية ومستمرة لكل ما يدور في الساحة اليمنية والمنطقة
+                              هـدس .. تغطية حية ومستمرة لكل ما يدور في الساحة اليمنية والمنطقة
                             </span>
                           );
 
@@ -473,7 +476,7 @@ function Home() {
                     </div>
 
                     {/* Time Indicator - Left Side */}
-                    <div className="bg-primary-crimson text-white px-3 md:px-4 flex items-center justify-center shrink-0 relative overflow-hidden group/clock z-20 shadow-[-10px_0_20px_white]">
+                    <div className="bg-primary-crimson text-white px-2 md:px-4 flex items-center justify-center shrink-0 relative overflow-hidden group/clock z-20 shadow-[-10px_0_20px_white]">
                       <div className="absolute inset-0 bg-white/10 animate-pulse"></div>
                       <span className="font-sans font-black text-xs md:text-sm tracking-widest tabular-nums" style={{ direction: 'ltr' }}>{currentTime.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true })}</span>
                     </div>
@@ -538,7 +541,7 @@ function Home() {
                     مساحة إعلانية
                   </motion.div>
                   <div className="text-2xl md:text-3xl font-black mb-4 leading-tight drop-shadow-2xl font-serif italic text-white/90 relative z-10">
-                    أجراس اليمن بريميوم
+                    هـدس بريميوم
                   </div>
                   <p className="text-xl font-bold mb-3 text-accent-gold/90 relative z-10">صوتك الحر في كل مكان</p>
                   <div className="h-px w-12 bg-white/20 mb-4 relative z-10"></div>
@@ -931,7 +934,7 @@ function Home() {
                     <Youtube className="w-6 h-6" />
                   </div>
                   <div>
-                    <h3 className="text-white font-black text-sm tracking-widest uppercase">{settings.youtube_section_title || 'أجراس اليمن'}</h3>
+                    <h3 className="text-white font-black text-sm tracking-widest uppercase">{settings.youtube_section_title || 'هـدس'}</h3>
                     <div className="text-accent-gold font-serif italic text-xs tracking-tighter">YouTube Showcase</div>
                   </div>
                 </div>
@@ -1109,7 +1112,7 @@ function Home() {
             <div className="w-full pt-8 border-t border-white/5 flex flex-col items-center justify-center gap-6 opacity-30">
               <div className="flex items-center gap-3">
                 <div className="w-8 h-8 bg-white/5 rounded-full flex items-center justify-center border border-white/5"><Globe className="w-4 h-4 text-white/50" /></div>
-                <span className="text-xs font-black uppercase tracking-wider font-serif">{settings.copyright_text || 'جميع الحقوق محفوظة لدى موقع أجراس اليمن'} &copy; {new Date().getFullYear()}</span>
+                <span className="text-xs font-black uppercase tracking-wider font-serif">{settings.copyright_text || 'جميع الحقوق محفوظة لدى موقع هـدس'} &copy; {new Date().getFullYear()}</span>
               </div>
             </div>
 
@@ -1141,7 +1144,7 @@ function Home() {
                       <div className="w-12 h-12 bg-primary-crimson/10 text-primary-crimson rounded-xl flex items-center justify-center"><Globe className="w-6 h-6" /></div>
                       <div>
                         <p className="text-sm text-gray-400 font-bold">البريد الإلكتروني</p>
-                        <p className="font-black text-gray-900">{settings.contact_email || 'info@ajras-yemen.com'}</p>
+                        <p className="font-black text-gray-900">{settings.contact_email || 'info@hads-news.com'}</p>
                       </div>
                     </div>
                     <div className="flex items-center gap-4 p-4 bg-gray-50 rounded-2xl border border-gray-100">

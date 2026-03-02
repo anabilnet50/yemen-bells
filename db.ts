@@ -198,7 +198,7 @@ export async function initDb() {
 
     // Initial Settings
     const defaultSettings = [
-      { key: 'site_name', value: 'أجراس اليمن' },
+      { key: 'site_name', value: 'هـدس' },
       { key: 'chief_editor', value: 'صلاح حيدرة' },
       { key: 'wisdom_right', value: 'الحرية شمس يجب أن تشرق في كل نفس.' },
       { key: 'wisdom_left', value: 'العلم يبني بيوتاً لا عماد لها، والجهل يهدم بيت العز والكرم.' },
@@ -210,10 +210,11 @@ export async function initDb() {
       { key: 'twitter_url', value: 'https://twitter.com' },
       { key: 'youtube_url', value: 'https://youtube.com' },
       { key: 'linkedin_url', value: 'https://linkedin.com' },
-      { key: 'telegram_url', value: 'https://t.me/yemen_bells' },
+      { key: 'telegram_url', value: 'https://t.me/hads_news' },
       { key: 'youtube_section_title', value: 'محتوى اليوتيوب' },
       { key: 'news_ball_image', value: '/logo.png' },
-      { key: 'copyright_text', value: 'جميع الحقوق محفوظة © 2024 أجراس اليمن' },
+      { key: 'copyright_text', value: 'جميع الحقوق محفوظة © 2024 هـدس' },
+      { key: 'site_tagline', value: 'الأقرب للأحدث - موقع إخباري شامل' },
     ];
 
     for (const s of defaultSettings) {
