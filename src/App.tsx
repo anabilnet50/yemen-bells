@@ -178,9 +178,8 @@ function Home() {
             </div>
           </div>
 
-          {/* Luxury Header Content */}
-          <div className="relative h-auto min-h-[280px] md:h-44 px-4 md:px-8 flex flex-col md:flex-row justify-between items-center overflow-hidden py-8 md:py-0">
-            {/* Artistic Background Overlay - News Globe Animation */}
+          {/* Luxury Header Content - Restructured for Vertical Branding */}
+          <div className="relative h-auto min-h-[350px] md:h-80 px-4 md:px-8 flex flex-col items-center justify-between overflow-hidden py-4">
             {/* Artistic Background Overlay - Premium Stone Texture */}
             <div className="absolute inset-0 z-0">
               <img
@@ -206,56 +205,47 @@ function Home() {
               <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(251,191,36,0.05),transparent)] pointer-events-none"></div>
             </div>
 
-            {/* Left Side: Dynamic Logo - Eye-Catching Visual Identity */}
-            <div className="relative z-20 flex flex-col items-end">
-              <Link to="/" onClick={() => setSelectedCategory(null)} className="group flex flex-col items-center md:items-start ml-auto">
+            {/* TOP: Site Name & Tagline - Centered Above Logo */}
+            <div className="relative z-20 w-full flex flex-col items-center pt-2 md:pt-4">
+              <Link to="/" onClick={() => setSelectedCategory(null)} className="group flex flex-col items-center">
                 <motion.div
-                  initial={{ opacity: 0, x: -30 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  className="relative"
+                  initial={{ opacity: 0, y: -20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="flex flex-col items-center"
                 >
-                  {/* Glow Aura Behind Logo */}
-                  <div className="absolute inset-0 blur-3xl opacity-30 bg-primary-crimson rounded-full scale-150 group-hover:opacity-60 transition-opacity duration-700"></div>
-                  <div className="flex flex-col items-center gap-4">
-                    {/* Logo & Tagline Stack */}
-                    <div className="flex flex-col items-center">
-                      <h1 className="relative text-3xl md:text-4xl font-black tracking-tight flex items-center gap-3 whitespace-nowrap"
-                        style={{
-                          background: 'linear-gradient(to right, #fefce8, #f59e0b, #d97706, #f59e0b, #fefce8)',
-                          backgroundSize: '200% auto',
-                          WebkitBackgroundClip: 'text',
-                          WebkitTextFillColor: 'transparent',
-                          backgroundClip: 'text',
-                          animation: 'logo-pulse 2.5s ease-in-out infinite, logo-gif-shimmer 3s linear infinite',
-                          filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.8))'
-                        }}
-                      >
-                        <span>{settings.site_name || '𐩠𐩵𐩪 هدس'}</span>
-                      </h1>
-                      <div className="mt-1 text-white font-black text-sm md:text-base tracking-[0.2em] uppercase italic bg-black/40 px-4 py-1 rounded-full border border-white/10 backdrop-blur-md whitespace-nowrap shadow-lg">
-                        {settings.site_tagline || 'الأقرب للأحدث - موقع إخباري شامل'}
-                      </div>
-                    </div>
-
-                    {/* Integrated Chief Editor Info - Positioned Below */}
-                    <div className="flex flex-col items-center bg-black/40 backdrop-blur-md border border-white/10 px-5 py-2 rounded-2xl shadow-2xl group/editor hover:bg-black/60 transition-all duration-300">
-                      <p className="text-accent-gold font-black text-[11px] uppercase tracking-[0.3em] opacity-90 mb-1 drop-shadow-sm">رئـيس التـحرير</p>
-                      <div className="text-white font-serif italic text-xl md:text-2xl font-black tracking-wider drop-shadow-md">
-                        {settings.chief_editor || 'صلاح حيدرة'}
-                      </div>
-                    </div>
+                  <h1 className="relative text-3xl md:text-5xl font-black tracking-tight flex items-center gap-3 whitespace-nowrap"
+                    style={{
+                      background: 'linear-gradient(to right, #fefce8, #f59e0b, #d97706, #f59e0b, #fefce8)',
+                      backgroundSize: '200% auto',
+                      WebkitBackgroundClip: 'text',
+                      WebkitTextFillColor: 'transparent',
+                      backgroundClip: 'text',
+                      animation: 'logo-pulse 2.5s ease-in-out infinite, logo-gif-shimmer 3s linear infinite',
+                      filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.8))'
+                    }}
+                  >
+                    <span>{settings.site_name || '𐩠𐩵𐩪 هدس'}</span>
+                  </h1>
+                  <div className="mt-2 text-accent-gold font-black text-xs md:text-sm tracking-[0.2em] uppercase italic bg-black/60 px-6 py-1.5 rounded-full border border-accent-gold/20 backdrop-blur-xl whitespace-nowrap shadow-[0_0_15px_rgba(245,158,11,0.2)]">
+                    {settings.site_tagline || 'الأقرب للأحدث - موقع إخباري شامل'}
                   </div>
                 </motion.div>
               </Link>
             </div>
 
-            {/* Right Spacer to preserve layout balance */}
-            {/* Right Spacer - visible only on desktop */}
-            <div className="hidden lg:block w-1/4"></div>
-
-            {/* Right Spacer to preserve layout balance */}
-            {/* Right Spacer - visible only on desktop */}
-            <div className="hidden lg:block w-1/4"></div>
+            {/* BOTTOM: Chief Editor Info - Centered Below Logo */}
+            <div className="relative z-20 w-full flex flex-col items-center pb-2 md:pb-4">
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="flex flex-col items-center group/editor"
+              >
+                <p className="text-accent-gold font-black text-[10px] md:text-xs uppercase tracking-[0.4em] mb-2 drop-shadow-lg bg-black/60 px-4 py-1 rounded-lg border border-accent-gold/20 backdrop-blur-md shadow-xl whitespace-nowrap">رئـيس التـحرير</p>
+                <div className="text-white font-serif italic text-xl md:text-3xl font-black tracking-wider drop-shadow-2xl bg-black/50 px-8 py-3 rounded-2xl border border-white/10 backdrop-blur-md">
+                  {settings.chief_editor || 'صلاح حيدرة'}
+                </div>
+              </motion.div>
+            </div>
           </div>
         </header>
 
@@ -577,14 +567,14 @@ function Home() {
                   <div className="w-1 h-3 bg-primary-crimson rounded-full shadow-glow"></div>
                   {settings?.opinion_title || 'مقالات'}
                 </Link>
-                <div className="flex-1 overflow-hidden relative p-4 z-10">
-                  <div className="animate-marquee-vertical flex flex-col space-y-4">
+                <div className="flex-1 overflow-y-auto overflow-x-hidden relative p-4 z-10 custom-scrollbar-minimal" style={{ maxHeight: '350px' }}>
+                  <div className="animate-marquee-vertical hover:pause flex flex-col space-y-4">
                     {opinionArticles.length > 0 ? (
-                      [...opinionArticles.slice(0, 2), ...opinionArticles.slice(0, 2)].map((v, i) => (
+                      [...opinionArticles, ...opinionArticles].map((v, i) => (
                         <Link
                           key={`${v.id}-${i}`}
                           to={`/article/${v.id}`}
-                          className="flex items-center gap-4 group/vitem bg-white/50 p-3 rounded-2xl hover:bg-white/80 transition-all border border-gray-100 shadow-sm"
+                          className="flex items-center gap-4 group/vitem bg-white/60 p-3 rounded-2xl hover:bg-white/95 transition-all border border-white/20 shadow-sm hover:shadow-md hover:-translate-y-0.5 transform duration-300"
                         >
                           <div className="w-20 h-14 rounded-lg overflow-hidden shrink-0 relative order-2">
                             <img src={v.image_url || undefined} alt={v.title} className="w-full h-full object-cover group-hover/vitem:scale-110 transition-transform duration-500" />
@@ -622,10 +612,10 @@ function Home() {
                   <div className="w-1 h-3 bg-accent-gold rounded-full shadow-glow"></div>
                   {settings?.research_title || 'أبحاث ودراسات'}
                 </Link>
-                <div className="flex-1 overflow-hidden relative p-4 z-10">
-                  <div className="animate-marquee-vertical flex flex-col space-y-4">
+                <div className="flex-1 overflow-y-auto overflow-x-hidden relative p-4 z-10 custom-scrollbar-minimal" style={{ maxHeight: '350px' }}>
+                  <div className="animate-marquee-vertical hover:pause flex flex-col space-y-4">
                     {studiesArticles.length > 0 ? (
-                      [...studiesArticles.slice(0, 2), ...studiesArticles.slice(0, 2)].map((v, i) => (
+                      [...studiesArticles, ...studiesArticles].map((v, i) => (
                         <Link
                           key={`${v.id}-${i}`}
                           to={`/article/${v.id}`}
@@ -820,11 +810,11 @@ function Home() {
                 </div>
 
                 <div className="relative z-10 p-8 h-full flex flex-col justify-end">
-                  <div className="h-48 overflow-hidden relative w-full mb-6">
-                    <div className="animate-marquee-vertical flex flex-col space-y-6 text-white text-right font-black text-lg drop-shadow-lg">
+                  <div className="h-48 overflow-y-auto overflow-x-hidden relative w-full mb-6 custom-scrollbar-minimal">
+                    <div className="animate-marquee-vertical hover:pause flex flex-col space-y-6 text-white text-right font-black text-lg drop-shadow-lg">
                       {articles.filter(a => a.category_slug === 'rights').length > 0 ? (
                         <>
-                          {[...articles.filter(a => a.category_slug === 'rights').slice(0, 4), ...articles.filter(a => a.category_slug === 'rights').slice(0, 4)].map((a, index) => (
+                          {[...articles.filter(a => a.category_slug === 'rights'), ...articles.filter(a => a.category_slug === 'rights')].map((a, index) => (
                             <Link key={`${a.id}-${index}`} to={`/article/${a.id}`} className="text-white hover:text-accent-gold transition-all duration-300 leading-relaxed flex items-start gap-4 pr-4">
                               <div className="w-2.5 h-2.5 bg-white rounded-sm shadow-glow shrink-0 mt-2"></div>
                               <span className="line-clamp-2">{a.title}</span>
@@ -872,11 +862,11 @@ function Home() {
                 </div>
 
                 <div className="relative z-10 p-8 h-full flex flex-col justify-end">
-                  <div className="h-48 overflow-hidden relative w-full mb-6">
-                    <div className="animate-marquee-vertical flex flex-col space-y-6 text-white text-right font-black text-lg drop-shadow-lg">
+                  <div className="h-48 overflow-y-auto overflow-x-hidden relative w-full mb-6 custom-scrollbar-minimal">
+                    <div className="animate-marquee-vertical hover:pause flex flex-col space-y-6 text-white text-right font-black text-lg drop-shadow-lg">
                       {articles.filter(a => a.category_slug === 'tech').length > 0 ? (
                         <>
-                          {[...articles.filter(a => a.category_slug === 'tech').slice(0, 4), ...articles.filter(a => a.category_slug === 'tech').slice(0, 4)].map((a, index) => (
+                          {[...articles.filter(a => a.category_slug === 'tech'), ...articles.filter(a => a.category_slug === 'tech')].map((a, index) => (
                             <Link key={`${a.id}-${index}`} to={`/article/${a.id}`} className="text-white hover:text-primary-crimson transition-all duration-300 leading-relaxed flex items-start gap-4 pr-4">
                               <div className="w-2.5 h-2.5 bg-white rounded-sm shadow-glow shrink-0 mt-2"></div>
                               <span className="line-clamp-2">{a.title}</span>
@@ -912,11 +902,11 @@ function Home() {
                     <div className="absolute inset-0 bg-primary-navy/40 group-hover:bg-primary-navy/20 transition-all duration-500 z-0"></div>
                   </div>
                   <div className="relative z-10 flex-1 p-6 flex flex-col items-center justify-end">
-                    <div className="h-44 overflow-hidden relative w-full mb-2">
-                      <div className="animate-marquee-vertical flex flex-col space-y-6 text-white text-right font-black text-lg">
+                    <div className="h-44 overflow-y-auto overflow-x-hidden relative w-full mb-2 custom-scrollbar-minimal">
+                      <div className="animate-marquee-vertical hover:pause flex flex-col space-y-6 text-white text-right font-black text-lg">
                         {articles.filter(a => a.category_slug === cat.slug).length > 0 ? (
                           <>
-                            {[...articles.filter(a => a.category_slug === cat.slug), ...articles.filter(a => a.category_slug === cat.slug)].slice(0, 3).map((a, index) => (
+                            {[...articles.filter(a => a.category_slug === cat.slug), ...articles.filter(a => a.category_slug === cat.slug)].map((a, index) => (
                               <Link key={`${a.id}-${index}`} to={`/article/${a.id}`} className="text-white hover:text-accent-gold transition-all duration-300 leading-relaxed flex items-start gap-4 pr-4">
                                 <div className="w-2.5 h-2.5 bg-accent-gold rounded-sm shadow-glow shrink-0 mt-2"></div>
                                 <span className="line-clamp-2">{a.title}</span>
@@ -954,8 +944,8 @@ function Home() {
                 </a>
               </div>
 
-              <div className="flex-1 overflow-hidden relative p-4">
-                <div className="animate-marquee-vertical flex flex-col space-y-4">
+              <div className="flex-1 overflow-y-auto overflow-x-hidden relative p-4 custom-scrollbar-minimal">
+                <div className="animate-marquee-vertical hover:pause flex flex-col space-y-4">
                   {articles.filter(a => a.video_url && (a.video_url.includes('youtube.com') || a.video_url.includes('youtu.be'))).map((v, i) => {
                     const videoId = v.video_url ? v.video_url.match(/(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|watch\?.+&v=))([^&?]+)/)?.[1] : null;
                     const thumb = videoId ? `https://img.youtube.com/vi/${videoId}/mqdefault.jpg` : v.image_url;
@@ -974,15 +964,15 @@ function Home() {
                             <Play className="w-5 h-5 text-white fill-current opacity-80" />
                           </div>
                         </div>
-                        <div className="flex-1 min-w-0">
-                          <p className="text-white font-black text-sm line-clamp-2 leading-snug group-hover/vitem:text-accent-gold transition-colors text-right">
+                        <div className="flex-1 min-w-0 text-right">
+                          <p className="text-white font-black text-sm line-clamp-2 leading-snug group-hover/vitem:text-accent-gold transition-colors">
                             {v.title}
                           </p>
                         </div>
                       </a>
                     );
                   })}
-                  {/* Repeat for seamless loop */}
+                  {/* Duplicate for seamless loop */}
                   {articles.filter(a => a.video_url && (a.video_url.includes('youtube.com') || a.video_url.includes('youtu.be'))).map((v, i) => {
                     const videoId = v.video_url ? v.video_url.match(/(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|watch\?.+&v=))([^&?]+)/)?.[1] : null;
                     const thumb = videoId ? `https://img.youtube.com/vi/${videoId}/mqdefault.jpg` : v.image_url;
@@ -997,9 +987,12 @@ function Home() {
                       >
                         <div className="w-24 h-16 rounded-lg overflow-hidden shrink-0 relative">
                           <img src={thumb} alt={v.title} className="w-full h-full object-cover group-hover/vitem:scale-110 transition-transform duration-500" />
+                          <div className="absolute inset-0 flex items-center justify-center bg-black/20 group-hover/vitem:bg-black/0 transition-all">
+                            <Play className="w-5 h-5 text-white fill-current opacity-80" />
+                          </div>
                         </div>
-                        <div className="flex-1 min-w-0">
-                          <p className="text-white font-black text-sm line-clamp-2 leading-snug group-hover/vitem:text-accent-gold transition-colors text-right">
+                        <div className="flex-1 min-w-0 text-right">
+                          <p className="text-white font-black text-sm line-clamp-2 leading-snug group-hover/vitem:text-accent-gold transition-colors">
                             {v.title}
                           </p>
                         </div>

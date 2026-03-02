@@ -19,10 +19,12 @@ import SettingsManagement from './admin/SettingsManagement.tsx';
 import UserManagement from './admin/UserManagement.tsx';
 import IPManagement from './admin/IPManagement.tsx';
 
+
 // --- Rest of imports and component logic ---
 
 export default function AdminDashboard() {
   const [activeSection, setActiveSection] = useState<'dashboard' | 'news' | 'categories' | 'comments' | 'settings' | 'ads' | 'writers' | 'trash' | 'history' | 'users' | 'security'>('dashboard');
+
   const [articles, setArticles] = useState<any[]>([]);
   const [trashArticles, setTrashArticles] = useState<any[]>([]);
   const [categories, setCategories] = useState<any[]>([]);
@@ -71,7 +73,7 @@ export default function AdminDashboard() {
     setTimeout(() => setNotification(null), 5000);
   };
 
-  const authenticatedFetch = (url: string, options: any = {}) => {
+  function authenticatedFetch(url: string, options: any = {}) {
     const headers = {
       ...options.headers,
       'Authorization': `Bearer ${token}`
@@ -85,7 +87,7 @@ export default function AdminDashboard() {
       }
       return res.json();
     });
-  };
+  }
 
   const fetchHistory = () => {
     let url = '/api/admin/audit-logs?';
@@ -1066,8 +1068,9 @@ export default function AdminDashboard() {
                   />
                 )}
 
+
                 {activeSection === 'security' && currentUser?.role === 'admin' && (
-                  <IPManagement />
+                  <IPManagement authenticatedFetch={authenticatedFetch} showNotification={showNotification} />
                 )}
               </>
             );

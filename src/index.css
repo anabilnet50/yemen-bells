@@ -177,6 +177,18 @@
     -ms-overflow-style: none;
     scrollbar-width: none;
   }
+
+  .custom-scrollbar-minimal::-webkit-scrollbar {
+    width: 4px;
+  }
+
+  .custom-scrollbar-minimal::-webkit-scrollbar-track {
+    @apply bg-transparent;
+  }
+
+  .custom-scrollbar-minimal::-webkit-scrollbar-thumb {
+    @apply bg-primary-navy/20 rounded-full hover:bg-primary-navy/40;
+  }
 }
 
 @media print {

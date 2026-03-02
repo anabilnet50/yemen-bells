@@ -2,7 +2,7 @@ import React from 'react';
 import {
     LayoutDashboard, FileText, Settings, LogOut, Users,
     MessageCircle, ExternalLink, Hash, Image, Play, TrendingUp,
-    Trash2, User, Globe, Shield
+    Trash2, User, Globe, Shield, Database, Activity, DollarSign
 } from 'lucide-react';
 
 interface SidebarProps {
@@ -29,9 +29,6 @@ const AdminSidebar: React.FC<SidebarProps> = ({
         { id: 'ads', label: 'الإعلانات', icon: DollarSignShort, icon_fallback: TrendingUp, permission: 'ads' },
         { id: 'trash', label: 'المحذوفات', icon: Trash2, permission: 'trash' },
     ];
-
-    // Manual fallback for icons not in the common set if needed, or just use what works.
-    // Using DollarSign locally since it wasn't in the provided list if I recall, but let's stick to the sidebar logic in AdminDashboard.
 
     const hasPermission = (id: string) => {
         if (currentUser?.role === 'admin') return true;
@@ -61,8 +58,8 @@ const AdminSidebar: React.FC<SidebarProps> = ({
                             key={item.id}
                             onClick={() => { setActiveSection(item.id); setIsSidebarOpen(false); }}
                             className={`w-full flex items-center gap-3 px-4 py-3 md:px-5 md:py-4 rounded-xl md:rounded-2xl font-black transition-all group ${activeSection === item.id
-                                ? 'bg-primary-crimson text-white shadow-xl shadow-primary-crimson/20 translate-x-1'
-                                : 'text-gray-500 hover:bg-red-50 hover:text-primary-crimson'
+                                    ? 'bg-primary-crimson text-white shadow-xl shadow-primary-crimson/20 translate-x-1'
+                                    : 'text-gray-500 hover:bg-red-50 hover:text-primary-crimson'
                                 }`}
                         >
                             <Icon className={`w-5 h-5 ${activeSection === item.id ? 'animate-pulse' : 'group-hover:scale-110'}`} />
