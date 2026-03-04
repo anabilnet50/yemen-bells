@@ -110,31 +110,34 @@ const UserManagement: React.FC<UserManagementProps> = ({
                 </div>
             ) : (
                 <div className="bg-white rounded-[2.5rem] shadow-premium border border-gray-100 w-full overflow-hidden">
-                    <div className="overflow-x-auto w-full">
-                        <table className="w-full text-center border-collapse border border-[#cfdce9] min-w-[800px]">
+                    <div className="overflow-x-auto w-full print:overflow-visible">
+                        <table className="w-full text-center border-collapse border border-[#cfdce9] table-auto">
                             <thead className="bg-[#5b9bd5] text-white">
                                 <tr className="divide-x divide-x-reverse divide-[#ffffff]">
-                                    <th className="p-4 sm:p-6 text-sm font-black uppercase text-center whitespace-nowrap">الاسم الكامل</th>
-                                    <th className="p-4 sm:p-6 text-sm font-black uppercase text-center whitespace-nowrap">اسم المستخدم</th>
-                                    <th className="p-4 sm:p-6 text-sm font-black uppercase text-center whitespace-nowrap">الدور</th>
-                                    <th className="p-4 sm:p-6 text-sm font-black uppercase text-center whitespace-nowrap">الصلاحيات</th>
-                                    <th className="p-4 sm:p-6 text-sm font-black uppercase text-center whitespace-nowrap">الإجراءات</th>
+                                    <th className="p-3 sm:p-6 text-[10px] sm:text-sm font-black uppercase text-center whitespace-nowrap">الاسم</th>
+                                    <th className="p-3 sm:p-6 text-[10px] sm:text-sm font-black uppercase text-center whitespace-nowrap hidden sm:table-cell">الحساب</th>
+                                    <th className="p-3 sm:p-6 text-[10px] sm:text-sm font-black uppercase text-center whitespace-nowrap">الدور</th>
+                                    <th className="p-3 sm:p-6 text-[10px] sm:text-sm font-black uppercase text-center whitespace-nowrap hidden md:table-cell">الصلاحيات</th>
+                                    <th className="p-3 sm:p-6 text-[10px] sm:text-sm font-black uppercase text-center whitespace-nowrap">إجراء</th>
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-[#cfdce9]">
                                 {users.map(user => (
                                     <tr key={user.id} className="even:bg-[#e9f0f8] odd:bg-white hover:bg-blue-50 transition-colors divide-x divide-x-reverse divide-[#cfdce9] text-center border-b border-[#cfdce9]">
-                                        <td className="p-6 font-black text-primary-navy align-middle">{user.full_name}</td>
-                                        <td className="p-6 font-mono text-sm text-gray-500 align-middle">@{user.username}</td>
-                                        <td className="p-6 align-middle">
-                                            <span className={`px-4 py-1.5 rounded-full text-[10px] font-black uppercase border ${user.role === 'admin' ? 'bg-red-50 text-primary-crimson border-red-100' : 'bg-blue-50 text-blue-600 border-blue-100'}`}>
-                                                {user.role === 'admin' ? 'مدير نظام' : 'محرر'}
+                                        <td className="p-3 sm:p-6 font-black text-primary-navy align-middle text-[11px] sm:text-base">
+                                            {user.full_name}
+                                            <div className="sm:hidden text-[9px] font-mono text-gray-400 mt-1">@{user.username}</div>
+                                        </td>
+                                        <td className="p-6 font-mono text-sm text-gray-500 align-middle hidden sm:table-cell">@{user.username}</td>
+                                        <td className="p-3 sm:p-6 align-middle">
+                                            <span className={`px-2 sm:px-4 py-1 rounded-full text-[8px] sm:text-[10px] font-black uppercase border ${user.role === 'admin' ? 'bg-red-50 text-primary-crimson border-red-100' : 'bg-blue-50 text-blue-600 border-blue-100'}`}>
+                                                {user.role === 'admin' ? 'مدير' : 'محرر'}
                                             </span>
                                         </td>
-                                        <td className="p-6 align-middle">
+                                        <td className="p-6 align-middle hidden md:table-cell">
                                             <div className="flex flex-wrap gap-1 justify-center max-w-xs mx-auto">
                                                 {user.role === 'admin' ? (
-                                                    <span className="text-[9px] font-black text-gray-400">وصول كامل لجميع الأقسام</span>
+                                                    <span className="text-[9px] font-black text-gray-400">وصول كامل</span>
                                                 ) : (
                                                     (Array.isArray(user.permissions) ? user.permissions : []).map((p: string) => (
                                                         <span key={p} className="bg-gray-100 text-[10px] font-bold text-gray-500 px-2 py-0.5 rounded-md border border-gray-200">{availablePermissions.find(ap => ap.id === p)?.label || p}</span>
@@ -142,10 +145,10 @@ const UserManagement: React.FC<UserManagementProps> = ({
                                                 )}
                                             </div>
                                         </td>
-                                        <td className="p-6 align-middle">
-                                            <div className="flex justify-center gap-3">
-                                                <button onClick={() => { setCurrentUserData({ ...user, password: '', permissions: Array.isArray(user.permissions) ? user.permissions : [] }); setIsEditingUser(true); }} className="w-10 h-10 bg-blue-50 text-blue-600 hover:bg-blue-600 hover:text-white rounded-xl transition-all flex items-center justify-center group"><Edit2 className="w-4 h-4" /></button>
-                                                <button onClick={() => handleUserDelete(user.id)} className="w-10 h-10 bg-red-50 text-red-600 hover:bg-red-600 hover:text-white rounded-xl transition-all flex items-center justify-center group"><Trash2 className="w-4 h-4" /></button>
+                                        <td className="p-3 sm:p-6 align-middle">
+                                            <div className="flex justify-center gap-1 sm:gap-3">
+                                                <button onClick={() => { setCurrentUserData({ ...user, password: '', permissions: Array.isArray(user.permissions) ? user.permissions : [] }); setIsEditingUser(true); }} className="w-8 h-8 sm:w-10 sm:h-10 bg-blue-50 text-blue-600 hover:bg-blue-600 hover:text-white rounded-lg sm:rounded-xl transition-all flex items-center justify-center group"><Edit2 className="w-4 h-4" /></button>
+                                                <button onClick={() => handleUserDelete(user.id)} className="w-8 h-8 sm:w-10 sm:h-10 bg-red-50 text-red-600 hover:bg-red-600 hover:text-white rounded-lg sm:rounded-xl transition-all flex items-center justify-center group"><Trash2 className="w-4 h-4" /></button>
                                             </div>
                                         </td>
                                     </tr>

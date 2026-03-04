@@ -300,84 +300,75 @@ const ArticleManagement: React.FC<ArticleManagementProps> = ({
                             />
                         </div>
                     </div>
-                    <div className="overflow-x-auto w-full">
-                        <table className="w-full border-separate border-spacing-0 min-w-[1000px]">
+                    <div className="overflow-x-auto w-full print:overflow-visible">
+                        <table className="w-full border-separate border-spacing-0 table-auto md:table-fixed">
                             <thead>
                                 <tr className="bg-primary-navy text-white">
-                                    <th className="p-5 text-right font-black text-xs uppercase tracking-widest border-b border-white/10 rounded-tr-[2rem] w-12">
+                                    <th className="p-2 sm:p-5 text-right font-black text-[10px] sm:text-xs uppercase tracking-widest border-b border-white/10 rounded-tr-[2rem] w-8 sm:w-12">
                                         <input
                                             type="checkbox"
                                             onChange={handleSelectAll}
                                             checked={selectedIds.length === processedArticles.length && processedArticles.length > 0}
-                                            className="w-5 h-5 accent-red-600 cursor-pointer"
+                                            className="w-4 h-4 sm:w-5 sm:h-5 accent-red-600 cursor-pointer"
                                         />
                                     </th>
-                                    <th className="p-5 text-right font-black text-xs uppercase tracking-widest border-b border-white/10">المعلومات الأساسية</th>
-                                    <th className="p-5 text-center font-black text-xs uppercase tracking-widest border-b border-white/10">القسم</th>
-                                    <th className="p-5 text-center font-black text-xs uppercase tracking-widest border-b border-white/10">التاريخ والوقت</th>
-                                    <th className="p-5 text-center font-black text-xs uppercase tracking-widest border-b border-white/10">التفاعل</th>
-                                    <th className="p-5 text-center font-black text-xs uppercase tracking-widest border-b border-white/10">الناشر</th>
-                                    <th className="p-5 text-center font-black text-xs uppercase tracking-widest border-b border-white/10">الحالة</th>
-                                    <th className="p-5 text-center font-black text-xs uppercase tracking-widest border-b border-white/10 rounded-tl-[2rem]">الإجراءات</th>
+                                    <th className="p-2 sm:p-5 text-right font-black text-[10px] sm:text-xs uppercase tracking-widest border-b border-white/10">المعلومات</th>
+                                    <th className="p-2 sm:p-5 text-center font-black text-[10px] sm:text-xs uppercase tracking-widest border-b border-white/10 hidden sm:table-cell">القسم</th>
+                                    <th className="p-2 sm:p-5 text-center font-black text-[10px] sm:text-xs uppercase tracking-widest border-b border-white/10">الوقت</th>
+                                    <th className="p-2 sm:p-5 text-center font-black text-[10px] sm:text-xs uppercase tracking-widest border-b border-white/10 hidden md:table-cell">التفاعل</th>
+                                    <th className="p-2 sm:p-5 text-center font-black text-[10px] sm:text-xs uppercase tracking-widest border-b border-white/10 hidden lg:table-cell">الناشر</th>
+                                    <th className="p-2 sm:p-5 text-center font-black text-[10px] sm:text-xs uppercase tracking-widest border-b border-white/10">الحالة</th>
+                                    <th className="p-2 sm:p-5 text-center font-black text-[10px] sm:text-xs uppercase tracking-widest border-b border-white/10 rounded-tl-[2rem]">إجراء</th>
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-gray-100 bg-white">
                                 {processedArticles.map(article => (
                                     <tr key={article.id} className={`hover:bg-gray-50/80 transition-all duration-300 group ${selectedIds.includes(article.id) ? 'bg-red-50/30' : ''}`}>
-                                        <td className="p-5 text-center">
+                                        <td className="p-2 sm:p-5 text-center">
                                             <input
                                                 type="checkbox"
                                                 checked={selectedIds.includes(article.id)}
                                                 onChange={() => handleSelectOne(article.id)}
-                                                className="w-5 h-5 accent-red-600 cursor-pointer"
+                                                className="w-4 h-4 sm:w-5 sm:h-5 accent-red-600 cursor-pointer"
                                             />
                                         </td>
-                                        <td className="p-5">
-                                            <div className="flex items-center gap-4">
-                                                <div className="relative w-20 h-14 rounded-2xl overflow-hidden shrink-0 shadow-sm ring-2 ring-gray-100 group-hover:ring-primary-crimson/30 transition-all">
+                                        <td className="p-2 sm:p-5">
+                                            <div className="flex items-center gap-2 sm:gap-4">
+                                                <div className="relative w-12 h-10 sm:w-20 sm:h-14 rounded-lg sm:rounded-2xl overflow-hidden shrink-0 shadow-sm ring-2 ring-gray-100 group-hover:ring-primary-crimson/30 transition-all">
                                                     <img
                                                         src={article.category_slug === 'opinion' ? (article.writer_image || article.image_url || 'https://via.placeholder.com/150') : (article.image_url || 'https://via.placeholder.com/150')}
                                                         className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
                                                         alt={article.title}
                                                     />
                                                     {article.is_urgent === 1 && (
-                                                        <div className="absolute inset-x-0 bottom-0 bg-primary-crimson text-[8px] text-white font-black text-center py-0.5 animate-pulse">
+                                                        <div className="absolute inset-x-0 bottom-0 bg-primary-crimson text-[6px] sm:text-[8px] text-white font-black text-center py-0.5 animate-pulse">
                                                             عاجل
                                                         </div>
                                                     )}
                                                 </div>
-                                                <div className="flex flex-col gap-1 min-w-0">
-                                                    <h3 className="text-gray-900 font-black text-sm line-clamp-1 group-hover:text-primary-crimson transition-colors">
+                                                <div className="flex flex-col gap-0.5 sm:gap-1 min-w-0">
+                                                    <h3 className="text-gray-900 font-black text-[10px] sm:text-sm line-clamp-1 group-hover:text-primary-crimson transition-colors">
                                                         {article.title}
                                                     </h3>
-                                                    <div className="flex items-center gap-2">
-                                                        <span className="text-[10px] font-black text-primary-navy/40 bg-gray-100 px-2 py-0.5 rounded-md">#{article.id}</span>
-                                                        {article.video_url && (
-                                                            <div className="w-5 h-5 bg-blue-50 text-blue-500 rounded-md flex items-center justify-center">
-                                                                <Play className="w-3 h-3" />
-                                                            </div>
-                                                        )}
+                                                    <div className="flex items-center gap-1 sm:gap-2">
+                                                        <span className="text-[8px] sm:text-[10px] font-black text-primary-navy/40 bg-gray-100 px-1.5 py-0.5 rounded-md">#{article.id}</span>
+                                                        <span className="sm:hidden text-[8px] font-black text-primary-navy bg-blue-50 px-1 py-0.5 rounded-md truncate max-w-[50px]">{article.category_name}</span>
                                                     </div>
                                                 </div>
                                             </div>
                                         </td>
-                                        <td className="p-5 text-center">
+                                        <td className="p-5 text-center hidden sm:table-cell">
                                             <span className="inline-flex items-center px-4 py-1.5 rounded-full bg-primary-navy text-[11px] font-black text-white shadow-sm">
                                                 {article.category_name}
                                             </span>
                                         </td>
-                                        <td className="p-5">
-                                            <div className="flex flex-col items-center gap-1">
-                                                <div className="flex items-center gap-1.5 text-gray-700 font-black text-xs">
-                                                    <Calendar className="w-3.5 h-3.5 text-gray-400" />
-                                                    {new Date(article.created_at).toLocaleDateString('ar-YE', { day: 'numeric', month: 'short' })}
-                                                </div>
-                                                <div className="text-[10px] text-gray-400 font-bold">
-                                                    {new Date(article.created_at).toLocaleTimeString('ar-YE', { hour: '2-digit', minute: '2-digit' })}
-                                                </div>
+                                        <td className="p-2 sm:p-5">
+                                            <div className="flex flex-col items-center">
+                                                <span className="text-[9px] sm:text-xs font-black text-gray-700">{new Date(article.created_at).toLocaleDateString('ar-YE', { day: 'numeric', month: 'short' })}</span>
+                                                <span className="text-[8px] sm:text-[10px] text-gray-400 font-bold">{new Date(article.created_at).toLocaleTimeString('ar-YE', { hour: '2-digit', minute: '2-digit' })}</span>
                                             </div>
                                         </td>
-                                        <td className="p-5">
+                                        <td className="p-5 hidden md:table-cell">
                                             <div className="flex justify-center">
                                                 <div className="flex items-center gap-2 px-3 py-1.5 bg-green-50 text-green-600 rounded-xl border border-green-100/50">
                                                     <Eye className="w-3.5 h-3.5" />
@@ -385,7 +376,7 @@ const ArticleManagement: React.FC<ArticleManagementProps> = ({
                                                 </div>
                                             </div>
                                         </td>
-                                        <td className="p-5">
+                                        <td className="p-5 hidden lg:table-cell">
                                             <div className="flex flex-col items-center gap-1">
                                                 <div className="w-8 h-8 rounded-full overflow-hidden border-2 border-white shadow-sm flex items-center justify-center bg-gray-50 text-blue-600">
                                                     {article.writer_image ? (
@@ -399,34 +390,27 @@ const ArticleManagement: React.FC<ArticleManagementProps> = ({
                                                 </span>
                                             </div>
                                         </td>
-                                        <td className="p-5 text-center">
-                                            <div className="flex flex-col items-center gap-2">
-                                                <button
-                                                    onClick={() => handleToggleArticleStatus(article.id, article.is_active)}
-                                                    className={`w-12 h-6 rounded-full relative transition-all duration-300 ${article.is_active === 1 ? 'bg-green-500 shadow-lg shadow-green-500/20' : 'bg-gray-200'}`}
-                                                >
-                                                    <div className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-all duration-500 shadow-sm ${article.is_active === 1 ? 'right-7' : 'right-1'}`}></div>
-                                                </button>
-                                                <span className={`text-[9px] font-black uppercase tracking-widest ${article.is_active === 1 ? 'text-green-600' : 'text-gray-400'}`}>
-                                                    {article.is_active === 1 ? 'نشط' : 'مخفي'}
-                                                </span>
-                                            </div>
+                                        <td className="p-2 sm:p-5 text-center">
+                                            <button
+                                                onClick={() => handleToggleArticleStatus(article.id, article.is_active)}
+                                                className={`w-8 h-4 sm:w-12 sm:h-6 rounded-full relative transition-all duration-300 ${article.is_active === 1 ? 'bg-green-500' : 'bg-gray-200'}`}
+                                            >
+                                                <div className={`absolute top-0.5 sm:top-1 w-3 h-3 sm:w-4 sm:h-4 bg-white rounded-full transition-all duration-500 shadow-sm ${article.is_active === 1 ? 'right-4.5 sm:right-7' : 'right-0.5 sm:right-1'}`}></div>
+                                            </button>
                                         </td>
-                                        <td className="p-5">
-                                            <div className="flex justify-center gap-2">
+                                        <td className="p-2 sm:p-5">
+                                            <div className="flex justify-center gap-1 sm:gap-2">
                                                 <button
                                                     onClick={() => { setCurrentArticle(article); setIsEditing(true); }}
-                                                    className="p-2.5 bg-blue-50 text-blue-600 hover:bg-blue-600 hover:text-white rounded-xl transition-all shadow-sm flex items-center justify-center"
-                                                    title="تعديل"
+                                                    className="p-1.5 sm:p-2.5 bg-blue-50 text-blue-600 hover:bg-blue-600 hover:text-white rounded-lg sm:rounded-xl transition-all"
                                                 >
-                                                    <Edit2 className="w-4 h-4" />
+                                                    <Edit2 className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                                                 </button>
                                                 <button
                                                     onClick={() => handleArticleDelete(article.id)}
-                                                    className="p-2.5 bg-red-50 text-primary-crimson hover:bg-primary-crimson hover:text-white rounded-xl transition-all shadow-sm flex items-center justify-center"
-                                                    title="حذف"
+                                                    className="p-1.5 sm:p-2.5 bg-red-50 text-primary-crimson hover:bg-primary-crimson hover:text-white rounded-lg sm:rounded-xl transition-all"
                                                 >
-                                                    <Trash2 className="w-4 h-4" />
+                                                    <Trash2 className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                                                 </button>
                                             </div>
                                         </td>

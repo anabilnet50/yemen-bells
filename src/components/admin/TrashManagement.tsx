@@ -56,15 +56,15 @@ const TrashManagement: React.FC<TrashManagementProps> = ({
             </div>
 
             <div className="bg-white rounded-[2.5rem] shadow-premium border border-gray-100 w-full overflow-hidden">
-                <div className="overflow-x-auto w-full">
-                    <table className="w-full text-center border-collapse border border-[#cfdce9] min-w-[800px]">
+                <div className="overflow-x-auto w-full print:overflow-visible">
+                    <table className="w-full text-center border-collapse border border-[#cfdce9] table-auto">
                         <thead className="bg-[#5b9bd5] text-white">
                             <tr className="divide-x divide-x-reverse divide-[#ffffff]">
-                                <th className="p-4 sm:p-6 w-16 text-center">
+                                <th className="p-2 sm:p-6 w-10 sm:w-16 text-center">
                                     <div className="flex justify-center">
                                         <input
                                             type="checkbox"
-                                            className="w-6 h-6 accent-red-600 cursor-pointer"
+                                            className="w-4 h-4 sm:w-6 sm:h-6 accent-red-600 cursor-pointer"
                                             checked={trashArticles.length > 0 && selectedTrashIds.length === trashArticles.length}
                                             onChange={(e) => {
                                                 if (e.target.checked) setSelectedTrashIds(trashArticles.map(a => a.id));
@@ -73,21 +73,19 @@ const TrashManagement: React.FC<TrashManagementProps> = ({
                                         />
                                     </div>
                                 </th>
-                                <th className="p-4 sm:p-6 text-sm font-black uppercase text-center whitespace-nowrap">
-                                    <div className="flex items-center gap-2 justify-center"><Hash className="w-5 h-5" /> العنوان</div>
-                                </th>
-                                <th className="p-4 sm:p-6 text-sm font-black uppercase text-center whitespace-nowrap">تاريخ الحذف</th>
-                                <th className="p-4 sm:p-6 text-sm font-black uppercase text-center whitespace-nowrap">الإجراءات</th>
+                                <th className="p-2 sm:p-6 text-[10px] sm:text-sm font-black uppercase text-center whitespace-nowrap">العنوان</th>
+                                <th className="p-2 sm:p-6 text-[10px] sm:text-sm font-black uppercase text-center whitespace-nowrap">التاريخ</th>
+                                <th className="p-2 sm:p-6 text-[10px] sm:text-sm font-black uppercase text-center whitespace-nowrap">إجراء</th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-[#cfdce9]">
                             {trashArticles.map(article => (
                                 <tr key={article.id} className={`divide-x divide-x-reverse divide-[#cfdce9] text-center transition-colors transition-all duration-300 ${selectedTrashIds.includes(article.id) ? 'bg-red-50' : 'even:bg-[#e9f0f8] odd:bg-white hover:bg-blue-50/50'}`}>
-                                    <td className="p-6 align-middle">
+                                    <td className="p-3 sm:p-6 align-middle">
                                         <div className="flex justify-center">
                                             <input
                                                 type="checkbox"
-                                                className="w-6 h-6 accent-red-600 cursor-pointer"
+                                                className="w-4 h-4 sm:w-6 sm:h-6 accent-red-600 cursor-pointer"
                                                 checked={selectedTrashIds.includes(article.id)}
                                                 onChange={() => {
                                                     if (selectedTrashIds.includes(article.id)) {
@@ -99,27 +97,25 @@ const TrashManagement: React.FC<TrashManagementProps> = ({
                                             />
                                         </div>
                                     </td>
-                                    <td className="p-6 font-black text-lg text-primary-navy align-middle text-right">{article.title}</td>
-                                    <td className="p-6 text-sm text-gray-500 font-bold align-middle">
-                                        <div className="flex justify-center">
-                                            <span className="bg-gray-100 px-4 py-1.5 rounded-xl border border-gray-200">{new Date(article.created_at).toLocaleDateString('ar-YE')}</span>
-                                        </div>
+                                    <td className="p-3 sm:p-6 font-black text-sm sm:text-lg text-primary-navy align-middle text-right line-clamp-1 sm:line-clamp-none">{article.title}</td>
+                                    <td className="p-3 sm:p-6 text-[10px] sm:text-sm text-gray-500 font-bold align-middle">
+                                        <span className="bg-gray-100 px-2 sm:px-4 py-1 rounded-lg sm:rounded-xl border border-gray-200">{new Date(article.created_at).toLocaleDateString('ar-YE', { day: 'numeric', month: 'short' })}</span>
                                     </td>
-                                    <td className="p-6 align-middle">
-                                        <div className="flex justify-center gap-4">
+                                    <td className="p-3 sm:p-6 align-middle">
+                                        <div className="flex justify-center gap-2 sm:gap-4">
                                             <button
                                                 onClick={() => handleRestoreArticle(article.id)}
-                                                className="w-12 h-12 bg-green-50 text-green-600 hover:bg-green-600 hover:text-white rounded-2xl transition-all shadow-sm flex items-center justify-center group"
+                                                className="w-8 h-8 sm:w-12 sm:h-12 bg-green-50 text-green-600 hover:bg-green-600 hover:text-white rounded-lg sm:rounded-2xl transition-all shadow-sm flex items-center justify-center group"
                                                 title="استعادة"
                                             >
-                                                <RotateCcw className="w-5 h-5 group-hover:rotate-45 transition-transform" />
+                                                <RotateCcw className="w-4 h-4 sm:w-5 sm:h-5 group-hover:rotate-45 transition-transform" />
                                             </button>
                                             <button
                                                 onClick={() => handlePermanentDelete(article.id)}
-                                                className="w-12 h-12 bg-red-50 text-primary-crimson hover:bg-primary-crimson hover:text-white rounded-2xl transition-all shadow-sm flex items-center justify-center group"
+                                                className="w-8 h-8 sm:w-12 sm:h-12 bg-red-50 text-primary-crimson hover:bg-primary-crimson hover:text-white rounded-lg sm:rounded-2xl transition-all shadow-sm flex items-center justify-center group"
                                                 title="حذف نهائي"
                                             >
-                                                <Trash2 className="w-5 h-5 group-hover:scale-110 transition-transform" />
+                                                <Trash2 className="w-4 h-4 sm:w-5 sm:h-5 group-hover:scale-110 transition-transform" />
                                             </button>
                                         </div>
                                     </td>
@@ -127,10 +123,10 @@ const TrashManagement: React.FC<TrashManagementProps> = ({
                             ))}
                             {trashArticles.length === 0 && (
                                 <tr>
-                                    <td colSpan={4} className="p-24 text-center">
+                                    <td colSpan={4} className="p-12 sm:p-24 text-center">
                                         <div className="flex flex-col items-center gap-4 opacity-30">
-                                            <Trash className="w-16 h-16 text-gray-400" />
-                                            <p className="text-gray-400 font-black text-2xl">سلة المحذوفات فارغة تماماً</p>
+                                            <Trash className="w-10 h-10 sm:w-16 sm:h-16 text-gray-400" />
+                                            <p className="text-gray-400 font-black text-lg sm:text-2xl">سلة المحذوفات فارغة</p>
                                         </div>
                                     </td>
                                 </tr>

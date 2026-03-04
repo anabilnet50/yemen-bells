@@ -176,20 +176,20 @@ const IPManagement = () => {
                             </div>
                         </div>
 
-                        <div className="flex-1 overflow-x-auto">
+                        <div className="flex-1 overflow-x-auto print:overflow-visible">
                             {isLoading ? (
                                 <div className="h-64 flex flex-col items-center justify-center gap-4">
                                     <RefreshCcw className="w-10 h-10 text-gray-200 animate-spin" />
                                     <p className="text-gray-400 font-bold">جاري تحميل القائمة...</p>
                                 </div>
                             ) : filteredIps.length > 0 ? (
-                                <table className="w-full border-collapse">
+                                <table className="w-full border-collapse table-auto">
                                     <thead>
                                         <tr className="bg-gray-50/50">
-                                            <th className="px-8 py-5 text-right text-[10px] font-black text-gray-400 uppercase tracking-widest border-b border-gray-50">عنوان IP</th>
-                                            <th className="px-8 py-5 text-right text-[10px] font-black text-gray-400 uppercase tracking-widest border-b border-gray-50">السبب</th>
-                                            <th className="px-8 py-5 text-right text-[10px] font-black text-gray-400 uppercase tracking-widest border-b border-gray-50">تاريخ الحظر</th>
-                                            <th className="px-8 py-5 text-center text-[10px] font-black text-gray-400 uppercase tracking-widest border-b border-gray-50 w-24">إجراء</th>
+                                            <th className="px-3 sm:px-8 py-3 sm:py-5 text-right text-[9px] sm:text-[10px] font-black text-gray-400 uppercase tracking-widest border-b border-gray-50">العنوان</th>
+                                            <th className="px-3 sm:px-8 py-3 sm:py-5 text-right text-[9px] sm:text-[10px] font-black text-gray-400 uppercase tracking-widest border-b border-gray-50 hidden sm:table-cell">السبب</th>
+                                            <th className="px-3 sm:px-8 py-3 sm:py-5 text-right text-[9px] sm:text-[10px] font-black text-gray-400 uppercase tracking-widest border-b border-gray-50">التوقيت</th>
+                                            <th className="px-3 sm:px-8 py-3 sm:py-5 text-center text-[9px] sm:text-[10px] font-black text-gray-400 uppercase tracking-widest border-b border-gray-50 w-16 sm:w-24">إجراء</th>
                                         </tr>
                                     </thead>
                                     <tbody>
@@ -203,31 +203,31 @@ const IPManagement = () => {
                                                     key={ip.id}
                                                     className="group hover:bg-gray-50/50 transition-colors"
                                                 >
-                                                    <td className="px-8 py-6 border-b border-gray-50 text-sm font-black text-primary-navy group-hover:text-primary-crimson transition-colors">
+                                                    <td className="px-3 sm:px-8 py-4 sm:py-6 border-b border-gray-50 text-[11px] sm:text-sm font-black text-primary-navy group-hover:text-primary-crimson transition-colors">
                                                         {ip.ip_address}
                                                         {ip.ip_address === '::1' || ip.ip_address === '127.0.0.1' ? (
-                                                            <span className="mr-2 inline-block px-2 py-0.5 bg-blue-50 text-blue-500 rounded-md text-[9px] font-black uppercase">Local</span>
+                                                            <span className="mr-1 inline-block px-1.5 py-0.5 bg-blue-50 text-blue-500 rounded-md text-[8px] font-black uppercase">Local</span>
                                                         ) : null}
+                                                        <div className="sm:hidden text-[9px] text-gray-400 font-bold italic mt-1 truncate max-w-[80px]">{ip.reason || 'بدون سبب'}</div>
                                                     </td>
-                                                    <td className="px-8 py-6 border-b border-gray-50 text-xs font-bold text-gray-500 italic max-w-xs truncate">
+                                                    <td className="px-8 py-6 border-b border-gray-50 text-xs font-bold text-gray-500 italic max-w-xs truncate hidden sm:table-cell">
                                                         {ip.reason || 'بدون سبب'}
                                                     </td>
-                                                    <td className="px-8 py-6 border-b border-gray-50 text-[11px] font-bold text-gray-400">
-                                                        {new Date(ip.created_at).toLocaleDateString('ar-EG', {
-                                                            year: 'numeric',
-                                                            month: 'long',
+                                                    <td className="px-3 sm:px-8 py-4 sm:py-6 border-b border-gray-50 text-[9px] sm:text-[11px] font-bold text-gray-400">
+                                                        {new Date(ip.created_at).toLocaleDateString('ar-YE', {
+                                                            month: 'short',
                                                             day: 'numeric',
                                                             hour: '2-digit',
                                                             minute: '2-digit'
                                                         })}
                                                     </td>
-                                                    <td className="px-8 py-6 border-b border-gray-50 text-center">
+                                                    <td className="px-3 sm:px-8 py-4 sm:py-6 border-b border-gray-50 text-center">
                                                         <button
                                                             onClick={() => handleUnban(ip.id)}
-                                                            className="w-10 h-10 flex items-center justify-center bg-white border-2 border-gray-100 text-gray-400 rounded-xl hover:bg-green-50 hover:text-green-600 hover:border-green-100 transition-all shadow-sm group-hover:scale-110"
+                                                            className="w-8 h-8 sm:w-10 sm:h-10 flex items-center justify-center bg-white border-2 border-gray-100 text-gray-400 rounded-lg sm:rounded-xl hover:bg-green-50 hover:text-green-600 hover:border-green-100 transition-all shadow-sm group-hover:scale-110"
                                                             title="إلغاء الحظر"
                                                         >
-                                                            <Trash2 className="w-5 h-5" />
+                                                            <Trash2 className="w-4 h-4 sm:w-5 sm:h-5" />
                                                         </button>
                                                     </td>
                                                 </motion.tr>
