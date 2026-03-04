@@ -20,6 +20,31 @@ const verifyPassword = (password: string, storedHash: string) => {
   return hash === verifyHash;
 };
 
+// --- Link Protection Helper ---
+const containsLink = (text: string) => {
+  if (!text) return false;
+  // Regex to detect common URL patterns, including domains without protocols
+  const urlPattern = /(https?:\/\/[^\s]+)|(www\.[^\s]+)|([a-z0-9-]+\.(com|net|org|edu|gov|io|co|me|ai|app|xyz|info|biz|site|online|tech|website|store|shop|link|click|tk|ml|ga|cf|gq|pw|ws|fun|space|top|vip|icu|win|bid|loan|host|live|mobi|name|pro|tel|pub|news|blog|xyz|icu|top))/gi;
+  return urlPattern.test(text);
+};
+
+// Rate limiting for public actions (In-memory)
+const publicRateLimits = new Map<string, { count: number, lastReset: number }>();
+const checkRateLimit = (ip: string, limit: number = 5, windowMs: number = 60000) => {
+  const now = Date.now();
+  const limitData = publicRateLimits.get(ip) || { count: 0, lastReset: now };
+
+  if (now - limitData.lastReset > windowMs) {
+    limitData.count = 1;
+    limitData.lastReset = now;
+  } else {
+    limitData.count++;
+  }
+
+  publicRateLimits.set(ip, limitData);
+  return limitData.count <= limit;
+};
+
 // --- Auth Secret ---
 const AUTH_SECRET = process.env.AUTH_SECRET || crypto.randomBytes(32).toString('hex');
 
@@ -194,11 +219,11 @@ async function startServer() {
   // Forgot Password
   // ... (rest of forgot password routes)
   app.post("/api/auth/forgot-password", async (req, res) => {
-    const { email } = req.body;
+    const { email } = req.body; // Using 'email' as the identifier field name from body
     try {
-      const { rows } = await db.query("SELECT id, username FROM system_users WHERE email = $1", [email]);
+      const { rows } = await db.query("SELECT id, username, email FROM system_users WHERE email = $1 OR username = $1", [email]);
       if (rows.length === 0) {
-        return res.status(404).json({ error: "البريد الإلكتروني غير موجود" });
+        return res.status(404).json({ error: "المستخدم غير موجود" });
       }
 
       const code = Math.floor(100000 + Math.random() * 900000).toString();
@@ -209,10 +234,10 @@ async function startServer() {
         [code, expiry, rows[0].id]
       );
 
-      // Simulated email sending - returning the code to the frontend for practical testing/usage
-      console.log(`[EMAIL SIMULATION] Verification Code for ${email}: ${code}`);
+      // Simulated sending - returning the code to the frontend for practical testing/usage
+      console.log(`[AUTH SIMULATION] Verification Code for ${email}/${rows[0].username}: ${code}`);
 
-      res.json({ message: "تم إرسال رمز التحقق إلى بريدك الإلكتروني", code });
+      res.json({ message: "تم إصدار رمز التحقق بنجاح", code });
     } catch (e) {
       res.status(500).json({ error: "حدث خطأ داخلي" });
     }
@@ -223,7 +248,7 @@ async function startServer() {
     const { email, code } = req.body;
     try {
       const { rows } = await db.query(
-        "SELECT id FROM system_users WHERE email = $1 AND reset_token = $2 AND reset_token_expiry > NOW()",
+        "SELECT id FROM system_users WHERE (email = $1 OR username = $1) AND reset_token = $2 AND reset_token_expiry > NOW()",
         [email, code]
       );
 
@@ -242,7 +267,7 @@ async function startServer() {
     const { email, code, newPassword } = req.body;
     try {
       const { rows } = await db.query(
-        "SELECT id FROM system_users WHERE email = $1 AND reset_token = $2 AND reset_token_expiry > NOW()",
+        "SELECT id FROM system_users WHERE (email = $1 OR username = $1) AND reset_token = $2 AND reset_token_expiry > NOW()",
         [email, code]
       );
 
@@ -510,17 +535,31 @@ async function startServer() {
   app.get("/api/articles/:id", async (req, res) => {
     await db.query("UPDATE articles SET views = views + 1 WHERE id = $1", [req.params.id]);
 
-    const { rows } = await db.query(`
-      SELECT articles.*, categories.name as category_name, categories.slug as category_slug, writers.name as writer_name, writers.bio as writer_bio, writers.image_url as writer_image
-      FROM articles 
-      LEFT JOIN categories ON articles.category_id = categories.id 
-      LEFT JOIN writers ON articles.writer_id = writers.id
-      WHERE articles.id = $1
-    `, [req.params.id]);
+    const [articleRes, adsRes, settingsRes] = await Promise.all([
+      db.query(`
+        SELECT articles.*, categories.name as category_name, categories.slug as category_slug, writers.name as writer_name, writers.bio as writer_bio, writers.image_url as writer_image
+        FROM articles 
+        LEFT JOIN categories ON articles.category_id = categories.id 
+        LEFT JOIN writers ON articles.writer_id = writers.id
+        WHERE articles.id = $1
+      `, [req.params.id]),
+      db.query("SELECT * FROM ads WHERE is_active = 1"),
+      db.query("SELECT * FROM settings")
+    ]);
 
-    const article = rows[0];
+    const article = articleRes.rows[0];
     if (!article) return res.status(404).json({ error: "Article not found" });
-    res.json(article);
+
+    const settingsMap = settingsRes.rows.reduce((acc: any, curr: any) => {
+      acc[curr.key] = curr.value;
+      return acc;
+    }, {});
+
+    res.json({
+      article,
+      ads: adsRes.rows,
+      settings: settingsMap
+    });
   });
 
   app.post("/api/articles", requireAuth, async (req, res) => {
@@ -682,6 +721,19 @@ async function startServer() {
 
   app.post("/api/articles/:id/comments", async (req, res) => {
     const { name, content } = req.body;
+    const clientIp = String(req.ip || req.headers['x-forwarded-for'] || req.socket.remoteAddress);
+
+    // Rate Limiting
+    if (!checkRateLimit(clientIp, 3, 60000)) {
+      return res.status(429).json({ error: "لقد تجاوزت الحد المسموح من التعليقات. يرجى الانتظار دقيقة." });
+    }
+
+    // Link Protection
+    if (containsLink(name) || containsLink(content)) {
+      await logAction(null, 'محاولة تعليق مشبوهة', `تم حظر تعليق يحتوي على روابط من IP: ${clientIp}`);
+      return res.status(400).json({ error: "عذراً، لا يُسمح بإضافة روابط في التعليقات أو الأسماء." });
+    }
+
     await db.query("INSERT INTO comments (article_id, name, content) VALUES ($1, $2, $3)", [req.params.id, name, content]);
     res.json({ success: true });
   });
@@ -705,10 +757,33 @@ async function startServer() {
     }
   });
 
+  app.delete("/api/admin/poll/comments", requireAuth, async (req, res) => {
+    try {
+      await db.query("DELETE FROM poll_comments");
+      await logAction((req as any).user.id, 'مسح استطلاع الرأي', 'تم مسح كافة تعليقات استطلاع الرأي لبدء استطلاع جديد');
+      res.json({ success: true });
+    } catch (e) {
+      res.status(500).json({ error: "Error clearing poll comments" });
+    }
+  });
+
   app.post("/api/poll/comments", async (req, res) => {
     const { name, content } = req.body;
     const finalName = name || 'زائر';
+    const clientIp = String(req.ip || req.headers['x-forwarded-for'] || req.socket.remoteAddress);
+
     if (!content) return res.status(400).json({ error: "Content is required" });
+
+    // Rate Limiting
+    if (!checkRateLimit(clientIp, 5, 60000)) {
+      return res.status(429).json({ error: "يرجى الانتظار قليلاً قبل إرسال مشاركة أخرى." });
+    }
+
+    // Link Protection
+    if (containsLink(finalName) || containsLink(content)) {
+      await logAction(null, 'محاولة مشاركة مشبوهة في الاستطلاع', `تم حظر مشاركة تحتوي على روابط من IP: ${clientIp}`);
+      return res.status(400).json({ error: "عذراً، لا يُسمح بإضافة روابط في المشاركات." });
+    }
 
     try {
       await db.query("INSERT INTO poll_comments (name, content) VALUES ($1, $2)", [finalName, content]);

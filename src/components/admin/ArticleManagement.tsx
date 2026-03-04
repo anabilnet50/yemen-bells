@@ -172,7 +172,7 @@ const ArticleManagement: React.FC<ArticleManagementProps> = ({
                                 <select
                                     value={currentArticle.category_id}
                                     onChange={e => setCurrentArticle({ ...currentArticle, category_id: e.target.value })}
-                                    className="w-full p-5 bg-gray-50 border-2 border-gray-100 rounded-2xl focus:border-red-500 focus:bg-white transition-all outline-none font-bold appearance-none bg-[url('https://www.svgrepo.com/show/511136/arrow-down-1.svg')] bg-[length:24px] bg-[right_20px_center] bg-no-repeat"
+                                    className="w-full p-5 bg-gray-50 border-2 border-gray-100 rounded-2xl focus:border-red-500 focus:bg-white transition-all outline-none font-bold appearance-none bg-[url('data:image/svg+xml;charset=UTF-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2224%22%20height%3D%2224%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22%236b7280%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Cpolyline%20points%3D%226%209%2012%2015%2018%209%22%3E%3C%2Fpolyline%3E%3C%2Fsvg%3E')] bg-[length:20px] bg-[left_20px_center] bg-no-repeat"
                                 >
                                     {categories.map(cat => (
                                         <option key={cat.id} value={cat.id}>{cat.name}</option>
@@ -217,15 +217,36 @@ const ArticleManagement: React.FC<ArticleManagementProps> = ({
                                 </div>
                             </div>
                             <div className="space-y-3">
-                                <label className="block text-sm font-black text-gray-700">اسم الكاتب / المصدر</label>
-                                <select
-                                    value={currentArticle.writer_id || ''}
-                                    onChange={e => setCurrentArticle({ ...currentArticle, writer_id: e.target.value })}
-                                    className="w-full p-4 bg-gray-50 border-2 border-gray-100 rounded-2xl focus:border-red-500 focus:bg-white transition-all outline-none font-bold appearance-none"
-                                >
-                                    <option value="">هـدس (افتراضي)</option>
-                                    {writers.map(writer => <option key={writer.id} value={writer.id}>{writer.name}</option>)}
-                                </select>
+                                <label className="block text-sm font-black text-gray-700">الكاتب / صاحب العمود</label>
+                                <div className="space-y-4">
+                                    <select
+                                        value={currentArticle.writer_id || ''}
+                                        onChange={e => setCurrentArticle({ ...currentArticle, writer_id: e.target.value })}
+                                        className={`w-full p-4 bg-gray-50 border-2 rounded-2xl focus:border-red-500 focus:bg-white transition-all outline-none font-bold appearance-none bg-[url('data:image/svg+xml;charset=UTF-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2224%22%20height%3D%2224%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22%236b7280%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Cpolyline%20points%3D%226%209%2012%2015%2018%209%22%3E%3C%2Fpolyline%3E%3C%2Fsvg%3E')] bg-[length:20px] bg-[left_15px_center] bg-no-repeat ${categories.find(c => String(c.id) === String(currentArticle.category_id))?.slug === 'opinion' ? 'border-primary-crimson/30 ring-4 ring-primary-crimson/5' : 'border-gray-100'}`}
+                                    >
+                                        <option value="">هـدس (افتراضي)</option>
+                                        {writers.map(writer => <option key={writer.id} value={writer.id}>{writer.name}</option>)}
+                                    </select>
+
+                                    {/* Writer Preview Box */}
+                                    {currentArticle.writer_id && (
+                                        <div className="flex items-center gap-4 p-4 bg-gray-50 rounded-2xl border-2 border-gray-100 animate-in fade-in slide-in-from-top-2 duration-300">
+                                            <div className="w-12 h-12 rounded-full overflow-hidden border-2 border-white shadow-sm">
+                                                <img
+                                                    src={writers.find(w => String(w.id) === String(currentArticle.writer_id))?.image_url || 'https://via.placeholder.com/150'}
+                                                    className="w-full h-full object-cover"
+                                                    alt="Preview"
+                                                />
+                                            </div>
+                                            <div>
+                                                <p className="text-xs text-gray-400 font-bold">معاينة الكاتب المختارة:</p>
+                                                <p className="text-sm font-black text-primary-navy">
+                                                    {writers.find(w => String(w.id) === String(currentArticle.writer_id))?.name}
+                                                </p>
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
                             </div>
                         </div>
 
@@ -315,7 +336,7 @@ const ArticleManagement: React.FC<ArticleManagementProps> = ({
                                             <div className="flex items-center gap-4">
                                                 <div className="relative w-20 h-14 rounded-2xl overflow-hidden shrink-0 shadow-sm ring-2 ring-gray-100 group-hover:ring-primary-crimson/30 transition-all">
                                                     <img
-                                                        src={article.image_url || 'https://via.placeholder.com/150'}
+                                                        src={article.category_slug === 'opinion' ? (article.writer_image || article.image_url || 'https://via.placeholder.com/150') : (article.image_url || 'https://via.placeholder.com/150')}
                                                         className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
                                                         alt={article.title}
                                                     />
@@ -366,8 +387,12 @@ const ArticleManagement: React.FC<ArticleManagementProps> = ({
                                         </td>
                                         <td className="p-5">
                                             <div className="flex flex-col items-center gap-1">
-                                                <div className="w-8 h-8 rounded-full bg-blue-50 border-2 border-white shadow-sm flex items-center justify-center text-blue-600">
-                                                    <User className="w-4 h-4" />
+                                                <div className="w-8 h-8 rounded-full overflow-hidden border-2 border-white shadow-sm flex items-center justify-center bg-gray-50 text-blue-600">
+                                                    {article.writer_image ? (
+                                                        <img src={article.writer_image} className="w-full h-full object-cover" alt={article.writer_name} />
+                                                    ) : (
+                                                        <User className="w-4 h-4" />
+                                                    )}
                                                 </div>
                                                 <span className="text-[10px] font-black text-gray-600 truncate max-w-[80px]">
                                                     {article.writer_name || article.author || 'المسؤول'}

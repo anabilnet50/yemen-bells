@@ -684,13 +684,13 @@ export default function AdminDashboard() {
           {authMode === 'forgot' && (
             <form onSubmit={handleForgotPassword} className="space-y-6">
               <div className="space-y-2">
-                <label className="text-sm font-black text-gray-700 block mr-1">البريد الإلكتروني</label>
+                <label className="text-sm font-black text-gray-700 block mr-1">اسم المستخدم أو البريد الإلكتروني</label>
                 <input
-                  type="email"
+                  type="text"
                   value={resetEmail}
                   onChange={e => setResetEmail(e.target.value)}
                   className="w-full p-4 bg-gray-50 border-2 border-gray-100 rounded-2xl outline-none focus:border-primary-crimson focus:bg-white transition-all font-bold"
-                  placeholder="name@example.com"
+                  placeholder="أدخل اسم المستخدم أو البريد"
                   required
                 />
               </div>

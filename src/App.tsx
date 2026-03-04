@@ -14,7 +14,7 @@ const getYoutubeEmbedUrl = (url: string) => {
 };
 
 const isAdActive = (ad: any) => {
-  if (ad.is_active !== 1) return false;
+  if (Number(ad.is_active) !== 1) return false;
   const now = new Date();
   if (ad.start_date && new Date(ad.start_date) > now) return false;
   if (ad.end_date && new Date(ad.end_date) < now) return false;
@@ -95,6 +95,13 @@ function Home() {
     e.preventDefault();
     if (!pollComment) return;
 
+    // Link Protection
+    const urlPattern = /(https?:\/\/[^\s]+)|(www\.[^\s]+)|([a-z0-9-]+\.(com|net|org|edu|gov|io|co|me|ai|app|xyz|info|biz|site|online|tech|website|store|shop|link|click|tk|ml|ga|cf|gq|pw|ws|fun|space|top|vip|icu|win|bid|loan|host|live|mobi|name|pro|tel|pub|news))/gi;
+    if (urlPattern.test(pollComment)) {
+      alert("عذراً، لأسباب أمنية لا يُسمح بإضافة روابط في المشاركات.");
+      return;
+    }
+
     fetch('/api/poll/comments', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -107,8 +114,11 @@ function Home() {
           fetchPollComments();
           setShowPollComments(true);
           setPollVoted(true);
+        } else {
+          alert(data.error || "حدث خطأ أثناء الإرسال");
         }
-      });
+      })
+      .catch(() => alert("حدث خطأ أثناء الإرسال"));
   };
 
   const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -393,12 +403,14 @@ function Home() {
                       className="w-full h-full relative"
                     >
                       {mainArticle.image_url && (
-                        <img
-                          src={mainArticle.image_url || undefined}
-                          alt={mainArticle.title}
-                          className="w-full h-full object-contain md:object-cover bg-black transition-transform duration-1000 scale-100 group-hover:scale-110"
-                          referrerPolicy="no-referrer"
-                        />
+                        <div className="w-full h-full relative">
+                          <img
+                            src={mainArticle.image_url}
+                            alt={mainArticle.title}
+                            className="w-full h-auto object-contain transition-transform duration-1000 scale-100 group-hover:scale-105"
+                            referrerPolicy="no-referrer"
+                          />
+                        </div>
                       )}
                       {mainArticle.video_url && !videoLoaded && (
                         <div className="absolute inset-0 flex items-center justify-center bg-black/50 backdrop-blur-sm z-30">
@@ -412,8 +424,8 @@ function Home() {
 
                   {/* Professional TV-Style News Ticker (Al Hadath/Al Jazeera Style) */}
                   <div className="absolute bottom-0 left-0 right-0 bg-white border-t-2 border-primary-crimson z-20 flex items-stretch h-10 md:h-12 overflow-hidden shadow-[0_-5px_20px_rgba(0,0,0,0.2)]">
-                    {/* Urgent Indicator - Right Side */}
-                    <div className="bg-primary-crimson text-white px-3 md:px-8 flex items-center justify-center font-black text-xs md:text-sm uppercase tracking-widest relative group/urgent shrink-0 z-30 shadow-[5px_0_15px_rgba(225,29,72,0.3)]">
+                    {/* Urgent Indicator - Right Side - Aggressively Shrinked for Mobile Space */}
+                    <div className="bg-primary-crimson text-white px-1.5 md:px-4 flex items-center justify-center font-black text-[9px] md:text-xs uppercase tracking-tighter md:tracking-widest relative group/urgent shrink-0 z-30 shadow-[5px_0_15px_rgba(225,29,72,0.3)]">
                       <div className="absolute inset-0 bg-white/10 animate-pulse"></div>
                       عاجل
                     </div>
@@ -435,8 +447,8 @@ function Home() {
                                 <Link key={`urgent-${a.id}`} to={`/article/${a.id}`} className="flex items-center gap-4 hover:text-primary-crimson transition-colors group/tickeritem shrink-0">
                                   <span className="w-1.5 h-1.5 bg-primary-crimson rotate-45 group-hover/tickeritem:scale-125 transition-transform"></span>
                                   {a.title}
-                                  {['opinion', 'studies'].includes(a.category_slug) && a.writer_name && (
-                                    <span className="text-primary-crimson/80 mr-2"> - {a.writer_name}</span>
+                                  {['opinion', 'studies'].includes(a.category_slug) && (
+                                    <span className="text-primary-crimson/80 mr-2"> - {a.writer_name || a.author || "هدس"}</span>
                                   )}
                                 </Link>
                               ))}
@@ -476,10 +488,10 @@ function Home() {
                       </div>
                     </div>
 
-                    {/* Time Indicator - Left Side */}
-                    <div className="bg-primary-crimson text-white px-2 md:px-4 flex items-center justify-center shrink-0 relative overflow-hidden group/clock z-20 shadow-[-10px_0_20px_white]">
+                    {/* Time Indicator - Left Side - Aggressively Shrinked for Mobile Space */}
+                    <div className="bg-primary-crimson text-white px-1 md:px-2 flex items-center justify-center shrink-0 relative overflow-hidden group/clock z-20 shadow-[-10px_0_20px_white]">
                       <div className="absolute inset-0 bg-white/10 animate-pulse"></div>
-                      <span className="font-sans font-black text-xs md:text-sm tracking-widest tabular-nums" style={{ direction: 'ltr' }}>{currentTime.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true })}</span>
+                      <span className="font-sans font-black text-[9px] md:text-xs tracking-tighter md:tracking-widest tabular-nums" style={{ direction: 'ltr' }}>{currentTime.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true })}</span>
                     </div>
                   </div>
 
@@ -510,38 +522,43 @@ function Home() {
             </div>
 
             {/* Ad Space - Dynamic Elite Promotion */}
-            <div className="lg:col-span-1 glass-card bg-primary-navy text-white flex flex-col items-center justify-center p-0 text-center relative overflow-hidden h-[300px] lg:h-auto group shadow-2xl border border-white/5 rounded-[2rem]">
-              {ads.filter(ad => isAdActive(ad) && ad.position === 'top').length > 0 ? (
+            <div className="lg:col-span-1 glass-card bg-primary-navy text-white flex flex-col items-center justify-center p-0 text-center relative overflow-hidden h-auto group shadow-2xl border border-white/5 rounded-[2rem]">
+              {ads.filter(ad => isAdActive(ad) && ad.position?.split(',').includes('top')).length > 0 ? (
                 (() => {
-                  const ad = ads.filter(ad => isAdActive(ad) && ad.position === 'top')[0];
+                  const ad = ads.filter(ad => isAdActive(ad) && ad.position?.split(',').includes('top'))[0];
                   return (
-                    <a href={ad.link_url || '#'} target="_blank" rel="noopener noreferrer" className="w-full h-full relative group">
+                    <a href={ad.link_url || '#'} target="_blank" rel="noopener noreferrer" className="w-full h-full relative group block overflow-hidden">
+                      <div className="flex justify-end p-2 px-4 w-full">
+                        <span className="bg-primary-crimson text-white px-3 py-1 rounded-lg text-[10px] font-black uppercase tracking-widest shadow-sm">
+                          {ad.title}
+                        </span>
+                      </div>
                       {ad.image_url ? (
-                        <img src={ad.image_url} alt={ad.title} className="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-110" />
-                      ) : ad.adsense_code ? (
-                        <div className="w-full h-full p-4 flex items-center justify-center overflow-hidden" dangerouslySetInnerHTML={{ __html: ad.adsense_code }} />
+                        <div className="w-full h-full relative">
+                          <img src={ad.image_url} alt={ad.title} className="w-full h-auto object-contain transition-transform duration-1000 group-hover:scale-105" />
+                        </div>
                       ) : (
                         <div className="w-full h-full p-12 flex flex-col items-center justify-center bg-gradient-to-br from-primary-navy to-primary-crimson">
                           <h3 className="text-2xl font-black mb-4">{ad.title}</h3>
                           <DollarSign className="w-12 h-12 text-accent-gold" />
                         </div>
                       )}
-                      <div className="absolute inset-0 bg-black/20 group-hover:bg-black/0 transition-all"></div>
-                      <div className="absolute top-4 right-4 bg-accent-gold text-primary-navy text-[10px] font-black px-2 py-0.5 rounded tracking-widest uppercase shadow-glow">Sponsored</div>
+                      <div className="absolute inset-0 bg-black/10 group-hover:bg-black/0 transition-all z-20"></div>
                     </a>
                   );
                 })()
               ) : (
                 <div className="relative z-10 p-10 flex flex-col justify-center items-center h-full bg-gradient-to-br from-primary-navy to-primary-crimson w-full">
                   <div className="absolute inset-0 opacity-20 bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')]"></div>
-                  <motion.div
-                    animate={{ y: [0, -5, 0] }}
-                    transition={{ duration: 4, repeat: Infinity }}
-                    className="bg-accent-gold text-primary-navy px-4 py-1 rounded-full text-xs font-black uppercase tracking-widest mb-6 shadow-glow relative z-10"
-                  >
-                    مساحة إعلانية
-                  </motion.div>
-                  <div className="text-2xl md:text-3xl font-black mb-4 leading-tight drop-shadow-2xl font-serif italic text-white/90 relative z-10">
+
+                  {/* Top-aligned placeholder label */}
+                  <div className="absolute top-4 right-4 z-20">
+                    <span className="bg-accent-gold text-primary-navy px-3 py-1 rounded-lg text-[10px] font-black uppercase tracking-widest shadow-lg">
+                      مساحة إعلانية
+                    </span>
+                  </div>
+
+                  <div className="text-2xl md:text-3xl font-black mb-4 mt-6 leading-tight drop-shadow-2xl font-serif italic text-white/90 relative z-10">
                     هـدس بريميوم
                   </div>
                   <p className="text-xl font-bold mb-3 text-accent-gold/90 relative z-10">صوتك الحر في كل مكان</p>
@@ -576,13 +593,17 @@ function Home() {
                           to={`/article/${v.id}`}
                           className="flex items-center gap-4 group/vitem bg-white/60 p-3 rounded-2xl hover:bg-white/95 transition-all border border-white/20 shadow-sm hover:shadow-md hover:-translate-y-0.5 transform duration-300"
                         >
-                          <div className="w-20 h-14 rounded-lg overflow-hidden shrink-0 relative order-2">
-                            <img src={v.image_url || undefined} alt={v.title} className="w-full h-full object-cover group-hover/vitem:scale-110 transition-transform duration-500" />
+                          <div className="w-20 h-20 rounded-2xl overflow-hidden shrink-0 relative order-2 border-2 border-white shadow-md ring-1 ring-black/5 group-hover/vitem:ring-primary-crimson/20 transition-all duration-500">
+                            <img
+                              src={v.writer_image || v.image_url || `https://i.pravatar.cc/150?u=${v.writer_id}`}
+                              alt={v.writer_name}
+                              className="w-full h-full object-cover group-hover/vitem:scale-115 transition-transform duration-700"
+                            />
                           </div>
                           <div className="flex-1 text-right order-1">
                             <h4 className="text-primary-navy font-black text-xs line-clamp-2 leading-relaxed group-hover/vitem:text-primary-crimson transition-colors">{v.title}</h4>
                             <p className="text-[10px] text-gray-400 font-bold mt-1 flex items-center justify-end gap-1">
-                              <span>{v.author || 'كاتب المقال'}</span>
+                              <span>{v.writer_name || v.author || settings?.site_name || 'هيئة التحرير'}</span>
                               <User className="w-3 h-3" />
                             </p>
                           </div>
@@ -627,7 +648,7 @@ function Home() {
                           <div className="flex-1 text-right order-2">
                             <h4 className="text-primary-navy font-black text-xs line-clamp-2 leading-relaxed group-hover/vitem:text-primary-crimson transition-colors">{v.title}</h4>
                             <p className="text-[10px] text-gray-400 font-bold mt-1 flex items-center justify-end gap-1">
-                              <span>{v.author || 'الباحث'}</span>
+                              <span>{v.writer_name || v.author || settings?.site_name || 'هيئة التحرير'}</span>
                               <User className="w-3 h-3" />
                             </p>
                           </div>
@@ -667,70 +688,76 @@ function Home() {
 
               <div className="divide-y divide-gray-50 bg-white">
                 {paginatedArticles.length > 0 ? paginatedArticles.map((article, index) => (
-                  <motion.div
-                    initial={{ opacity: 0, y: 20 }}
-                    whileInView={{ opacity: 1, y: 0 }}
-                    viewport={{ once: true, margin: "-50px" }}
-                    transition={{ duration: 0.6, delay: (index % 3) * 0.1 }}
-                    key={article.id}
-                    className="group/item"
-                  >
-                    <div
-                      className="p-4 md:p-8 flex flex-col sm:flex-row items-center gap-6 md:gap-8 hover:bg-surface-soft/80 transition-all duration-700 cursor-pointer relative"
-                      onClick={() => navigate(`/article/${article.id}`)}
+                  <React.Fragment key={article.id}>
+                    <motion.div
+                      initial={{ opacity: 0, y: 20 }}
+                      whileInView={{ opacity: 1, y: 0 }}
+                      viewport={{ once: true, margin: "-50px" }}
+                      transition={{ duration: 0.6, delay: (index % 3) * 0.1 }}
+                      className="group/item"
                     >
-                      {/* Left Interaction Stripe */}
-                      <div className="absolute left-0 top-0 bottom-0 w-0 group-hover/item:w-1.5 bg-primary-crimson shadow-[0_0_15px_rgba(225,29,72,0.4)] transition-all duration-500 ease-out"></div>
+                      <div
+                        className="p-5 md:px-6 md:py-8 flex flex-col sm:flex-row items-center gap-6 md:gap-8 hover:bg-surface-soft/80 transition-all duration-700 cursor-pointer relative"
+                        onClick={() => navigate(`/article/${article.id}`)}
+                      >
+                        {/* Left Interaction Stripe */}
+                        <div className="absolute left-0 top-0 bottom-0 w-0 group-hover/item:w-1.5 bg-primary-crimson shadow-[0_0_15px_rgba(225,29,72,0.4)] transition-all duration-500 ease-out"></div>
 
-                      {/* Image Content - Cinematic Frame */}
-                      {article.image_url && (
-                        <div className={`w-full md:w-56 lg:w-48 xl:w-64 h-48 shrink-0 overflow-hidden rounded-3xl shadow-xl relative group-hover/item:shadow-[0_20px_50px_rgba(0,0,0,0.15)] transition-all duration-700 ${index === 0 ? 'sm:order-1' : (index % 2 !== 0 ? 'order-1 sm:order-2' : 'order-1')}`}>
-                          <img
-                            src={article.image_url || undefined}
-                            alt={article.title}
-                            className="w-full h-full object-cover group-hover/item:scale-110 group-hover/item:rotate-1 transition-transform duration-1000"
-                            referrerPolicy="no-referrer"
-                          />
-                          <div className="absolute inset-0 bg-primary-navy/20 group-hover/item:bg-transparent transition-colors duration-700"></div>
-                          {article.video_url && (
-                            <div className="absolute inset-0 flex items-center justify-center">
-                              <motion.div
-                                whileHover={{ scale: 1.1 }}
-                                className="w-16 h-16 bg-white/10 backdrop-blur-xl rounded-full flex items-center justify-center text-white border border-white/30 shadow-2xl group-hover/item:bg-primary-crimson group-hover/item:border-primary-crimson transition-all duration-500"
-                              >
-                                <Play className="w-8 h-8 fill-current" />
-                              </motion.div>
+                        {/* Image Content - Cinematic Frame */}
+                        {article.image_url && (
+                          <div className={`w-full md:w-56 lg:w-48 xl:w-64 shrink-0 overflow-hidden rounded-3xl shadow-xl relative group-hover/item:shadow-[0_20px_50px_rgba(0,0,0,0.15)] transition-all duration-700 ${index === 0 ? 'sm:order-1' : (index % 2 !== 0 ? 'order-1 sm:order-2' : 'order-1')}`}>
+                            <div className="w-full h-full relative">
+                              <img
+                                src={article.image_url}
+                                alt={article.title}
+                                className="w-full h-auto object-contain transition-transform duration-1000 scale-100 group-hover:item:scale-105"
+                                referrerPolicy="no-referrer"
+                              />
                             </div>
-                          )}
-                        </div>
-                      )}
-
-                      {/* Text Content - Refined Spacing */}
-                      <div className={`flex-1 flex flex-col justify-center ${index % 2 !== 0 ? 'order-1 text-right' : 'order-1 sm:order-2 text-right'}`}>
-                        <div className={`flex items-center gap-3 mb-4 ${index % 2 !== 0 ? 'justify-start' : 'justify-end'}`}>
-                          <span className="text-sm font-black text-primary-crimson uppercase tracking-[0.25em] bg-primary-crimson/5 px-3 py-1 rounded-full">{article.category_name}</span>
-                          <div className="w-1 h-1 bg-gray-200 rounded-full"></div>
-                          <span className="text-sm text-gray-400 font-black uppercase tracking-widest">{new Date(article.created_at).toLocaleDateString('ar-YE', { day: '2-digit', month: 'short' })}</span>
-                        </div>
-                        <h5 className="text-primary-navy font-black text-lg md:text-xl mb-4 group-hover/item:text-primary-crimson premium-transition leading-[1.3] drop-shadow-sm">
-                          {article.title}
-                        </h5>
-                        <p className="text-gray-500 font-bold leading-relaxed text-base line-clamp-2 mb-6 opacity-80 group-hover/item:opacity-100 transition-opacity">
-                          {article.content}
-                        </p>
-                        <div className={`flex items-center justify-between text-sm font-black uppercase tracking-[0.2em] border-t border-gray-100/50 pt-6 mt-auto ${index % 2 !== 0 ? '' : 'flex-row-reverse'}`}>
-                          <div className="flex items-center gap-6 text-gray-400">
-                            <span className="flex items-center gap-2 group-hover/item:text-primary-navy transition-colors"><Eye className="w-4 h-4 text-primary-crimson/50" /> {article.views || 0}</span>
-                            <span className="flex items-center gap-2 group-hover/item:text-primary-navy transition-colors"><MapPin className="w-4 h-4 text-primary-crimson/50" /> صنعاء</span>
+                            <div className="absolute inset-0 bg-primary-navy/20 group-hover/item:bg-transparent transition-colors duration-700"></div>
+                            {article.video_url && (
+                              <div className="absolute inset-0 flex items-center justify-center">
+                                <motion.div
+                                  whileHover={{ scale: 1.1 }}
+                                  className="w-16 h-16 bg-white/10 backdrop-blur-xl rounded-full flex items-center justify-center text-white border border-white/30 shadow-2xl group-hover/item:bg-primary-crimson group-hover/item:border-primary-crimson transition-all duration-500"
+                                >
+                                  <Play className="w-8 h-8 fill-current" />
+                                </motion.div>
+                              </div>
+                            )}
                           </div>
-                          <span className="text-primary-crimson flex items-center gap-2 group-hover/item:gap-4 transition-all duration-500 font-black">
-                            {index % 2 !== 0 ? 'استمـر في القراءة' : 'قراءة المزيـد'}
-                            <ArrowLeft className="w-4 h-4" />
-                          </span>
+                        )}
+
+                        {/* Text Content - Refined Spacing */}
+                        <div className={`flex-1 min-w-0 flex flex-col justify-center px-6 ${index % 2 !== 0 ? 'order-1 text-right' : 'order-1 sm:order-2 text-right'}`}>
+                          <div className={`flex items-center gap-3 mb-4 ${index % 2 !== 0 ? 'justify-start' : 'justify-end'}`}>
+                            <span className="text-sm font-black text-primary-crimson uppercase tracking-[0.25em] bg-primary-crimson/5 px-3 py-1 rounded-full">{article.category_name}</span>
+                            <div className="w-1 h-1 bg-gray-200 rounded-full"></div>
+                            <span className="text-sm text-gray-400 font-black uppercase tracking-widest">{new Date(article.created_at).toLocaleDateString('ar-YE', { day: '2-digit', month: 'short' })}</span>
+                          </div>
+                          <h5 className="text-primary-navy font-black text-base md:text-lg mb-4 group-hover/item:text-primary-crimson premium-transition leading-[1.3] drop-shadow-sm">
+                            {article.title}
+                          </h5>
+                          <p className="text-gray-500 font-bold leading-relaxed text-xs md:text-sm line-clamp-2 mb-6 opacity-80 group-hover/item:opacity-100 transition-opacity">
+                            {article.content}
+                          </p>
+                          <div className={`flex items-center justify-between text-sm font-black uppercase tracking-[0.2em] border-t border-gray-100/50 pt-6 mt-auto ${index % 2 !== 0 ? '' : 'flex-row-reverse'}`}>
+                            <div className="flex items-center gap-6 text-gray-400">
+                              <span className="flex items-center gap-2 group-hover/item:text-primary-navy transition-colors"><User className="w-4 h-4 text-primary-crimson/50" /> {article.writer_name || article.author || "هدس"}</span>
+                              <span className="flex items-center gap-2 group-hover/item:text-primary-navy transition-colors"><Eye className="w-4 h-4 text-primary-crimson/50" /> {article.views || 0}</span>
+                              <span className="flex items-center gap-2 group-hover/item:text-primary-navy transition-colors"><MapPin className="w-4 h-4 text-primary-crimson/50" /> {settings?.site_location || "صنعاء"}</span>
+                            </div>
+                            <span className="text-primary-crimson flex items-center gap-2 group-hover/item:gap-4 transition-all duration-500 font-black">
+                              {index % 2 !== 0 ? 'استمـر في القراءة' : 'قراءة المزيـد'}
+                              <ArrowLeft className="w-4 h-4" />
+                            </span>
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  </motion.div>
+                    </motion.div>
+
+                    {/* Mobile Ad Injection removed as per user request to avoid duplication */}
+                  </React.Fragment>
                 )) : (
                   <div className="p-32 text-center text-gray-300 font-black tracking-widest uppercase flex flex-col items-center gap-8 bg-surface-soft/20">
                     <div className="p-12 bg-white rounded-[3rem] shadow-premium"><Search className="w-14 h-14 opacity-10" /></div>
@@ -830,29 +857,7 @@ function Home() {
                 </div>
               </div>
 
-              {/* Sidebar Ad 1 */}
-              {ads.filter(ad => isAdActive(ad) && ad.position === 'sidebar').length > 0 && (
-                <div className="glass-card overflow-hidden border border-primary-navy/10 relative group h-[350px] rounded-[2rem]">
-                  {(() => {
-                    const ad = ads.filter(ad => isAdActive(ad) && ad.position === 'sidebar')[0];
-                    return (
-                      <a href={ad.link_url || '#'} target="_blank" rel="noopener noreferrer" className="w-full h-full relative block">
-                        {ad.image_url ? (
-                          <img src={ad.image_url} alt={ad.title} className="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-110" />
-                        ) : ad.adsense_code ? (
-                          <div className="w-full h-full flex items-center justify-center overflow-hidden bg-white" dangerouslySetInnerHTML={{ __html: ad.adsense_code }} />
-                        ) : (
-                          <div className="w-full h-full p-8 flex flex-col items-center justify-center bg-gradient-to-br from-primary-navy to-primary-crimson text-white">
-                            <h3 className="text-xl font-black mb-4">{ad.title}</h3>
-                            <DollarSign className="w-10 h-10 text-accent-gold" />
-                          </div>
-                        )}
-                        <div className="absolute top-4 right-4 bg-accent-gold text-primary-navy text-[8px] font-black px-2 py-0.5 rounded tracking-widest uppercase shadow-glow">Sponsored</div>
-                      </a>
-                    );
-                  })()}
-                </div>
-              )}
+
 
               {/* Technology - Futuristic Space */}
               <div className="glass-card overflow-hidden flex-1 flex flex-col border border-primary-navy/10 relative group min-h-[350px]">
@@ -1023,7 +1028,7 @@ function Home() {
                 {!pollVoted ? (
                   <div className="space-y-4">
                     <p className="text-gray-900 font-bold text-xs md:text-sm text-right leading-relaxed">
-                      هل تعتقد أن التحولات السياسية الأخيرة ستؤدي إلى استقرار اقتصادي مستدام في المنطقة؟
+                      {settings.poll_question || 'هل تعتقد أن التحولات السياسية الأخيرة ستؤدي إلى استقرار اقتصادي مستدام في المنطقة؟'}
                     </p>
                     <form onSubmit={handlePollCommentSubmit} className="space-y-2">
                       <textarea

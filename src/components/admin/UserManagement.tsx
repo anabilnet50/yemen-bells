@@ -69,7 +69,7 @@ const UserManagement: React.FC<UserManagementProps> = ({
                             </div>
                             <div className="space-y-3">
                                 <label className="text-sm font-black text-gray-700 block mr-1">الدور الوظيفي</label>
-                                <select value={currentUserData.role} onChange={e => setCurrentUserData({ ...currentUserData, role: e.target.value })} className="w-full p-4 bg-gray-50 rounded-2xl border-2 border-gray-100 focus:border-primary-navy transition-all outline-none font-bold appearance-none">
+                                <select value={currentUserData.role} onChange={e => setCurrentUserData({ ...currentUserData, role: e.target.value })} className="w-full p-4 bg-gray-50 rounded-2xl border-2 border-gray-100 focus:border-primary-navy transition-all outline-none font-bold appearance-none bg-[url('data:image/svg+xml;charset=UTF-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2224%22%20height%3D%2224%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22%236b7280%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Cpolyline%20points%3D%226%209%2012%2015%2018%209%22%3E%3C%2Fpolyline%3E%3C%2Fsvg%3E')] bg-[length:20px] bg-[left_15px_center] bg-no-repeat">
                                     <option value="editor">محرر (Editor)</option>
                                     <option value="admin">مدير نظام (Admin)</option>
                                 </select>

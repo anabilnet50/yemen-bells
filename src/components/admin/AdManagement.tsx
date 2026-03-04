@@ -31,7 +31,7 @@ const AdManagement: React.FC<AdManagementProps> = ({
             <div className="flex justify-between items-center">
                 <h1 className="text-3xl font-black text-gray-900">إدارة الإعلانات</h1>
                 <button
-                    onClick={() => { setIsEditingAd(true); setCurrentAd({ title: '', image_url: '', link_url: '', adsense_code: '', position: 'sidebar', is_active: 1, start_date: '', end_date: '' }); }}
+                    onClick={() => { setIsEditingAd(true); setCurrentAd({ title: '', image_url: '', link_url: '', position: 'sidebar', is_active: 1, start_date: '', end_date: '' }); }}
                     className="bg-red-600 text-white px-6 py-3 md:px-8 md:py-4 rounded-xl md:rounded-2xl text-sm md:text-base font-black flex items-center gap-2 shadow-xl shadow-red-600/20 hover:bg-red-700 transition-all font-bold"
                 >
                     <Plus className="w-5 h-5 md:w-6 md:h-6" /> إضافة إعلان جديد
@@ -61,13 +61,31 @@ const AdManagement: React.FC<AdManagementProps> = ({
                                     if (file) handleImageUpload(file, 'ad');
                                 }} className="w-full p-4 bg-gray-50 border-2 border-dashed border-gray-200 rounded-2xl outline-none font-bold" />
                             </div>
-                            <div className="space-y-2">
-                                <label className="text-sm font-black text-gray-700">مكان العرض</label>
-                                <select value={currentAd.position} onChange={e => setCurrentAd({ ...currentAd, position: e.target.value })} className="w-full p-4 bg-gray-50 border-2 border-gray-100 rounded-2xl font-bold focus:border-red-500 outline-none">
-                                    <option value="sidebar">جانبي | Sidebar</option>
-                                    <option value="top">بجانب الخبر الرئيسي | Hero Section</option>
-                                    <option value="inline">داخل المحتوى | Middle Section</option>
-                                </select>
+                            <div className="space-y-3 col-span-full">
+                                <label className="text-sm font-black text-gray-700">أماكن العرض (يمكنك اختيار أكثر من مكان)</label>
+                                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                    {[
+                                        { id: 'sidebar', label: 'جانبي | Sidebar' },
+                                        { id: 'top', label: 'بجانب الخبر الرئيسي | Hero' },
+                                        { id: 'inline', label: 'داخل المحتوى | Middle' }
+                                    ].map(pos => (
+                                        <label key={pos.id} className={`flex items-center gap-3 p-4 rounded-2xl border-2 transition-all cursor-pointer ${currentAd.position?.split(',').includes(pos.id) ? 'bg-red-50 border-red-500 text-red-700' : 'bg-gray-50 border-gray-100 text-gray-500 hover:border-gray-200'}`}>
+                                            <input
+                                                type="checkbox"
+                                                checked={currentAd.position?.split(',').filter(Boolean).includes(pos.id)}
+                                                onChange={e => {
+                                                    const currentPositions = currentAd.position?.split(',').filter(Boolean) || [];
+                                                    const newPositions = e.target.checked
+                                                        ? [...currentPositions, pos.id]
+                                                        : currentPositions.filter(p => p !== pos.id);
+                                                    setCurrentAd({ ...currentAd, position: newPositions.join(',') });
+                                                }}
+                                                className="w-5 h-5 accent-red-600"
+                                            />
+                                            <span className="font-black text-sm">{pos.label}</span>
+                                        </label>
+                                    ))}
+                                </div>
                             </div>
                             <div className="flex items-center gap-3 p-4 bg-gray-50 border-2 border-gray-100 rounded-2xl h-[72px] self-end">
                                 <input
@@ -98,10 +116,6 @@ const AdManagement: React.FC<AdManagementProps> = ({
                                 />
                             </div>
                         </div>
-                        <div className="space-y-2">
-                            <label className="text-sm font-black text-gray-700 text-orange-600">أو وضع كود AdSense البرمجي</label>
-                            <textarea placeholder="<ins class='adsbygoogle' ...></ins>" value={currentAd.adsense_code} onChange={e => setCurrentAd({ ...currentAd, adsense_code: e.target.value })} className="w-full p-5 bg-orange-50/20 border-2 border-orange-100 rounded-2xl font-mono text-sm focus:border-orange-400 outline-none" rows={4}></textarea>
-                        </div>
                         <div className="flex gap-4 pt-4">
                             <button type="submit" className="bg-red-600 text-white px-6 py-3 md:px-12 md:py-4 rounded-xl md:rounded-2xl text-sm md:text-base font-black shadow-xl shadow-red-600/20 hover:bg-red-700 transition-all font-bold">حفظ الإعلان</button>
                             <button type="button" onClick={() => setIsEditingAd(false)} className="bg-gray-100 text-gray-600 px-6 py-3 md:px-12 md:py-4 rounded-xl md:rounded-2xl text-sm md:text-base font-black hover:bg-gray-200 transition-all font-bold">إلغاء</button>
@@ -122,11 +136,12 @@ const AdManagement: React.FC<AdManagementProps> = ({
                                     <span className={`w-2 h-2 rounded-full ${ad.is_active === 1 ? 'bg-green-500 animate-pulse' : 'bg-gray-300'}`}></span>
                                 </div>
                                 <p className="text-sm text-gray-400 font-bold truncate mb-2">{ad.link_url || 'لا يوجد رابط توجه'}</p>
-                                <div className="flex gap-2">
-                                    <span className="text-[10px] bg-blue-50 text-blue-600 px-3 py-1 rounded-full font-black uppercase tracking-wider">
-                                        {ad.position === 'top' ? 'بجانب الخبر الرئيسي' : ad.position === 'sidebar' ? 'جانبي' : 'داخل المحتوى'}
-                                    </span>
-                                    {ad.adsense_code && <span className="text-[10px] bg-orange-50 text-orange-600 px-3 py-1 rounded-full font-black uppercase tracking-wider">AdSense</span>}
+                                <div className="flex flex-wrap gap-2">
+                                    {(ad.position?.split(',') || []).filter(Boolean).map(pos => (
+                                        <span key={pos} className="text-[10px] bg-blue-50 text-blue-600 px-3 py-1 rounded-full font-black uppercase tracking-wider">
+                                            {pos === 'top' ? 'بجانب الخبر الرئيسي' : pos === 'sidebar' ? 'جانبي' : 'داخل المحتوى'}
+                                        </span>
+                                    ))}
                                 </div>
                             </div>
                             <div className="flex gap-3">

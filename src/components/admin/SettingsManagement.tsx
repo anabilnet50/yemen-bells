@@ -322,7 +322,6 @@ const SettingsManagement: React.FC<SettingsManagementProps> = ({
                                 </div>
                             </div>
                         </div>
-
                         {/* Opinion Section */}
                         <div className="space-y-4 p-6 bg-gray-50 rounded-[2rem] border border-gray-100">
                             <h4 className="font-black text-sm text-gray-400 uppercase">قسم المقالات</h4>
@@ -337,6 +336,48 @@ const SettingsManagement: React.FC<SettingsManagementProps> = ({
                                     <input type="file" accept="image/*" onChange={e => e.target.files?.[0] && handleImageUpload(e.target.files[0], 'opinion_bg')} className="hidden" id="opinion-bg-upload" />
                                     <label htmlFor="opinion-bg-upload" className="bg-white p-3 rounded-xl cursor-pointer shadow-sm border border-gray-100 hover:bg-gray-50 transition-all"><Play className="w-4 h-4 text-gray-400 rotate-90" /></label>
                                 </div>
+                            </div>
+                        </div>
+
+                        {/* Poll Section */}
+                        <div className="space-y-4 p-6 bg-gray-50 rounded-[2rem] border border-gray-100">
+                            <h4 className="font-black text-sm text-gray-400 uppercase">إعدادات استطلاع الرأي</h4>
+                            <div className="space-y-3">
+                                <label className="block text-xs font-black text-gray-700">سؤال الاستطلاع</label>
+                                <textarea
+                                    value={settings.poll_question || ''}
+                                    onChange={e => setSettings((prev: any) => ({ ...prev, poll_question: e.target.value }))}
+                                    className="w-full p-3 bg-white border-2 border-gray-100 rounded-xl outline-none focus:border-red-500 font-bold text-sm h-24 resize-none"
+                                    placeholder="أدخل سؤال الاستطلاع هنا..."
+                                />
+                            </div>
+                            <div className="pt-2">
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        if (window.confirm('🚨 هل أنت متأكد من مسح كافة التعليقات الحالية لبدء استطلاع جديد؟')) {
+                                            fetch('/api/admin/poll/comments', {
+                                                method: 'DELETE',
+                                                headers: {
+                                                    'Authorization': `Bearer ${localStorage.getItem('admin_token')}`
+                                                }
+                                            })
+                                                .then(res => res.json())
+                                                .then(data => {
+                                                    if (data.success) {
+                                                        alert('تم مسح التعليقات بنجاح');
+                                                    } else {
+                                                        alert('خطأ في مسح التعليقات');
+                                                    }
+                                                });
+                                        }
+                                    }}
+                                    className="w-full flex items-center justify-center gap-2 p-3 bg-red-50 text-red-600 rounded-xl hover:bg-red-100 transition-all font-black text-xs border border-red-100"
+                                >
+                                    <Play className="w-4 h-4 rotate-90" />
+                                    مسح تعليقات الاستطلاع الحالية
+                                </button>
+                                <p className="text-[10px] text-gray-400 mt-2 font-bold leading-tight">استخدم هذا الزر عندما ترغب في طرح سؤال جديد وتصفير المشاركات السابقة.</p>
                             </div>
                         </div>
                     </div>

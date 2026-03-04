@@ -36,7 +36,7 @@ export async function initDb() {
         category_id INTEGER REFERENCES categories(id),
         image_url TEXT,
         video_url TEXT,
-        author TEXT DEFAULT 'صلاح حيدرة',
+        author TEXT,
         writer_id INTEGER,
         created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
         is_urgent INTEGER DEFAULT 0,
@@ -72,6 +72,9 @@ export async function initDb() {
     } catch (e) {
       console.log('Columns might already exist');
     }
+
+    // Migration: Clear hardcoded default author name if it exists
+    await client.query("UPDATE articles SET author = NULL WHERE author = 'صلاح حيدرة'");
 
     await client.query(`
       CREATE TABLE IF NOT EXISTS ads (
@@ -216,11 +219,26 @@ export async function initDb() {
       { key: 'copyright_text', value: 'جميع الحقوق محفوظة © 2024 هـدس' },
       { key: 'site_tagline', value: 'الأقرب للأحدث - موقع إخباري شامل' },
       { key: 'header_background_url', value: '/header_bg_new.jpg' },
+      { key: 'poll_question', value: 'هل تعتقد أن التحولات السياسية الأخيرة ستؤدي إلى استقرار اقتصادي مستدام في المنطقة؟' },
     ];
 
     for (const s of defaultSettings) {
       await client.query("INSERT INTO settings (key, value) VALUES ($1, $2) ON CONFLICT (key) DO NOTHING", [s.key, s.value]);
     }
+
+    // Force migration for poll_question if it doesn't exist
+    await client.query(`
+      INSERT INTO settings (key, value) 
+      VALUES ('poll_question', 'هل تعتقد أن التحولات السياسية الأخيرة ستؤدي إلى استقرار اقتصادي مستدام في المنطقة؟')
+      ON CONFLICT (key) DO NOTHING
+    `);
+
+    // Force migration for poll_question if it doesn't exist
+    await client.query(`
+      INSERT INTO settings (key, value) 
+      VALUES ('poll_question', 'هل تعتقد أن التحولات السياسية الأخيرة ستؤدي إلى استقرار اقتصادي مستدام في المنطقة؟')
+      ON CONFLICT (key) DO NOTHING
+    `);
 
     // Default Admin User (Password: admin123)
     await client.query(`
