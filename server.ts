@@ -575,30 +575,39 @@ async function startServer() {
 
   app.put("/api/articles/:id", requireAuth, async (req, res) => {
     const { title, content, category_id, image_url, video_url, is_urgent, tags, writer_id, is_active } = req.body;
+
+    // Fetch old title for logging if needed or just use the new one
     await db.query(`
       UPDATE articles 
       SET title = $1, content = $2, category_id = $3, image_url = $4, video_url = $5, is_urgent = $6, tags = $7, writer_id = $8, is_active = $9
       WHERE id = $10
     `, [title, content, category_id, image_url, video_url, is_urgent ? 1 : 0, tags, writer_id || null, is_active !== undefined ? (is_active ? 1 : 0) : 1, req.params.id]);
-    await logAction((req as any).user.id, 'تعديل خبر', `تم تعديل الخبر رقم: ${req.params.id}`);
+
+    await logAction((req as any).user.id, 'تعديل خبر', `تم تعديل الخبر: ${title} (رقم: ${req.params.id})`);
     res.json({ success: true });
   });
 
   app.delete("/api/articles/:id", requireAuth, async (req, res) => {
     const { permanent } = req.query;
+    const { rows } = await db.query("SELECT title FROM articles WHERE id = $1", [req.params.id]);
+    const articleTitle = rows[0]?.title || "غير معروف";
+
     if (permanent === 'true') {
       await db.query("DELETE FROM articles WHERE id = $1", [req.params.id]);
-      await logAction((req as any).user.id, 'حذف نهائي للخبر', `تم حذف الخبر رقم: ${req.params.id} نهائياً`);
+      await logAction((req as any).user.id, 'حذف نهائي للخبر', `تم حذف الخبر نهائياً: ${articleTitle} (رقم: ${req.params.id})`);
     } else {
       await db.query("UPDATE articles SET is_deleted = 1 WHERE id = $1", [req.params.id]);
-      await logAction((req as any).user.id, 'حذف خبر', `تم نقل الخبر رقم: ${req.params.id} للمحذوفات`);
+      await logAction((req as any).user.id, 'حذف خبر', `تم نقل الخبر للمحذوفات: ${articleTitle} (رقم: ${req.params.id})`);
     }
     res.json({ success: true });
   });
 
   app.post("/api/articles/:id/restore", requireAuth, async (req, res) => {
+    const { rows } = await db.query("SELECT title FROM articles WHERE id = $1", [req.params.id]);
+    const articleTitle = rows[0]?.title || "غير معروف";
+
     await db.query("UPDATE articles SET is_deleted = 0 WHERE id = $1", [req.params.id]);
-    await logAction((req as any).user.id, 'استعادة خبر', `تم استعادة الخبر رقم: ${req.params.id}`);
+    await logAction((req as any).user.id, 'استعادة خبر', `تم استعادة الخبر: ${articleTitle} (رقم: ${req.params.id})`);
     res.json({ success: true });
   });
 

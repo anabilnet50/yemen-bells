@@ -109,35 +109,35 @@ const AuditLog: React.FC<AuditLogProps> = ({
             </div>
 
             <div className="bg-white rounded-[2.5rem] shadow-premium border border-gray-100 w-full overflow-hidden print:shadow-none print:border-none print:rounded-none">
-                <div className="overflow-x-auto w-full">
-                    <table className="w-full text-center border-collapse border border-[#cfdce9] min-w-[1000px]">
+                <div className="overflow-x-auto w-full print:overflow-visible">
+                    <table className="w-full text-center border-collapse border border-[#cfdce9] table-auto md:table-fixed">
                         <thead className="bg-[#5b9bd5] text-white print:bg-gray-100 print:text-black">
                             <tr className="divide-x divide-x-reverse divide-[#ffffff]">
-                                <th className="p-4 sm:p-6 text-sm font-black uppercase text-center whitespace-nowrap print:py-4">المسؤول</th>
-                                <th className="p-4 sm:p-6 text-sm font-black uppercase text-center whitespace-nowrap print:py-4">الإجراء المتخذ</th>
-                                <th className="p-4 sm:p-6 text-sm font-black uppercase text-center whitespace-nowrap print:py-4">تفاصيل العملية</th>
-                                <th className="p-4 sm:p-6 text-sm font-black uppercase text-center whitespace-nowrap print:py-4">التوقيت الزمني</th>
+                                <th className="p-2 sm:p-4 md:p-6 text-[10px] sm:text-xs md:text-sm font-black uppercase text-center whitespace-nowrap print:py-4">المسؤول</th>
+                                <th className="p-2 sm:p-4 md:p-6 text-[10px] sm:text-xs md:text-sm font-black uppercase text-center whitespace-nowrap print:py-4">الإجراء</th>
+                                <th className="p-2 sm:p-4 md:p-6 text-[10px] sm:text-xs md:text-sm font-black uppercase text-center print:py-4">التفاصيل</th>
+                                <th className="p-2 sm:p-4 md:p-6 text-[10px] sm:text-xs md:text-sm font-black uppercase text-center whitespace-nowrap print:py-4">التوقيت</th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-[#cfdce9] print:divide-gray-300">
                             {history.map((log: any) => (
                                 <tr key={log.id} className="even:bg-[#e9f0f8] odd:bg-white hover:bg-blue-50 transition-colors divide-x divide-x-reverse divide-[#cfdce9] text-center border-b border-[#cfdce9]">
-                                    <td className="p-6 font-black text-primary-navy print:py-4 align-middle">{log.user_name || 'نظام آلي'}</td>
-                                    <td className="p-6 print:py-4 align-middle">
-                                        <span className={`px-5 py-2.5 rounded-2xl text-[11px] font-black uppercase shadow-sm border ${log.action.includes('حذف') ? 'bg-red-50 text-red-600 border-red-100' :
+                                    <td className="p-2 sm:p-4 md:p-6 font-black text-primary-navy print:py-4 align-middle text-[10px] sm:text-xs md:text-base">{log.user_name || 'آلي'}</td>
+                                    <td className="p-2 sm:p-4 md:p-6 print:py-4 align-middle">
+                                        <span className={`px-2 py-1 sm:px-5 sm:py-2.5 rounded-lg sm:rounded-2xl text-[8px] sm:text-[11px] font-black uppercase shadow-sm border ${log.action.includes('حذف') ? 'bg-red-50 text-red-600 border-red-100' :
                                             log.action.includes('إضافة') ? 'bg-green-50 text-green-600 border-green-100' :
                                                 'bg-blue-50 text-blue-600 border-blue-100'
                                             }`}>
                                             {log.action}
                                         </span>
                                     </td>
-                                    <td className="p-6 text-[15px] text-gray-700 font-bold print:py-4 print:text-gray-900 align-middle leading-relaxed max-w-sm text-right px-10">
+                                    <td className="p-2 sm:p-4 md:p-6 text-[10px] sm:text-[13px] md:text-[15px] text-gray-700 font-bold print:py-4 print:text-gray-900 align-middle leading-tight sm:leading-relaxed text-right md:px-10">
                                         {log.details}
                                     </td>
-                                    <td className="p-6 text-base text-gray-900 font-bold print:py-4 print:text-gray-900 align-middle" dir="rtl">
+                                    <td className="p-2 sm:p-4 md:p-6 text-[10px] sm:text-sm md:text-base text-gray-900 font-bold print:py-4 print:text-gray-900 align-middle" dir="rtl">
                                         <div className="flex flex-col items-center">
-                                            <span className="text-sm">{new Date(log.created_at).toLocaleDateString('ar-YE')}</span>
-                                            <span className="text-xs text-gray-400">{new Date(log.created_at).toLocaleTimeString('ar-YE', { hour: '2-digit', minute: '2-digit', hour12: true })}</span>
+                                            <span className="text-[10px] sm:text-sm">{new Date(log.created_at).toLocaleDateString('ar-YE')}</span>
+                                            <span className="text-[8px] sm:text-xs text-gray-400">{new Date(log.created_at).toLocaleTimeString('ar-YE', { hour: '2-digit', minute: '2-digit', hour12: true })}</span>
                                         </div>
                                     </td>
                                 </tr>
