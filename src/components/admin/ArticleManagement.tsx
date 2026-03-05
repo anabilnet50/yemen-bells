@@ -312,7 +312,7 @@ const ArticleManagement: React.FC<ArticleManagementProps> = ({
                                             className="w-4 h-4 sm:w-5 sm:h-5 accent-red-600 cursor-pointer"
                                         />
                                     </th>
-                                    <th className="p-2 sm:p-5 text-right font-black text-[10px] sm:text-xs uppercase tracking-widest border-b border-white/10">المعلومات</th>
+                                    <th className="p-2 sm:p-5 text-right font-black text-[10px] sm:text-xs uppercase tracking-widest border-b border-white/10 w-1/3 md:w-2/5">المعلومات</th>
                                     <th className="p-2 sm:p-5 text-center font-black text-[10px] sm:text-xs uppercase tracking-widest border-b border-white/10 hidden sm:table-cell">القسم</th>
                                     <th className="p-2 sm:p-5 text-center font-black text-[10px] sm:text-xs uppercase tracking-widest border-b border-white/10">الوقت</th>
                                     <th className="p-2 sm:p-5 text-center font-black text-[10px] sm:text-xs uppercase tracking-widest border-b border-white/10 hidden md:table-cell">التفاعل</th>
@@ -347,7 +347,7 @@ const ArticleManagement: React.FC<ArticleManagementProps> = ({
                                                     )}
                                                 </div>
                                                 <div className="flex flex-col gap-0.5 sm:gap-1 min-w-0">
-                                                    <h3 className="text-gray-900 font-black text-[10px] sm:text-sm line-clamp-1 group-hover:text-primary-crimson transition-colors">
+                                                    <h3 className="text-gray-900 font-black text-[10px] sm:text-sm line-clamp-2 group-hover:text-primary-crimson transition-colors leading-relaxed">
                                                         {article.title}
                                                     </h3>
                                                     <div className="flex items-center gap-1 sm:gap-2">

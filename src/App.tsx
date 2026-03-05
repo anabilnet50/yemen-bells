@@ -551,7 +551,7 @@ function Home() {
                       </div>
                       {ad.image_url ? (
                         <div className="w-full h-full relative">
-                          <img src={ad.image_url} alt={ad.title} className="w-full h-auto object-contain transition-transform duration-1000 group-hover:scale-105" />
+                          <img src={ad.image_url} alt={ad.title} className="w-full h-auto object-contain transition-transform duration-1000 group-hover:scale-105" referrerPolicy="no-referrer" />
                         </div>
                       ) : (
                         <div className="w-full h-full p-12 flex flex-col items-center justify-center bg-gradient-to-br from-primary-navy to-primary-crimson">
@@ -721,12 +721,12 @@ function Home() {
 
                         {/* Image Content - Cinematic Frame */}
                         {article.image_url && (
-                          <div className={`w-full md:w-56 lg:w-48 xl:w-64 shrink-0 overflow-hidden rounded-3xl shadow-xl relative group-hover/item:shadow-[0_20px_50px_rgba(0,0,0,0.15)] transition-all duration-700 ${index === 0 ? 'sm:order-1' : (index % 2 !== 0 ? 'order-1 sm:order-2' : 'order-1')}`}>
-                            <div className="w-full h-full relative">
+                          <div className={`w-full md:w-56 lg:w-48 xl:w-64 shrink-0 overflow-hidden rounded-3xl shadow-xl relative group-hover/item:shadow-[0_20px_50px_rgba(0,0,0,0.15)] transition-all duration-700 flex items-center justify-center bg-gray-50 h-48 md:h-auto`}>
+                            <div className="w-full h-full relative flex items-center justify-center">
                               <img
                                 src={article.image_url}
                                 alt={article.title}
-                                className="w-full h-auto object-contain transition-transform duration-1000 scale-100 group-hover:item:scale-105"
+                                className="w-full h-full object-cover transition-transform duration-1000 scale-100 group-hover/item:scale-105"
                                 referrerPolicy="no-referrer"
                               />
                             </div>
@@ -745,13 +745,13 @@ function Home() {
                         )}
 
                         {/* Text Content - Refined Spacing */}
-                        <div className={`flex-1 min-w-0 flex flex-col justify-center px-6 ${index % 2 !== 0 ? 'order-1 text-right' : 'order-1 sm:order-2 text-right'}`}>
-                          <div className={`flex items-center gap-3 mb-4 ${index % 2 !== 0 ? 'justify-start' : 'justify-end'}`}>
+                        <div className="flex-1 min-w-0 flex flex-col justify-center text-right">
+                          <div className="flex items-center gap-3 mb-4 justify-end">
                             <span className="text-sm font-black text-primary-crimson uppercase tracking-[0.25em] bg-primary-crimson/5 px-3 py-1 rounded-full">{article.category_name}</span>
                             <div className="w-1 h-1 bg-gray-200 rounded-full"></div>
                             <span className="text-sm text-gray-400 font-black uppercase tracking-widest">{new Date(article.created_at).toLocaleDateString('ar-YE', { day: '2-digit', month: 'short' })}</span>
                           </div>
-                          <h5 className="text-primary-navy font-black text-base md:text-lg mb-4 group-hover/item:text-primary-crimson premium-transition leading-[1.3] drop-shadow-sm">
+                          <h5 className="text-primary-navy font-black text-base md:text-xl lg:text-2xl mb-4 group-hover/item:text-primary-crimson transition-colors duration-300 leading-[1.3] drop-shadow-sm">
                             {article.title}
                           </h5>
                           <p className="text-gray-500 font-bold leading-relaxed text-xs md:text-sm line-clamp-2 mb-6 opacity-80 group-hover/item:opacity-100 transition-opacity">

@@ -127,7 +127,7 @@ const AdManagement: React.FC<AdManagementProps> = ({
                     {ads.map(ad => (
                         <div key={ad.id} className="bg-white p-6 rounded-3xl shadow-sm border border-gray-100 flex items-center gap-6 hover:shadow-md transition-shadow group">
                             <div className="w-32 h-20 bg-gray-100 rounded-xl overflow-hidden shrink-0 border border-gray-50 relative">
-                                <img src={ad.image_url || 'https://via.placeholder.com/150x100'} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
+                                <img src={ad.image_url || 'https://via.placeholder.com/150x100'} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" referrerPolicy="no-referrer" />
                                 {ad.is_active === 0 && <div className="absolute inset-0 bg-black/40 flex items-center justify-center"><span className="text-[10px] text-white font-black uppercase bg-red-600 px-2 py-0.5 rounded">معطل</span></div>}
                             </div>
                             <div className="flex-1 min-w-0">

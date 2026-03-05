@@ -311,7 +311,7 @@ export default function ArticleDetail() {
                                     </div>
                                     <div className="relative">
                                       <div className="absolute inset-0 bg-primary-navy/5 rounded-3xl blur-xl transition-opacity group-hover:opacity-20 opacity-0"></div>
-                                      <img src={ad.image_url} alt={ad.title} className="relative w-full h-auto rounded-3xl object-cover transition-transform duration-1000 group-hover:scale-[1.03] z-10" />
+                                      <img src={ad.image_url} alt={ad.title} className="relative w-full h-auto rounded-3xl object-cover transition-transform duration-1000 group-hover:scale-[1.03] z-10" referrerPolicy="no-referrer" />
                                     </div>
                                   </div>
                                 ) : ad.adsense_code ? (
@@ -368,8 +368,8 @@ export default function ArticleDetail() {
                   <a href={ad.link_url || '#'} target="_blank" rel="noopener noreferrer" className="block w-full relative group h-[400px]">
                     {ad.image_url ? (
                       <div className="w-full h-full relative">
-                        <img src={ad.image_url} alt={ad.title} className="absolute inset-0 w-full h-full object-cover blur-2xl opacity-50 transition-transform duration-1000 group-hover:scale-110" />
-                        <img src={ad.image_url} alt={ad.title} className="relative w-full h-full object-contain transition-transform duration-1000 group-hover:scale-105 z-10" />
+                        <img src={ad.image_url} alt={ad.title} className="absolute inset-0 w-full h-full object-cover blur-2xl opacity-50 transition-transform duration-1000 group-hover:scale-110" referrerPolicy="no-referrer" />
+                        <img src={ad.image_url} alt={ad.title} className="relative w-full h-full object-contain transition-transform duration-1000 group-hover:scale-105 z-10" referrerPolicy="no-referrer" />
                       </div>
                     ) : (
                       <div className="w-full h-full p-12 bg-gradient-to-br from-primary-navy to-primary-crimson text-white text-center rounded-[1.5rem] flex flex-col items-center justify-center">
