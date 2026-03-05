@@ -36,8 +36,23 @@ export default function ArticleDetail() {
   const isAdActive = (ad: any) => {
     if (Number(ad.is_active) !== 1) return false;
     const now = new Date();
-    if (ad.start_date && new Date(ad.start_date) > now) return false;
-    if (ad.end_date && new Date(ad.end_date) < now) return false;
+
+    if (ad.start_date) {
+      const start = new Date(ad.start_date);
+      if (!isNaN(start.getTime()) && start.getTime() > 0) {
+        const startDay = new Date(start.getFullYear(), start.getMonth(), start.getDate());
+        const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+        if (startDay > today) return false;
+      }
+    }
+
+    if (ad.end_date) {
+      const end = new Date(ad.end_date);
+      if (!isNaN(end.getTime()) && end.getTime() > 0) {
+        if (end < now) return false;
+      }
+    }
+
     return true;
   };
 
@@ -433,7 +448,7 @@ export default function ArticleDetail() {
 
             {/* Bottom Navigation & Branding */}
             <div className="mt-4 flex items-center justify-between px-4 pb-12">
-              <div className="text-[10px] font-black text-primary-navy/20 uppercase tracking-widest">HADS</div>
+              <div className="text-[10px] font-black text-primary-navy/20 uppercase tracking-widest">هدس</div>
               <button
                 onClick={() => navigate('/')}
                 className="flex items-center gap-2 text-[#005c97] font-black text-sm hover:text-primary-crimson transition-all"

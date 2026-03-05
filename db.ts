@@ -18,6 +18,13 @@ export async function initDb() {
 
   const client = await pool.connect();
   try {
+    // Quick check if already initialized
+    const tableCheck = await client.query("SELECT 1 FROM information_schema.tables WHERE table_name = 'categories'");
+    if (tableCheck.rows.length > 0) {
+      console.log('Database already initialized. Skipping heavy init.');
+      return;
+    }
+
     await client.query('BEGIN');
 
     await client.query(`

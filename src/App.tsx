@@ -16,8 +16,24 @@ const getYoutubeEmbedUrl = (url: string) => {
 const isAdActive = (ad: any) => {
   if (Number(ad.is_active) !== 1) return false;
   const now = new Date();
-  if (ad.start_date && new Date(ad.start_date) > now) return false;
-  if (ad.end_date && new Date(ad.end_date) < now) return false;
+
+  if (ad.start_date) {
+    const start = new Date(ad.start_date);
+    if (!isNaN(start.getTime()) && start.getTime() > 0) {
+      // Comparison ignoring hours to handle UTC/Local mismatch for "today"
+      const startDay = new Date(start.getFullYear(), start.getMonth(), start.getDate());
+      const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+      if (startDay > today) return false;
+    }
+  }
+
+  if (ad.end_date) {
+    const end = new Date(ad.end_date);
+    if (!isNaN(end.getTime()) && end.getTime() > 0) {
+      if (end < now) return false;
+    }
+  }
+
   return true;
 };
 
@@ -682,7 +698,7 @@ function Home() {
                   <div className="flex -space-x-2">
                     {[1, 2, 3].map(i => <div key={i} className="w-6 h-6 rounded-full border-2 border-primary-navy bg-gray-200 overflow-hidden"><img src={`https://i.pravatar.cc/100?img=${i + 10}`} alt="viewer" /></div>)}
                   </div>
-                  <span className="text-xs font-black text-white/40 uppercase tracking-[0.3em] hidden md:block">Active Readers</span>
+                  <span className="text-xs font-black text-white/40 uppercase tracking-[0.3em] hidden md:block">القراء النشطون</span>
                 </div>
               </div>
 
@@ -941,11 +957,11 @@ function Home() {
                   </div>
                   <div>
                     <h3 className="text-white font-black text-sm tracking-widest uppercase">{settings.youtube_section_title || 'هـدس'}</h3>
-                    <div className="text-accent-gold font-serif italic text-xs tracking-tighter">YouTube Showcase</div>
+                    <div className="text-accent-gold font-serif italic text-xs tracking-tighter">معرض اليوتيوب</div>
                   </div>
                 </div>
                 <a href={settings.youtube_url || "https://youtube.com"} target="_blank" rel="noopener noreferrer" className="px-5 py-2 bg-white/5 hover:bg-primary-crimson text-white text-[10px] font-black uppercase tracking-widest rounded-lg border border-white/10 transition-all">
-                  Subscribe
+                  اشترك الآن
                 </a>
               </div>
 

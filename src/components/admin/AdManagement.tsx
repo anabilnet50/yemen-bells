@@ -65,9 +65,9 @@ const AdManagement: React.FC<AdManagementProps> = ({
                                 <label className="text-sm font-black text-gray-700">أماكن العرض (يمكنك اختيار أكثر من مكان)</label>
                                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                                     {[
-                                        { id: 'sidebar', label: 'جانبي | Sidebar' },
-                                        { id: 'top', label: 'بجانب الخبر الرئيسي | Hero' },
-                                        { id: 'inline', label: 'داخل المحتوى | Middle' }
+                                        { id: 'sidebar', label: 'جانبي' },
+                                        { id: 'top', label: 'بجانب الخبر الرئيسي' },
+                                        { id: 'inline', label: 'داخل المحتوى' }
                                     ].map(pos => (
                                         <label key={pos.id} className={`flex items-center gap-3 p-4 rounded-2xl border-2 transition-all cursor-pointer ${currentAd.position?.split(',').includes(pos.id) ? 'bg-red-50 border-red-500 text-red-700' : 'bg-gray-50 border-gray-100 text-gray-500 hover:border-gray-200'}`}>
                                             <input
