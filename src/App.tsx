@@ -214,14 +214,14 @@ function Home() {
                 className="w-full h-full object-cover object-center opacity-100 scale-100 pointer-events-none select-none"
               />
 
-              {/* Restored News Globe Animation - Enhanced Visibility */}
+              {/* Restored News Globe Animation - Enhanced Visibility with Blending */}
               <div
-                className="absolute top-1/2 -left-10 md:-left-12 -translate-y-1/2 w-[200px] md:w-[600px] h-[200px] md:h-[600px] opacity-60 select-none pointer-events-none mix-blend-lighten"
+                className="absolute top-1/2 -left-10 md:-left-12 -translate-y-1/2 w-[220px] md:w-[650px] h-[220px] md:h-[650px] opacity-80 select-none pointer-events-none mix-blend-lighten drop-shadow-[0_0_20px_rgba(251,191,36,0.2)]"
               >
                 <img
                   src={settings.news_ball_image || "https://tse1.mm.bing.net/th/id/OIP.dKbPF3sk4Qg2vDcgN6jjxAHaB2?rs=1&pid=ImgDetMain&o=7&rm=3"}
                   alt="News Globe"
-                  className="w-full h-full object-cover animate-[spin_60s_linear_infinite] rounded-full"
+                  className="w-full h-full object-cover animate-[spin_60s_linear_infinite] rounded-full brightness-110 contrast-110"
                   referrerPolicy="no-referrer"
                 />
               </div>
