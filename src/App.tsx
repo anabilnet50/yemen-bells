@@ -310,7 +310,7 @@ function Home() {
                             onClick={() => { navigate(`/article/${result.id}`); setSearchTerm(''); }}
                             className="p-4 hover:bg-surface-soft cursor-pointer rounded-2xl flex gap-4 items-center group/item transition-all duration-300"
                           >
-                            <img src={result.image_url || undefined} className="w-16 h-16 object-cover rounded-xl shadow-lg group-hover/item:scale-105 transition-transform duration-500" />
+                            <img src={result.image_url || undefined} className="w-16 h-16 object-cover rounded-xl shadow-lg group-hover/item:scale-105 transition-transform duration-500" referrerPolicy="no-referrer" />
                             <div className="flex-1 min-w-0">
                               <p className="font-black text-base group-hover/item:text-primary-crimson transition-colors truncate mb-1">{result.title}</p>
                               <div className="flex items-center gap-3">
@@ -659,7 +659,7 @@ function Home() {
                           className="flex items-center gap-4 group/vitem bg-white/50 p-3 rounded-2xl hover:bg-white/80 transition-all border border-gray-100 shadow-sm"
                         >
                           <div className="w-20 h-14 rounded-lg overflow-hidden shrink-0 relative order-1">
-                            <img src={v.image_url || undefined} alt={v.title} className="w-full h-full object-cover group-hover/vitem:scale-110 transition-transform duration-500" />
+                            <img src={v.image_url || undefined} alt={v.title} className="w-full h-full object-cover group-hover/vitem:scale-110 transition-transform duration-500" referrerPolicy="no-referrer" />
                           </div>
                           <div className="flex-1 text-right order-2">
                             <h4 className="text-primary-navy font-black text-xs line-clamp-2 leading-relaxed group-hover/vitem:text-primary-crimson transition-colors">{v.title}</h4>
@@ -757,14 +757,14 @@ function Home() {
                           <p className="text-gray-500 font-bold leading-relaxed text-xs md:text-sm line-clamp-2 mb-6 opacity-80 group-hover/item:opacity-100 transition-opacity">
                             {article.content}
                           </p>
-                          <div className={`flex items-center justify-between text-sm font-black uppercase tracking-[0.2em] border-t border-gray-100/50 pt-6 mt-auto ${index % 2 !== 0 ? '' : 'flex-row-reverse'}`}>
-                            <div className="flex items-center gap-6 text-gray-400">
-                              <span className="flex items-center gap-2 group-hover/item:text-primary-navy transition-colors"><User className="w-4 h-4 text-primary-crimson/50" /> {article.writer_name || article.author || "هدس"}</span>
-                              <span className="flex items-center gap-2 group-hover/item:text-primary-navy transition-colors"><Eye className="w-4 h-4 text-primary-crimson/50" /> {article.views || 0}</span>
-                              <span className="flex items-center gap-2 group-hover/item:text-primary-navy transition-colors"><MapPin className="w-4 h-4 text-primary-crimson/50" /> {settings?.site_location || "صنعاء"}</span>
+                          <div className={`flex items-center justify-between text-[10px] sm:text-sm font-black uppercase tracking-[0.1em] sm:tracking-[0.2em] border-t border-gray-100/50 pt-6 mt-auto ${index % 2 !== 0 ? '' : 'flex-row-reverse'}`}>
+                            <div className="flex items-center gap-3 md:gap-6 text-gray-400 overflow-hidden">
+                              <span className="flex items-center gap-1 sm:gap-2 group-hover/item:text-primary-navy transition-colors truncate max-w-[80px] sm:max-w-none"><User className="w-3 h-3 sm:w-4 sm:h-4 text-primary-crimson/50" /> {article.writer_name || article.author || "هدس"}</span>
+                              <span className="flex items-center gap-1 sm:gap-2 group-hover/item:text-primary-navy transition-colors shrink-0"><Eye className="w-3 h-3 sm:w-4 sm:h-4 text-primary-crimson/50" /> {article.views || 0} قراءة</span>
+                              <span className="hidden sm:flex items-center gap-2 group-hover/item:text-primary-navy transition-colors shrink-0"><MapPin className="w-4 h-4 text-primary-crimson/50" /> {settings?.site_location || "صنعاء"}</span>
                             </div>
-                            <span className="text-primary-crimson flex items-center gap-2 group-hover/item:gap-4 transition-all duration-500 font-black">
-                              {index % 2 !== 0 ? 'استمـر في القراءة' : 'قراءة المزيـد'}
+                            <span className="text-primary-crimson flex items-center gap-2 group-hover/item:gap-4 transition-all duration-500 font-black whitespace-nowrap">
+                              {index % 2 !== 0 ? 'استمـر' : 'قراءة'} <span className="hidden md:inline">{index % 2 !== 0 ? ' في القراءة' : ' المزيد'}</span>
                               <ArrowLeft className="w-4 h-4" />
                             </span>
                           </div>
@@ -919,7 +919,7 @@ function Home() {
                   className={`glass-card overflow-hidden h-72 relative group transition-all duration-500 flex flex-col border border-primary-navy/5`}
                 >
                   <div className="absolute inset-0">
-                    <img src={cat.img} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-1000" />
+                    <img src={cat.img} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-1000" referrerPolicy="no-referrer" />
                     <div className="absolute inset-0 bg-primary-navy/40 group-hover:bg-primary-navy/20 transition-all duration-500 z-0"></div>
                   </div>
                   <div className="relative z-10 flex-1 p-6 flex flex-col items-center justify-end">

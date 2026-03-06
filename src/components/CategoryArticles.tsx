@@ -17,8 +17,22 @@ export default function CategoryArticles() {
     const isAdActive = (ad: any) => {
         if (Number(ad.is_active) !== 1) return false;
         const now = new Date();
-        if (ad.start_date && new Date(ad.start_date) > now) return false;
-        if (ad.end_date && new Date(ad.end_date) < now) return false;
+
+        if (ad.start_date) {
+            const start = new Date(ad.start_date);
+            if (!isNaN(start.getTime()) && start.getTime() > 0) {
+                const startDay = new Date(start.getFullYear(), start.getMonth(), start.getDate());
+                const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+                if (startDay > today) return false;
+            }
+        }
+
+        if (ad.end_date) {
+            const end = new Date(ad.end_date);
+            if (!isNaN(end.getTime()) && end.getTime() > 0) {
+                if (end < now) return false;
+            }
+        }
         return true;
     };
 
@@ -68,7 +82,7 @@ export default function CategoryArticles() {
             <div className={`py-20 relative overflow-hidden ${category?.background_url ? '' : 'bg-primary-navy'}`}>
                 {category?.background_url ? (
                     <div className="absolute inset-0 z-0">
-                        <img src={category.background_url} className="w-full h-full object-cover" alt="" />
+                        <img src={category.background_url} className="w-full h-full object-cover" alt="" referrerPolicy="no-referrer" />
                         <div className="absolute inset-0 bg-primary-navy/70 backdrop-blur-sm"></div>
                     </div>
                 ) : (
@@ -126,14 +140,14 @@ export default function CategoryArticles() {
                                                 <div className="p-8 flex-1 flex flex-col">
                                                     <div className="flex items-center gap-4 text-[10px] text-gray-400 font-bold uppercase tracking-widest mb-4">
                                                         <span className="flex items-center gap-1.5"><Calendar className="w-3.5 h-3.5" /> {new Date(article.created_at).toLocaleDateString('ar-YE')}</span>
-                                                        <span className="flex items-center gap-1.5"><Eye className="w-3.5 h-3.5" /> {article.views || 0}</span>
+                                                        <span className="flex items-center gap-1.5"><Eye className="w-3.5 h-3.5" /> {article.views || 0} قراءة</span>
                                                     </div>
                                                     <h3 className="text-xl font-black text-primary-navy group-hover:text-primary-crimson transition-colors line-clamp-2 leading-tight mb-6 flex-1">
                                                         {article.title}
                                                     </h3>
-                                                    <div className="flex items-center justify-between pt-6 border-t border-gray-50 mt-auto">
-                                                        <span className="text-xs font-black text-primary-navy/60 group-hover:text-primary-navy transition-colors">بواسطة: {article.writer_name || article.author || "هدس"}</span>
-                                                        <ArrowLeft className="w-4 h-4 text-primary-crimson group-hover:translate-x-[-5px] transition-transform" />
+                                                    <div className="flex items-center justify-between pt-6 border-t border-gray-50 mt-auto overflow-hidden">
+                                                        <span className="text-xs font-black text-primary-navy/60 group-hover:text-primary-navy transition-colors truncate">بواسطة: {article.writer_name || article.author || "هدس"}</span>
+                                                        <ArrowLeft className="w-4 h-4 text-primary-crimson group-hover:translate-x-[-5px] transition-transform shrink-0" />
                                                     </div>
                                                 </div>
                                             </motion.div>
@@ -189,8 +203,8 @@ export default function CategoryArticles() {
                                         <a href={ad.link_url || '#'} target="_blank" rel="noopener noreferrer" className="block w-full relative group h-[400px]">
                                             {ad.image_url ? (
                                                 <div className="w-full h-full relative">
-                                                    <img src={ad.image_url} alt={ad.title} className="absolute inset-0 w-full h-full object-cover blur-2xl opacity-50 transition-transform duration-1000 group-hover:scale-110" />
-                                                    <img src={ad.image_url} alt={ad.title} className="relative w-full h-full object-contain transition-transform duration-1000 group-hover:scale-105 z-10" />
+                                                    <img src={ad.image_url} alt={ad.title} className="absolute inset-0 w-full h-full object-cover blur-2xl opacity-50 transition-transform duration-1000 group-hover:scale-110" referrerPolicy="no-referrer" />
+                                                    <img src={ad.image_url} alt={ad.title} className="relative w-full h-full object-contain transition-transform duration-1000 group-hover:scale-105 z-10" referrerPolicy="no-referrer" />
                                                 </div>
                                             ) : (
                                                 <div className="w-full h-full p-12 bg-gradient-to-br from-primary-navy to-primary-crimson text-white text-center rounded-[1.5rem] flex flex-col items-center justify-center">

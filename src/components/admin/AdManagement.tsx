@@ -26,6 +26,23 @@ const AdManagement: React.FC<AdManagementProps> = ({
     authenticatedFetch,
     fetchAds
 }) => {
+    const formatDateForInput = (dateString: string) => {
+        if (!dateString) return '';
+        try {
+            const date = new Date(dateString);
+            if (isNaN(date.getTime())) return '';
+            // Format to YYYY-MM-DDThh:mm for datetime-local
+            const year = date.getFullYear();
+            const month = String(date.getMonth() + 1).padStart(2, '0');
+            const day = String(date.getDate()).padStart(2, '0');
+            const hours = String(date.getHours()).padStart(2, '0');
+            const minutes = String(date.getMinutes()).padStart(2, '0');
+            return `${year}-${month}-${day}T${hours}:${minutes}`;
+        } catch (e) {
+            return '';
+        }
+    };
+
     return (
         <div className="space-y-10">
             <div className="flex justify-between items-center">
@@ -37,6 +54,13 @@ const AdManagement: React.FC<AdManagementProps> = ({
                     <Plus className="w-5 h-5 md:w-6 md:h-6" /> إضافة إعلان جديد
                 </button>
             </div>
+
+            {/*
+             - [x] تحسين محاذاة "قراءة المزيد" في شاشات الجوال <!-- id: 153 -->
+             - [x] إضافة كلمة "قراءة" لعدد المشاهدات <!-- id: 154 -->
+             - [x] توحيد بيانات الخبر في سطر واحد بصفحة التفاصيل <!-- id: 155 -->
+             - [x] إصلاح شامل لظهور الصور الخارجية (روابط جوجل وغيرها) <!-- id: 143 -->
+            */}
 
             {isEditingAd ? (
                 <div className="bg-white p-8 rounded-3xl shadow-xl border border-gray-100 animate-in fade-in slide-in-from-bottom-4 duration-500">
@@ -101,7 +125,7 @@ const AdManagement: React.FC<AdManagementProps> = ({
                                 <label className="text-sm font-black text-gray-700">تاريخ بدء العرض</label>
                                 <input
                                     type="datetime-local"
-                                    value={currentAd.start_date || ''}
+                                    value={formatDateForInput(currentAd.start_date)}
                                     onChange={e => setCurrentAd({ ...currentAd, start_date: e.target.value })}
                                     className="w-full p-4 bg-gray-50 border-2 border-gray-100 rounded-2xl font-bold focus:border-red-500 outline-none"
                                 />
@@ -110,7 +134,7 @@ const AdManagement: React.FC<AdManagementProps> = ({
                                 <label className="text-sm font-black text-gray-700">تاريخ انتهاء العرض</label>
                                 <input
                                     type="datetime-local"
-                                    value={currentAd.end_date || ''}
+                                    value={formatDateForInput(currentAd.end_date)}
                                     onChange={e => setCurrentAd({ ...currentAd, end_date: e.target.value })}
                                     className="w-full p-4 bg-gray-50 border-2 border-gray-100 rounded-2xl font-bold focus:border-red-500 outline-none"
                                 />
@@ -135,7 +159,17 @@ const AdManagement: React.FC<AdManagementProps> = ({
                                     <p className="font-black text-lg text-primary-navy truncate">{ad.title || 'إعلان بدون عنوان'}</p>
                                     <span className={`w-2 h-2 rounded-full ${ad.is_active === 1 ? 'bg-green-500 animate-pulse' : 'bg-gray-300'}`}></span>
                                 </div>
-                                <p className="text-sm text-gray-400 font-bold truncate mb-2">{ad.link_url || 'لا يوجد رابط توجه'}</p>
+                                <div className="flex flex-col gap-1 mb-2">
+                                    <p className="text-sm text-gray-400 font-bold truncate">{ad.link_url || 'لا يوجد رابط توجه'}</p>
+                                    <div className="flex items-center gap-4 text-[10px] font-black text-gray-400">
+                                        {ad.start_date && (
+                                            <span className="flex items-center gap-1">من: {new Date(ad.start_date).toLocaleString('ar-YE', { dateStyle: 'short', timeStyle: 'short' })}</span>
+                                        )}
+                                        {ad.end_date && (
+                                            <span className="flex items-center gap-1">إلى: {new Date(ad.end_date).toLocaleString('ar-YE', { dateStyle: 'short', timeStyle: 'short' })}</span>
+                                        )}
+                                    </div>
+                                </div>
                                 <div className="flex flex-wrap gap-2">
                                     {(ad.position?.split(',') || []).filter(Boolean).map(pos => (
                                         <span key={pos} className="text-[10px] bg-blue-50 text-blue-600 px-3 py-1 rounded-full font-black uppercase tracking-wider">

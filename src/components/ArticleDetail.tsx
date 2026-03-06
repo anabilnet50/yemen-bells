@@ -180,7 +180,15 @@ export default function ArticleDetail() {
 
 
   const inlineAds = ads.filter(ad => isAdActive(ad) && ad.position?.split(',').includes('inline'));
-  const sidebarAds = ads.filter(ad => isAdActive(ad) && ad.position?.split(',').includes('sidebar'));
+  const sidebarAds = ads.filter(ad => {
+    if (!isAdActive(ad)) return false;
+    const positions = ad.position?.split(',') || [];
+    // If it has both inline and sidebar, it shows in content only, exclude from sidebar
+    if (positions.includes('inline') && positions.includes('sidebar')) {
+      return false;
+    }
+    return positions.includes('sidebar');
+  });
 
   return (
     <div className="bg-[#f8f9fc] min-h-screen pb-20 pt-10">
@@ -235,24 +243,24 @@ export default function ArticleDetail() {
                   {article.title}
                 </h1>
 
-                <div className="flex flex-wrap items-center gap-6 text-gray-500 font-bold text-sm">
-                  <div className="flex items-center gap-2">
-                    <Calendar className="w-4 h-4 text-primary-crimson" />
-                    {new Date(article.created_at).toLocaleDateString("ar-YE", { day: "numeric", month: "long", year: "numeric" })}
+                <div className="flex items-center gap-2 md:gap-6 text-gray-500 font-bold text-[10px] md:text-sm overflow-x-auto scrollbar-hide pb-2">
+                  <div className="flex items-center gap-1 shrink-0">
+                    <Calendar className="w-3 h-3 md:w-4 md:h-4 text-primary-crimson" />
+                    <span className="whitespace-nowrap">{new Date(article.created_at).toLocaleDateString("ar-YE", { day: "numeric", month: "short" })}</span>
                   </div>
-                  <div className="flex items-center gap-3 bg-gray-50/80 px-4 py-2 rounded-2xl border border-gray-100/50">
+                  <div className="flex items-center gap-2 bg-gray-50/80 px-2 md:px-4 py-1.5 md:py-2 rounded-xl md:rounded-2xl border border-gray-100/50 shrink-0">
                     {article.category_slug === 'opinion' && article.writer_image ? (
-                      <div className="w-8 h-8 rounded-full overflow-hidden border-2 border-white shadow-sm ring-1 ring-primary-crimson/10">
-                        <img src={article.writer_image} className="w-full h-full object-cover" alt={article.writer_name} />
+                      <div className="w-5 h-5 md:w-8 md:h-8 rounded-full overflow-hidden border border-white shadow-sm ring-1 ring-primary-crimson/10">
+                        <img src={article.writer_image} className="w-full h-full object-cover" alt={article.writer_name} referrerPolicy="no-referrer" />
                       </div>
                     ) : (
-                      <User className="w-5 h-5 text-primary-crimson" />
+                      <User className="w-3 h-3 md:w-5 md:h-5 text-primary-crimson" />
                     )}
-                    <span className="font-black text-primary-navy">{article.writer_name || article.author || "هدس"}</span>
+                    <span className="font-black text-primary-navy truncate max-w-[80px] md:max-w-none">{article.writer_name || article.author || "هدس"}</span>
                   </div>
-                  <div className="flex items-center gap-2 text-primary-navy bg-gray-50/80 px-4 py-2 rounded-2xl border border-gray-100/50">
-                    <Eye className="w-4 h-4 text-primary-crimson" />
-                    <span className="font-bold">{article.views || 0} قراءة</span>
+                  <div className="flex items-center gap-1.5 text-primary-navy bg-gray-50/80 px-2 md:px-4 py-1.5 md:py-2 rounded-xl md:rounded-2xl border border-gray-100/50 shrink-0">
+                    <Eye className="w-3 h-3 md:w-4 md:h-4 text-primary-crimson" />
+                    <span className="font-bold whitespace-nowrap">{article.views || 0} قراءة</span>
                   </div>
                 </div>
               </div>
