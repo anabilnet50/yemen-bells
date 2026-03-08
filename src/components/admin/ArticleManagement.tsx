@@ -163,7 +163,7 @@ const ArticleManagement: React.FC<ArticleManagementProps> = ({
                                     value={currentArticle.title}
                                     onChange={e => setCurrentArticle({ ...currentArticle, title: e.target.value })}
                                     className="w-full p-5 bg-gray-50 border-2 border-gray-100 rounded-2xl focus:border-red-500 focus:bg-white transition-all outline-none font-black text-xl placeholder:text-gray-300"
-                                    placeholder="أدخل عنواناً جذاباً وقصيراً..."
+                                    placeholder="أدخل عنواناً كاملاً وتفصيلياً..."
                                     required
                                 />
                             </div>
@@ -178,6 +178,16 @@ const ArticleManagement: React.FC<ArticleManagementProps> = ({
                                         <option key={cat.id} value={cat.id}>{cat.name}</option>
                                     ))}
                                 </select>
+                                {categories.find(c => String(c.id) === String(currentArticle.category_id))?.slug === 'short-urgent' && (
+                                    <div className="mt-4 p-4 bg-primary-crimson/5 border border-primary-crimson/20 rounded-2xl flex items-start gap-3 animate-pulse">
+                                        <AlertCircle className="w-5 h-5 text-primary-crimson mt-0.5" />
+                                        <p className="text-xs font-black text-primary-crimson leading-relaxed">
+                                            ملاحظة: هذا التصنيف مخصص للهيرو (الواجهة العلوية).
+                                            <br />
+                                            سيظهر العنوان الرئيسي والميديا هنا في المساحة الكبيرة للموقع.
+                                        </p>
+                                    </div>
+                                )}
                             </div>
                             <div className="space-y-3">
                                 <label className="block text-sm font-black text-gray-700 text-blue-600">رابط الفيديو (YouTube)</label>
@@ -250,19 +260,20 @@ const ArticleManagement: React.FC<ArticleManagementProps> = ({
                             </div>
                         </div>
 
-                        {!categories.find(c => String(c.id) === String(currentArticle.category_id))?.slug.includes('youtube') && (
-                            <div className="space-y-3">
-                                <label className="block text-sm font-black text-gray-700">محتوى الخبر التفصيلي</label>
-                                <textarea
-                                    rows={12}
-                                    value={currentArticle.content}
-                                    onChange={e => setCurrentArticle({ ...currentArticle, content: e.target.value })}
-                                    className="w-full p-4 bg-gray-50 border-2 border-gray-100 rounded-2xl focus:border-red-500 focus:bg-white transition-all outline-none font-bold leading-relaxed"
-                                    placeholder="اكتب تفاصيل الخبر هنا..."
-                                    required
-                                ></textarea>
-                            </div>
-                        )}
+                        {!categories.find(c => String(c.id) === String(currentArticle.category_id))?.slug.includes('youtube') &&
+                            categories.find(c => String(c.id) === String(currentArticle.category_id))?.slug !== 'short-urgent' && (
+                                <div className="space-y-3">
+                                    <label className="block text-sm font-black text-gray-700">محتوى الخبر التفصيلي</label>
+                                    <textarea
+                                        rows={12}
+                                        value={currentArticle.content}
+                                        onChange={e => setCurrentArticle({ ...currentArticle, content: e.target.value })}
+                                        className="w-full p-4 bg-gray-50 border-2 border-gray-100 rounded-2xl focus:border-red-500 focus:bg-white transition-all outline-none font-bold leading-relaxed"
+                                        placeholder="اكتب تفاصيل الخبر هنا..."
+                                        required
+                                    ></textarea>
+                                </div>
+                            )}
 
                         <div className="flex items-center gap-6 bg-red-50 p-6 rounded-2xl border border-red-100">
                             <div className="flex items-center gap-4">
@@ -275,7 +286,7 @@ const ArticleManagement: React.FC<ArticleManagementProps> = ({
                                 />
                                 <label htmlFor="urgent" className="font-black text-red-700 cursor-pointer flex flex-col">
                                     <span>تمييز كخبر عاجل</span>
-                                    <span className="text-[10px] font-bold text-red-500/70">(يظهر في الهيرو الكبير وشريط الأخبار)</span>
+                                    <span className="text-[10px] font-bold text-red-500/70">(يظهر في شريط الأخبار السفلي بجانب قسمه الأصلي)</span>
                                 </label>
                             </div>
                         </div>

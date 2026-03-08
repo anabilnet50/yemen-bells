@@ -50,7 +50,8 @@ export async function initDb() {
         is_deleted INTEGER DEFAULT 0,
         is_active INTEGER DEFAULT 1,
         views INTEGER DEFAULT 0,
-        tags TEXT
+        tags TEXT,
+        short_title TEXT
       );
     `);
 
@@ -76,6 +77,7 @@ export async function initDb() {
       await client.query('ALTER TABLE categories ADD COLUMN IF NOT EXISTS background_url TEXT');
       await client.query('ALTER TABLE ads ADD COLUMN IF NOT EXISTS start_date TIMESTAMPTZ');
       await client.query('ALTER TABLE ads ADD COLUMN IF NOT EXISTS end_date TIMESTAMPTZ');
+      await client.query('ALTER TABLE articles ADD COLUMN IF NOT EXISTS short_title TEXT');
     } catch (e) {
       console.log('Columns might already exist');
     }
@@ -182,7 +184,7 @@ export async function initDb() {
     const ensureCategories = [
       { name: 'أخبار محلية', slug: 'local' },
       { name: 'أخبار دولية', slug: 'intl' },
-      { name: 'عام', slug: 'general' },
+      { name: 'عاجل', slug: 'general' },
       { name: 'اقتصاد', slug: 'economy' },
       { name: 'رياضة', slug: 'sports' },
       { name: 'تكنولوجيا', slug: 'tech' },
@@ -191,6 +193,7 @@ export async function initDb() {
       { name: 'أبحاث ودراسات', slug: 'studies' },
       { name: 'يوتيوب', slug: 'youtube' },
       { name: 'مجتمع', slug: 'society' },
+      { name: 'عاجل قصير', slug: 'short-urgent' },
     ];
 
     for (const cat of ensureCategories) {

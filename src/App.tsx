@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { BrowserRouter as Router, Routes, Route, Link, useNavigate } from 'react-router-dom';
 import { Search, Globe, Facebook, Twitter, Youtube, Linkedin, ChevronLeft, ChevronRight, Calendar, User, Eye, TrendingUp, Play, Clock, Send, MessageCircle, ArrowLeft, MapPin, DollarSign } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
@@ -37,6 +37,21 @@ const isAdActive = (ad: any) => {
   return true;
 };
 
+const DigitalClock = () => {
+  const [time, setTime] = useState(new Date());
+
+  useEffect(() => {
+    const timer = setInterval(() => setTime(new Date()), 1000);
+    return () => clearInterval(timer);
+  }, []);
+
+  return (
+    <span className="font-sans font-black text-[9px] md:text-xs tracking-tighter md:tracking-widest tabular-nums" style={{ direction: 'ltr' }}>
+      {time.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true })}
+    </span>
+  );
+};
+
 function Home() {
   const [articles, setArticles] = useState<any[]>([]);
   const [categories, setCategories] = useState<any[]>([]);
@@ -55,19 +70,16 @@ function Home() {
   const [showBackToTop, setShowBackToTop] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const articlesPerPage = 3;
-  const smallArticlesPerPage = 3;
   const navigate = useNavigate();
 
-  const urgentArticles = articles.filter(a => a.is_urgent == 1 || a.is_urgent === true || a.is_urgent === '1');
-  const mainArticle = urgentArticles[0] || articles[0];
+  const urgentArticles = useMemo(() => articles.filter(a => (a.is_urgent == 1 || a.is_urgent === true || a.is_urgent === '1') && a.category_slug !== 'short-urgent'), [articles]);
+  const shortUrgentArticles = useMemo(() => articles.filter(a => a.category_slug === 'short-urgent'), [articles]);
+  const displayArticles = useMemo(() => articles.filter(a => !(a.is_urgent == 1 || a.is_urgent === true || a.is_urgent === '1') && a.category_slug !== 'short-urgent'), [articles]);
+  const mainArticle = useMemo(() => shortUrgentArticles[0] || displayArticles[0], [shortUrgentArticles, displayArticles]);
 
   const [videoLoaded, setVideoLoaded] = useState(false);
-  const [currentTime, setCurrentTime] = useState(new Date());
 
-  useEffect(() => {
-    const timer = setInterval(() => setCurrentTime(new Date()), 1000);
-    return () => clearInterval(timer);
-  }, []);
+
 
   useEffect(() => {
     // Delay loading video to prioritize initial render
@@ -153,21 +165,30 @@ function Home() {
     }
   };
 
-  const centerCategories = ['local', 'intl', 'general'];
-  const centerArticles = articles.filter(a => centerCategories.includes(a.category_slug));
+  const filteredDisplayArticles = useMemo(() => articles.filter(a => {
+    const isHeroOnly = a.category_slug === 'short-urgent';
 
-  const filteredDisplayArticles = selectedCategory
-    ? articles.filter(a => a.category_slug === selectedCategory)
-    : centerArticles;
+    // Exclude only hero-only articles from the center feed
+    if (isHeroOnly) return false;
 
-  const totalPages = Math.ceil(filteredDisplayArticles.length / articlesPerPage);
-  const paginatedArticles = filteredDisplayArticles.slice(
+    // If a category is selected, show only that category
+    if (selectedCategory) {
+      return a.category_slug === selectedCategory;
+    }
+
+    // Default view: Show center categories
+    const centerCategories = ['local', 'intl', 'general'];
+    return centerCategories.includes(a.category_slug);
+  }), [articles, selectedCategory]);
+
+  const totalPages = useMemo(() => Math.ceil(filteredDisplayArticles.length / articlesPerPage), [filteredDisplayArticles.length, articlesPerPage]);
+  const paginatedArticles = useMemo(() => filteredDisplayArticles.slice(
     (currentPage - 1) * articlesPerPage,
     currentPage * articlesPerPage
-  );
+  ), [filteredDisplayArticles, currentPage, articlesPerPage]);
 
-  const opinionArticles = articles.filter(a => a.category_slug === 'opinion');
-  const studiesArticles = articles.filter(a => a.category_slug === 'studies');
+  const opinionArticles = useMemo(() => articles.filter(a => a.category_slug === 'opinion'), [articles]);
+  const studiesArticles = useMemo(() => articles.filter(a => a.category_slug === 'studies'), [articles]);
 
   if (!settings) {
     return (
@@ -376,11 +397,11 @@ function Home() {
           {/* Top Section */}
           <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 p-0 md:p-6">
             {/* Main News Hero - Premium Large Format */}
-            <div className="lg:col-span-3 flex flex-col group/hero">
+            <div className="lg:col-span-3 flex flex-col group/hero order-1 lg:order-1">
               {mainArticle && (
                 <div
-                  onClick={() => navigate(`/article/${mainArticle.id}`)}
-                  className="relative h-[250px] sm:h-[350px] md:h-[480px] bg-primary-navy rounded-none md:rounded-3xl overflow-hidden cursor-pointer shadow-none md:shadow-premium border-none md:border border-white/5 group"
+                  onClick={mainArticle.category_slug === 'short-urgent' ? undefined : () => navigate(`/article/${mainArticle.id}`)}
+                  className={`relative h-[250px] sm:h-[350px] md:h-[480px] bg-primary-navy rounded-none md:rounded-3xl overflow-hidden ${mainArticle.category_slug === 'short-urgent' ? '' : 'cursor-pointer shadow-none md:shadow-premium border-none md:border border-white/5'} group`}
                 >
                   {/* Watermark Logo - Compact & Focused - Always visible over image or video */}
                   <div className="absolute top-4 right-4 md:top-8 md:right-8 z-40 flex flex-col items-end pointer-events-none group-hover:scale-110 transition-transform duration-700">
@@ -423,7 +444,7 @@ function Home() {
                           <img
                             src={mainArticle.image_url}
                             alt={mainArticle.title}
-                            className="w-full h-auto object-contain transition-transform duration-1000 scale-100 group-hover:scale-105"
+                            className={`w-full h-auto object-contain transition-transform duration-1000 scale-100 ${mainArticle.category_slug === 'short-urgent' ? '' : 'group-hover:scale-105'}`}
                             referrerPolicy="no-referrer"
                           />
                         </div>
@@ -507,20 +528,20 @@ function Home() {
                     {/* Time Indicator - Left Side - Aggressively Shrinked for Mobile Space */}
                     <div className="bg-primary-crimson text-white px-1 md:px-2 flex items-center justify-center shrink-0 relative overflow-hidden group/clock z-20 shadow-[-10px_0_20px_white]">
                       <div className="absolute inset-0 bg-white/10 animate-pulse"></div>
-                      <span className="font-sans font-black text-[9px] md:text-xs tracking-tighter md:tracking-widest tabular-nums" style={{ direction: 'ltr' }}>{currentTime.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true })}</span>
+                      <DigitalClock />
                     </div>
                   </div>
 
                   {/* High-End Overlay - Moved Up slightly to accommodate the ticker */}
                   <div className="absolute inset-0 bg-gradient-to-t from-primary-navy/90 via-transparent to-transparent flex flex-col justify-end p-8 md:p-10 pb-16 md:pb-20">
                     <div className="flex items-center gap-3 mb-3">
-                      <span className="bg-white/10 backdrop-blur-md text-white/90 border border-white/10 px-3 py-1 text-[10px] md:text-xs font-black uppercase tracking-[0.2em] rounded-full">
-                        {mainArticle.category_name}
+                      <span className="bg-primary-crimson text-white border border-primary-crimson px-3 py-1 text-[10px] md:text-sm font-black uppercase tracking-[0.2em] rounded-full shadow-[0_0_15px_rgba(225,29,72,0.4)] animate-pulse">
+                        عاجل
                       </span>
                     </div>
 
-                    <h2 className="text-white text-xl md:text-2xl font-black leading-[1.2] mb-4 group-hover:text-accent-gold transition-colors duration-500 drop-shadow-2xl line-clamp-2">
-                      {mainArticle.title}
+                    <h2 className={`text-white text-xl md:text-3xl font-black leading-[1.2] mb-4 ${mainArticle.category_slug === 'short-urgent' ? '' : 'group-hover:text-accent-gold'} transition-colors duration-500 drop-shadow-2xl line-clamp-3`}>
+                      {mainArticle.short_title || mainArticle.title}
                     </h2>
 
                     <div className="flex items-center justify-between opacity-0 group-hover:opacity-100 transition-opacity duration-500">
@@ -538,7 +559,7 @@ function Home() {
             </div>
 
             {/* Ad Space - Dynamic Elite Promotion */}
-            <div className="lg:col-span-1 glass-card bg-primary-navy text-white flex flex-col items-center justify-center p-0 text-center relative overflow-hidden h-auto group shadow-2xl border border-white/5 rounded-[2rem]">
+            <div className="lg:col-span-1 glass-card bg-primary-navy text-white flex flex-col items-center justify-center p-0 text-center relative overflow-hidden h-auto group shadow-2xl border border-white/5 rounded-[2rem] order-2 lg:order-2">
               {ads.filter(ad => isAdActive(ad) && ad.position?.split(',').includes('top')).length > 0 ? (
                 (() => {
                   const ad = ads.filter(ad => isAdActive(ad) && ad.position?.split(',').includes('top'))[0];
@@ -588,7 +609,7 @@ function Home() {
           {/* Middle Section - Precision Journalism Layout */}
           <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 items-stretch px-4 md:px-6">
             {/* Right Column (Articles & Studies) - order-1 on mobile, order-1 on desktop */}
-            <div className="lg:col-span-1 order-1 lg:order-1 flex flex-col gap-6">
+            <div className="lg:col-span-1 order-2 lg:order-1 flex flex-col gap-6">
 
               {/* Articles Section (Redesigned from Opinion) */}
               <div className="glass-card overflow-hidden flex-1 flex flex-col border border-primary-navy/5 relative group h-60">
@@ -687,12 +708,12 @@ function Home() {
             </div>
 
             {/* Center Column (News Feed - Elite Curation) - order-2 on both */}
-            <div id="news-feed-top" className="lg:col-span-2 order-2 flex flex-col glass-card bg-white shadow-2xl overflow-hidden border border-primary-navy/10 group/feed">
+            <div id="news-feed-top" className="lg:col-span-2 order-1 lg:order-2 flex flex-col glass-card bg-white shadow-2xl overflow-hidden border border-primary-navy/10 group/feed">
               <div className="bg-primary-navy p-6 flex justify-between items-center relative overflow-hidden">
                 <div className="absolute inset-0 bg-primary-crimson/5 skew-x-[-20deg] translate-x-[-50%] group-hover/feed:translate-x-[-40%] transition-transform duration-1000"></div>
                 <h3 className="font-black text-xl text-white flex items-center gap-4 relative z-10">
                   <div className="p-2.5 bg-primary-crimson/20 rounded-xl shadow-inner"><TrendingUp className="w-5 h-5 text-primary-crimson" /></div>
-                  <span className="tracking-widest uppercase text-base md:text-lg">تغطية خاصة | <span className="text-accent-gold">{selectedCategory ? categories.find(c => c.slug === selectedCategory)?.name : 'آخر المستجدات'}</span></span>
+                  <span className="tracking-widest uppercase text-base md:text-lg">تغطية خاصة | <span className="text-accent-gold">{selectedCategory ? categories.find(c => c.slug === selectedCategory)?.name : 'أخبار محلية'}</span></span>
                 </h3>
                 <div className="flex items-center gap-4 relative z-10">
                   <div className="flex -space-x-2">
@@ -713,7 +734,7 @@ function Home() {
                       className="group/item"
                     >
                       <div
-                        className="p-5 md:px-6 md:py-8 flex flex-col sm:flex-row items-center gap-6 md:gap-8 hover:bg-surface-soft/80 transition-all duration-700 cursor-pointer relative"
+                        className={`p-5 md:px-6 md:py-8 flex flex-col ${index % 2 === 1 ? 'sm:flex-row-reverse' : 'sm:flex-row'} items-center gap-6 md:gap-8 hover:bg-surface-soft/80 transition-all duration-700 cursor-pointer relative`}
                         onClick={() => navigate(`/article/${article.id}`)}
                       >
                         {/* Left Interaction Stripe */}

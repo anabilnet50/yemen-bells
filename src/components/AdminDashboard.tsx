@@ -4,7 +4,7 @@ import {
   RotateCcw, FileText, Filter, Search, Eye, Play,
   LayoutDashboard, DollarSign, MessageCircle, AlertCircle,
   EyeOff, ChevronRight, ChevronLeft, Calendar,
-  Bell, Settings, Users, Database, Shield, Activity
+  Bell, Settings, Users, Database, Shield, Activity, Zap
 } from 'lucide-react';
 import AdminSidebar from './admin/AdminSidebar.tsx';
 import DashboardOverview from './admin/DashboardOverview.tsx';
@@ -301,10 +301,12 @@ export default function AdminDashboard() {
 
     // If it's a YouTube category, ensure we have some content
     const articleToSave = { ...currentArticle };
+    delete articleToSave.short_title;
     const isYouTube = categories.find(c => c.id === Number(articleToSave.category_id))?.slug.includes('youtube');
+    const isShortUrgent = categories.find(c => c.id === Number(articleToSave.category_id))?.slug === 'short-urgent';
 
-    if (isYouTube && !articleToSave.content) {
-      articleToSave.content = 'شاهد الفيديو';
+    if ((isYouTube || isShortUrgent) && !articleToSave.content) {
+      articleToSave.content = isYouTube ? 'شاهد الفيديو' : 'محتوى عاجل قصير';
     }
 
     authenticatedFetch(url, {
