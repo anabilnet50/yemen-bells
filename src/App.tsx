@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { BrowserRouter as Router, Routes, Route, Link, useNavigate } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Link, useNavigate, useLocation } from 'react-router-dom';
 import { Search, Globe, Facebook, Twitter, Youtube, Linkedin, ChevronLeft, ChevronRight, Calendar, User, Eye, TrendingUp, Play, Clock, Send, MessageCircle, ArrowLeft, MapPin, DollarSign } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import ArticleDetail from './components/ArticleDetail';
@@ -57,7 +57,40 @@ function Home() {
   const [categories, setCategories] = useState<any[]>([]);
   const [ads, setAds] = useState<any[]>([]);
   const [settings, setSettings] = useState<any>(null);
-  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+
+  // Initialize selectedCategory based on localStorage for rock-solid persistence across page navigation
+  const [selectedCategory, setSelectedCategory] = useState<string | null>(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('hads_selected_tab');
+      return saved && saved !== 'null' ? saved : null;
+    }
+    return null;
+  });
+
+  // Save to localStorage whenever user clicks a tab
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      if (selectedCategory) {
+        localStorage.setItem('hads_selected_tab', selectedCategory);
+      } else {
+        localStorage.removeItem('hads_selected_tab');
+      }
+    }
+  }, [selectedCategory]);
+
+  // Read URL hash on very first load JUST IN CASE it was previously bookmarked from our old logic,
+  // but rely primarily on localStorage moving forward.
+  useEffect(() => {
+    if (typeof window !== 'undefined' && window.location.hash) {
+      const hash = window.location.hash.replace('#', '');
+      if (hash && hash !== 'null') {
+        setSelectedCategory(hash);
+        // Clean up the URL so it's clean and doesn't interfere anymore
+        window.history.replaceState(null, '', window.location.pathname + window.location.search);
+      }
+    }
+  }, []);
+
   const [searchTerm, setSearchTerm] = useState('');
   const [searchResults, setSearchResults] = useState<any[]>([]);
   const [isSearching, setIsSearching] = useState(false);
@@ -75,6 +108,7 @@ function Home() {
   const urgentArticles = useMemo(() => articles.filter(a => (a.is_urgent == 1 || a.is_urgent === true || a.is_urgent === '1') && a.category_slug !== 'short-urgent'), [articles]);
   const shortUrgentArticles = useMemo(() => articles.filter(a => a.category_slug === 'short-urgent'), [articles]);
   const displayArticles = useMemo(() => articles.filter(a => !(a.is_urgent == 1 || a.is_urgent === true || a.is_urgent === '1') && a.category_slug !== 'short-urgent'), [articles]);
+
   const mainArticle = useMemo(() => shortUrgentArticles[0] || displayArticles[0], [shortUrgentArticles, displayArticles]);
 
   const [videoLoaded, setVideoLoaded] = useState(false);
@@ -165,21 +199,39 @@ function Home() {
     }
   };
 
+  // 1. Check if there are ANY recent urgent articles (within last 5 hours) globally
+  const hasRecentUrgent = useMemo(() => {
+    return articles.some(art => {
+      if (art.category_slug !== 'general') return false;
+      const createdAt = new Date(art.created_at || new Date());
+      const hoursDiff = (new Date().getTime() - createdAt.getTime()) / (1000 * 60 * 60);
+      return hoursDiff <= 5;
+    });
+  }, [articles]);
+
   const filteredDisplayArticles = useMemo(() => articles.filter(a => {
     const isHeroOnly = a.category_slug === 'short-urgent';
 
     // Exclude only hero-only articles from the center feed
     if (isHeroOnly) return false;
 
-    // If a category is selected, show only that category
+    // If a category is selected via tabs (e.g., user clicked "أخبار دولية"), strictly show only that category
     if (selectedCategory) {
       return a.category_slug === selectedCategory;
     }
 
-    // Default view: Show center categories
-    const centerCategories = ['local', 'intl', 'general'];
-    return centerCategories.includes(a.category_slug);
-  }), [articles, selectedCategory]);
+    // --- Default Home View Logic (No tab selected - Middle Feed under "تغطية خاصة") ---
+
+    // 2. The User's Logic: 
+    // - IF there is a recent urgent (< 5 hours), the feed shows ONLY Urgent (general).
+    // - IF 5 hours pass (or none exist), the feed flips to ONLY Local (local).
+    if (hasRecentUrgent) {
+      return a.category_slug === 'general';
+    } else {
+      return a.category_slug === 'local';
+    }
+
+  }), [articles, selectedCategory, hasRecentUrgent]);
 
   const totalPages = useMemo(() => Math.ceil(filteredDisplayArticles.length / articlesPerPage), [filteredDisplayArticles.length, articlesPerPage]);
   const paginatedArticles = useMemo(() => filteredDisplayArticles.slice(
@@ -207,8 +259,46 @@ function Home() {
   return (
     <div className="font-sans bg-surface-soft min-h-screen text-primary-navy">
       <div className="max-w-7xl mx-auto bg-white/80 backdrop-blur-xl shadow-premium relative z-10">
-        {/* Header */}
-        <header className="relative bg-black overflow-hidden">
+        {/* Mobile Top Ad - Fixed Premium Header Space - Increased Height */}
+        <div className="lg:hidden bg-primary-navy overflow-hidden h-28 relative group border-b border-white/5">
+          {ads.filter(ad => isAdActive(ad) && ad.position?.split(',').includes('top')).length > 0 ? (
+            (() => {
+              const ad = ads.filter(ad => isAdActive(ad) && ad.position?.split(',').includes('top'))[0];
+              return (
+                <a href={ad.link_url || '#'} target="_blank" rel="noopener noreferrer" className="block w-full h-full relative">
+                  <div className="absolute top-2 right-2 z-20">
+                    <span className="bg-accent-gold text-primary-navy px-2 py-0.5 rounded-md text-[8px] font-black uppercase tracking-widest shadow-lg">
+                      إعلان
+                    </span>
+                  </div>
+                  {ad.image_url ? (
+                    <img src={ad.image_url} alt={ad.title} className="w-full h-full object-contain bg-black/40" referrerPolicy="no-referrer" />
+                  ) : (
+                    <div className="w-full h-full p-4 flex items-center justify-center bg-gradient-to-r from-primary-navy to-primary-crimson">
+                      <h3 className="text-white text-sm font-black truncate px-10">{ad.title}</h3>
+                    </div>
+                  )}
+                  <div className="absolute inset-0 bg-black/10"></div>
+                </a>
+              );
+            })()
+          ) : (
+            <div className="relative z-10 w-full h-full flex flex-col justify-center items-center bg-gradient-to-r from-primary-navy to-primary-crimson">
+              <div className="absolute inset-0 opacity-10 bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')]"></div>
+              <div className="absolute top-2 right-2 z-20">
+                <span className="bg-accent-gold text-primary-navy px-2 py-0.5 rounded-md text-[8px] font-black uppercase tracking-widest shadow-lg">
+                  مساحة إعلانية
+                </span>
+              </div>
+              <div className="text-xl font-black tracking-[0.2em] font-serif italic text-white/50 relative z-10">
+                هـدس بريميوم
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Header - V7 Mobile Match & Stable Desktop */}
+        <header className="relative bg-black overflow-hidden h-auto min-h-[220px] md:min-h-[400px]">
           {/* Top Bar - Elite Thin Line */}
           <div className="bg-black/30 backdrop-blur-sm text-white py-2 px-8 border-b border-white/5 relative z-30">
             <div className="flex justify-between items-center text-xs md:text-sm font-black uppercase tracking-[0.2em]">
@@ -225,145 +315,152 @@ function Home() {
             </div>
           </div>
 
-          {/* Luxury Header Content - Restructured for Vertical Branding */}
-          <div className="relative h-auto min-h-[350px] md:h-80 px-4 md:px-8 flex flex-col items-center justify-between overflow-hidden py-4">
-            {/* Artistic Background Overlay - Premium Stone Texture */}
-            <div className="absolute inset-0 z-0">
-              <img
-                src={settings.header_background_url || "/header_bg.jpg"}
-                alt="Header Background"
-                className="w-full h-full object-cover object-center opacity-100 scale-100 pointer-events-none select-none"
-              />
+          {/* Artistic Background Overlay - Original Clarity State */}
+          <div className="absolute inset-0 z-0 bg-black">
+            <img
+              src={settings.header_background_url || "/header_bg.jpg"}
+              alt="Header Background"
+              className="w-full h-full object-cover object-center opacity-100"
+              referrerPolicy="no-referrer"
+            />
+          </div>
 
-              {/* Restored News Globe Animation - Enhanced Visibility with Blending */}
-              <div
-                className="absolute top-1/2 -left-10 md:-left-12 -translate-y-1/2 w-[220px] md:w-[650px] h-[220px] md:h-[650px] opacity-80 select-none pointer-events-none mix-blend-lighten drop-shadow-[0_0_20px_rgba(251,191,36,0.2)]"
-              >
-                <img
-                  src={settings.news_ball_image || "https://tse1.mm.bing.net/th/id/OIP.dKbPF3sk4Qg2vDcgN6jjxAHaB2?rs=1&pid=ImgDetMain&o=7&rm=3"}
-                  alt="News Globe"
-                  className="w-full h-full object-cover animate-[spin_60s_linear_infinite] rounded-full brightness-110 contrast-110"
-                  referrerPolicy="no-referrer"
-                />
+          {/* News Globe - Anchored on Left */}
+          <div className="absolute top-1/2 -left-32 md:-left-20 -translate-y-1/2 w-[250px] md:w-[700px] h-[250px] md:h-[700px] pointer-events-none opacity-70 md:opacity-100 z-10 mix-blend-screen overflow-hidden">
+            <img
+              src={settings.news_ball_image || "https://tse1.mm.bing.net/th/id/OIP.dKbPF3sk4Qg2vDcgN6jjxAHaB2?rs=1&pid=ImgDetMain&o=7&rm=3"}
+              alt="Globe Decor"
+              className="w-full h-full object-cover animate-[spin_60s_linear_infinite] rounded-full brightness-150 shadow-[0_0_80px_rgba(59,130,246,0.5)]"
+              referrerPolicy="no-referrer"
+            />
+          </div>
+
+          {/* Central Identity Stack - Strict 2-Column Row Alignment */}
+          <div className="relative z-20 w-full h-full flex flex-row items-center justify-between pt-24 md:pt-48 pb-2 md:pb-4 px-2 md:px-16 pointer-events-none">
+
+            {/* Right Side: Site Name & Tagline */}
+            <motion.div
+              initial={{ opacity: 0, x: 30 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ duration: 1, ease: "easeOut" }}
+              className="flex flex-col items-center justify-center w-[60%] md:w-5/12 md:-translate-x-12"
+            >
+              {/* Row 1: Top Label */}
+              <div className="h-[40px] md:h-[60px] flex items-end justify-center mb-1 w-full">
+                <h1 className="text-sm sm:text-lg md:text-2xl lg:text-3xl font-black tracking-tighter text-transparent bg-clip-text bg-gradient-to-br from-white via-red-100 to-primary-crimson drop-shadow-[0_4px_10px_rgba(225,29,72,0.6)] leading-none select-none whitespace-nowrap">
+                  𐩠𐩵𐩪 هدس – الأقرب للأحدث
+                </h1>
               </div>
 
-              <div className="absolute inset-0 bg-black/5"></div>
-              {/* Extra Dynamic Overlays for depth - Static Subtle Shift */}
-              <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(251,191,36,0.05),transparent)] pointer-events-none"></div>
-            </div>
+              {/* Divider / Spacer */}
+              <div className="w-12 md:w-32 h-[2px] md:h-1 bg-gradient-to-r from-transparent via-primary-crimson to-transparent rounded-full opacity-80 mb-1 drop-shadow-[0_0_10px_rgba(225,29,72,0.8)] mx-auto"></div>
 
-            {/* TOP: Site Name & Tagline - Centered Above Logo */}
-            <div className="relative z-20 w-full flex flex-col items-center pt-2 md:pt-4">
-              <Link to="/" onClick={() => setSelectedCategory(null)} className="group flex flex-col items-center">
-                <motion.div
-                  initial={{ opacity: 0, y: -20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  className="flex flex-col items-center"
+              {/* Row 2: Bottom Detail */}
+              <div className="h-[40px] md:h-[60px] flex items-start justify-center text-center w-full">
+                <h2 className="text-[9px] md:text-lg font-bold text-accent-gold/90 drop-shadow-xl tracking-widest leading-none">
+                  موقع اخباري متكامل
+                </h2>
+              </div>
+            </motion.div>
+
+            {/* Left Side: Editor-in-Chief */}
+            <motion.div
+              initial={{ opacity: 0, y: 30 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 1, delay: 0.3 }}
+              className="flex flex-col items-center justify-center w-[40%] md:w-1/3 z-20 translate-x-12 md:-translate-x-8 pr-4 md:pr-0"
+            >
+              {/* Row 1: Top Label */}
+              <div className="h-[40px] md:h-[60px] flex items-end justify-center mb-1 w-full">
+                <span className="text-accent-gold/90 text-[10px] md:text-2xl font-black tracking-widest drop-shadow-[0_1px_4px_rgba(0,0,0,1)] uppercase leading-none relative -top-1 md:-top-3">
+                  رئيس التحرير
+                </span>
+              </div>
+
+              {/* Divider / Spacer to match structurally */}
+              <div className="h-[2px] md:h-1 opacity-0 mb-1"></div>
+
+              {/* Row 2: Bottom Detail */}
+              <div className="h-[40px] md:h-[60px] flex items-start justify-center w-full">
+                <span
+                  className="text-lg md:text-5xl text-white drop-shadow-[0_2px_8px_rgba(0,0,0,0.8)] whitespace-nowrap leading-none relative -top-2 md:-top-4"
+                  style={{
+                    fontFamily: "'Aref Ruqaa', 'Amiri', 'Tajawal', cursive, serif",
+                    fontWeight: 700,
+                    textShadow: '1px 1px 0px rgba(0,0,0,0.5), -1px -1px 0 rgba(225,29,72,0.5)'
+                  }}
                 >
-                  <h1 className="relative text-3xl md:text-5xl font-black tracking-tight flex items-center gap-3 whitespace-nowrap"
-                    style={{
-                      background: 'linear-gradient(to right, #fefce8, #f59e0b, #d97706, #f59e0b, #fefce8)',
-                      backgroundSize: '200% auto',
-                      WebkitBackgroundClip: 'text',
-                      WebkitTextFillColor: 'transparent',
-                      backgroundClip: 'text',
-                      animation: 'logo-pulse 2.5s ease-in-out infinite, logo-gif-shimmer 3s linear infinite',
-                      filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.8))'
-                    }}
-                  >
-                    <span>{settings.site_name || '𐩠𐩵𐩪 هدس'}</span>
-                  </h1>
-                  <div className="mt-2 text-accent-gold font-black text-xs md:text-sm tracking-[0.2em] uppercase italic bg-black/60 px-6 py-1.5 rounded-full border border-accent-gold/20 backdrop-blur-xl whitespace-nowrap shadow-[0_0_15px_rgba(245,158,11,0.2)]">
-                    {settings.site_tagline || 'الأقرب للأحدث - موقع إخباري شامل'}
-                  </div>
-                </motion.div>
-              </Link>
-            </div>
-
-            {/* BOTTOM: Chief Editor Info - Centered Below Logo */}
-            <div className="relative z-20 w-full flex flex-col items-center pb-2 md:pb-4">
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="flex flex-col items-center group/editor"
-              >
-                <p className="text-accent-gold font-black text-[10px] md:text-xs uppercase tracking-[0.4em] mb-2 drop-shadow-lg bg-black/60 px-4 py-1 rounded-lg border border-accent-gold/20 backdrop-blur-md shadow-xl whitespace-nowrap">رئـيس التـحرير</p>
-                <div className="text-white font-serif italic text-xl md:text-3xl font-black tracking-wider drop-shadow-2xl bg-black/50 px-8 py-3 rounded-2xl border border-white/10 backdrop-blur-md">
                   {settings.chief_editor || 'صلاح حيدرة'}
-                </div>
-              </motion.div>
-            </div>
+                </span>
+              </div>
+            </motion.div>
+
+            {/* Left Column: Empty space to balance flex layout (Globe fills this space visually) */}
+            <div className="hidden md:block w-full md:w-1/3"></div>
+
           </div>
         </header>
 
-        {/* Elite Navigation Bar - Glassmorphism Sticky */}
-        <nav className="sticky top-0 z-[100] bg-white/95 backdrop-blur-md border-b border-primary-navy/5 shadow-premium">
-          <div className="px-4 md:px-8 flex flex-col md:flex-row justify-between items-center py-1.5 h-auto md:h-14 gap-2 md:gap-4">
-            {/* Search - Modern Minimalist Focus */}
+        {/* Navigation Bar - Stable Version */}
+        <nav className="sticky top-0 z-[100] bg-white border-b border-gray-100 shadow-sm">
+          <div className="max-w-7xl mx-auto px-2 md:px-8 flex flex-col md:flex-row justify-between items-center py-2 md:h-16 gap-2 md:gap-4">
+            {/* Search - Fixed Red Border */}
             <div className="relative w-full md:w-80 group order-2 md:order-2">
               <input
                 type="text"
-                placeholder="ابحث عن الحقيقة..."
+                placeholder="ابحث في الأخبار..."
                 value={searchTerm}
                 onChange={handleSearch}
-                className="w-full pl-6 pr-14 py-2.5 bg-surface-soft border-2 border-transparent focus:border-primary-crimson/30 focus:bg-white rounded-[1rem] outline-none font-bold text-sm transition-all duration-500 shadow-inner"
+                className="w-full pl-6 pr-10 md:pr-12 py-2 md:py-2.5 bg-gray-50 border-2 border-primary-crimson/50 focus:border-primary-crimson focus:ring-2 focus:ring-primary-crimson/20 rounded-xl outline-none font-bold text-xs md:text-sm transition-all"
               />
-              <div className="absolute right-1 top-1 bottom-1 w-12 bg-white rounded-xl flex items-center justify-center border border-gray-100 shadow-sm text-gray-400 group-focus-within:text-primary-crimson transition-all duration-300">
-                <Search className="w-5 h-5" />
-              </div>
+              <Search className="absolute right-3 md:right-4 top-1/2 -translate-y-1/2 w-4 h-4 md:w-5 md:h-5 text-primary-crimson transition-colors" />
 
-              {/* Advanced Results Dropdown */}
               <AnimatePresence>
                 {searchTerm.length > 2 && (
                   <motion.div
-                    initial={{ opacity: 0, scale: 0.95, y: 10 }}
-                    animate={{ opacity: 1, scale: 1, y: 0 }}
-                    exit={{ opacity: 0, scale: 0.95, y: 10 }}
-                    className="absolute top-full left-0 right-0 mt-4 bg-white/98 backdrop-blur-2xl rounded-[2rem] shadow-[0_50px_100px_-20px_rgba(0,0,0,0.15)] border border-primary-navy/5 overflow-hidden z-[110] max-h-[500px] custom-scrollbar overflow-y-auto"
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: 10 }}
+                    className="absolute top-full left-0 right-0 mt-2 bg-white rounded-2xl shadow-2xl border border-gray-100 overflow-hidden z-[110] max-h-[400px] overflow-y-auto"
                   >
                     {isSearching ? (
-                      <div className="p-10 text-center"><div className="animate-spin w-8 h-8 border-4 border-primary-crimson border-t-transparent rounded-full mx-auto mb-4 shadow-[0_0_10px_rgba(225,29,72,0.3)]"></div><p className="font-black text-gray-400">جاري الكشف عن النتائج...</p></div>
+                      <div className="p-8 text-center text-gray-400 font-bold">جاري البحث...</div>
                     ) : searchResults.length > 0 ? (
-                      <div className="p-3 space-y-1">
+                      <div className="p-2 space-y-1">
                         {searchResults.map(result => (
                           <div
                             key={result.id}
                             onClick={() => { navigate(`/article/${result.id}`); setSearchTerm(''); }}
-                            className="p-4 hover:bg-surface-soft cursor-pointer rounded-2xl flex gap-4 items-center group/item transition-all duration-300"
+                            className="p-3 hover:bg-gray-50 cursor-pointer rounded-xl flex gap-3 items-center group transition-colors"
                           >
-                            <img src={result.image_url || undefined} className="w-16 h-16 object-cover rounded-xl shadow-lg group-hover/item:scale-105 transition-transform duration-500" referrerPolicy="no-referrer" />
+                            <img src={result.image_url || undefined} className="w-12 h-12 object-cover rounded-lg" referrerPolicy="no-referrer" />
                             <div className="flex-1 min-w-0">
-                              <p className="font-black text-base group-hover/item:text-primary-crimson transition-colors truncate mb-1">{result.title}</p>
-                              <div className="flex items-center gap-3">
-                                <span className="text-xs px-2.5 py-1 bg-primary-navy/5 text-primary-navy rounded-full font-black uppercase tracking-wider">{result.category_name}</span>
-                                <span className="text-xs text-gray-400 font-bold flex items-center gap-1.5"><Clock className="w-3 h-3" /> تم النشر مؤخراً</span>
-                              </div>
+                              <p className="font-bold text-sm truncate group-hover:text-primary-crimson transition-colors">{result.title}</p>
+                              <p className="text-[10px] text-gray-400 font-bold uppercase">{result.category_name}</p>
                             </div>
-                            <div className="p-3 rounded-xl bg-white shadow-sm border border-gray-50 opacity-0 group-hover/item:opacity-100 transition-all group-hover/item:translate-x-[-5px]">
-                              <ChevronLeft className="w-4 h-4 text-primary-crimson" />
-                            </div>
+                            <ChevronLeft className="w-4 h-4 text-gray-300" />
                           </div>
                         ))}
                       </div>
                     ) : (
-                      <div className="p-16 text-center text-gray-400 font-black tracking-widest uppercase">لا توجد نتائج مطابقة</div>
+                      <div className="p-8 text-center text-gray-400 font-bold">لا توجد نتائج</div>
                     )}
                   </motion.div>
                 )}
               </AnimatePresence>
             </div>
 
-            {/* Main Tabs - Prestigious Indicator Animations */}
-            <ul className="flex items-center gap-2 font-black text-sm md:text-base order-1 md:order-1 overflow-x-auto scrollbar-hide pb-2 md:pb-0 w-full md:w-auto">
+            {/* Nav Tabs - Compressed for Mobile Fit */}
+            <ul className="flex items-center justify-between w-full md:w-auto gap-1 md:gap-4 font-bold text-[10px] sm:text-xs md:text-base order-1 md:order-1 pb-1 md:pb-0">
               {[
-                { label: 'الرئيسية', slug: null },
+                { label: 'عاجل', slug: 'general' },
                 { label: 'أخبار محلية', slug: 'local' },
                 { label: 'أخبار دولية', slug: 'intl' },
                 { label: 'راسلنا', slug: 'contact' }
               ].map((item) => (
                 <li
                   key={item.label}
-                  className={`cursor-pointer px-5 md:px-6 py-2.5 md:py-2 rounded-xl transition-all duration-500 relative group overflow-hidden shrink-0 ${selectedCategory === item.slug ? 'text-white bg-primary-crimson shadow-glow-sm' : 'text-primary-navy/70 bg-primary-navy/5 hover:text-primary-navy hover:bg-primary-navy/10 border border-primary-navy/5'}`}
+                  className={`cursor-pointer px-2 sm:px-3 md:px-8 py-1.5 md:py-3 rounded-[15px] md:rounded-[20px] transition-all relative flex-1 md:flex-none text-center font-bold ${selectedCategory === item.slug ? 'text-white shadow-md' : 'text-primary-navy bg-gray-100 hover:bg-gray-200'}`}
                   onClick={() => {
                     if (item.slug === 'contact') {
                       window.location.href = `mailto:${settings.contact_email || 'info@hads-news.com'}`;
@@ -378,10 +475,13 @@ function Home() {
                   <span className="relative z-10">{item.label}</span>
                   {selectedCategory === item.slug && (
                     <motion.div
-                      layoutId="activeTabGlow"
-                      className="absolute bottom-0 left-0 right-0 h-1 bg-primary-crimson shadow-[0_0_20px_rgba(225,29,72,0.8)]"
-                      transition={{ type: "spring", stiffness: 400, damping: 30 }}
-                    />
+                      initial={{ opacity: 0, scale: 0.95 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      className="absolute inset-0 bg-primary-crimson flex items-center justify-center rounded-[15px] md:rounded-[20px] shadow-lg"
+                      transition={{ duration: 0.2 }}
+                    >
+                      <span className="relative z-10">{item.label}</span>
+                    </motion.div>
                   )}
                 </li>
               ))}
@@ -558,8 +658,8 @@ function Home() {
               )}
             </div>
 
-            {/* Ad Space - Dynamic Elite Promotion */}
-            <div className="lg:col-span-1 glass-card bg-primary-navy text-white flex flex-col items-center justify-center p-0 text-center relative overflow-hidden h-auto group shadow-2xl border border-white/5 rounded-[2rem] order-2 lg:order-2">
+            {/* Ad Space - Visible only on Desktop */}
+            <div className="hidden lg:flex lg:col-span-1 glass-card bg-primary-navy text-white flex flex-col items-center justify-center p-0 text-center relative overflow-hidden h-auto group shadow-2xl border border-white/5 rounded-[2rem] order-2 lg:order-2">
               {ads.filter(ad => isAdActive(ad) && ad.position?.split(',').includes('top')).length > 0 ? (
                 (() => {
                   const ad = ads.filter(ad => isAdActive(ad) && ad.position?.split(',').includes('top'))[0];
@@ -713,7 +813,7 @@ function Home() {
                 <div className="absolute inset-0 bg-primary-crimson/5 skew-x-[-20deg] translate-x-[-50%] group-hover/feed:translate-x-[-40%] transition-transform duration-1000"></div>
                 <h3 className="font-black text-xl text-white flex items-center gap-4 relative z-10">
                   <div className="p-2.5 bg-primary-crimson/20 rounded-xl shadow-inner"><TrendingUp className="w-5 h-5 text-primary-crimson" /></div>
-                  <span className="tracking-widest uppercase text-base md:text-lg">تغطية خاصة | <span className="text-accent-gold">{selectedCategory ? categories.find(c => c.slug === selectedCategory)?.name : 'أخبار محلية'}</span></span>
+                  <span className="tracking-widest uppercase text-base md:text-lg">تغطية خاصة | <span className="text-accent-gold">{selectedCategory ? categories.find(c => c.slug === selectedCategory)?.name : (hasRecentUrgent ? 'عاجل' : 'أخبار محلية')}</span></span>
                 </h3>
                 <div className="flex items-center gap-4 relative z-10">
                   <div className="flex -space-x-2">
@@ -804,64 +904,52 @@ function Home() {
               </div>
 
               {/* Pagination Controls */}
-              {
-                totalPages > 1 && (
-                  <div className="bg-surface-soft/30 p-6 flex items-center justify-center gap-2 border-t border-primary-navy/5">
-                    <button
-                      onClick={() => {
-                        setCurrentPage(prev => Math.max(prev - 1, 1));
-                        const feedElement = document.getElementById('news-feed-top');
-                        if (feedElement) feedElement.scrollIntoView({ behavior: 'smooth' });
-                      }}
-                      disabled={currentPage === 1}
-                      className="w-10 h-10 rounded-xl flex items-center justify-center border border-primary-navy/10 bg-white text-primary-navy hover:bg-primary-crimson hover:text-white hover:border-primary-crimson transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                      <ChevronRight className="w-5 h-5" />
-                    </button>
+              {totalPages > 1 && (
+                <div className="bg-surface-soft/30 p-6 flex items-center justify-between border-t border-primary-navy/5">
+                  <button
+                    onClick={() => {
+                      setCurrentPage(prev => Math.max(prev - 1, 1));
+                      const feedElement = document.getElementById('news-feed-top');
+                      if (feedElement) feedElement.scrollIntoView({ behavior: 'smooth' });
+                    }}
+                    disabled={currentPage === 1}
+                    className="p-2.5 rounded-xl bg-white text-primary-navy hover:bg-surface-soft disabled:opacity-30 disabled:hover:bg-white transition-all shadow-sm border border-primary-navy/5"
+                  >
+                    <ChevronLeft className="w-5 h-5 rotate-180" />
+                  </button>
 
-                    <div className="flex items-center gap-1 font-black text-primary-navy">
-                      {[1, 2, 3].map((page) => {
-                        if (page > totalPages) return null;
-                        return (
-                          <button
-                            key={page}
-                            onClick={() => {
-                              setCurrentPage(page);
-                              const feedElement = document.getElementById('news-feed-top');
-                              if (feedElement) feedElement.scrollIntoView({ behavior: 'smooth' });
-                            }}
-                            className={`w-10 h-8 sm:w-10 sm:h-10 rounded-xl flex items-center justify-center border transition-all text-base ${currentPage === page ? 'bg-primary-crimson text-white border-primary-crimson shadow-[0_0_15px_rgba(225,29,72,0.4)]' : 'bg-white border-primary-navy/10 hover:bg-surface-soft'}`}
-                          >
-                            {page}
-                          </button>
-                        );
-                      })}
-                      {totalPages > 3 && currentPage > 3 && (
-                        <>
-                          <span className="px-2 opacity-30">...</span>
-                          <button
-                            className="w-10 h-10 rounded-xl flex items-center justify-center border bg-primary-crimson text-white border-primary-crimson shadow-[0_0_15px_rgba(225,29,72,0.4)]"
-                          >
-                            {currentPage}
-                          </button>
-                        </>
-                      )}
-                    </div>
-
-                    <button
-                      onClick={() => {
-                        setCurrentPage(prev => Math.min(prev + 1, totalPages));
-                        const feedElement = document.getElementById('news-feed-top');
-                        if (feedElement) feedElement.scrollIntoView({ behavior: 'smooth' });
-                      }}
-                      disabled={currentPage === totalPages}
-                      className="w-10 h-10 rounded-xl flex items-center justify-center border border-primary-navy/10 bg-white text-primary-navy hover:bg-primary-crimson hover:text-white hover:border-primary-crimson transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                      <ChevronLeft className="w-5 h-5" />
-                    </button>
+                  <div className="flex items-center gap-2">
+                    {[...Array(totalPages)].map((_, i) => (
+                      <button
+                        key={i}
+                        onClick={() => {
+                          setCurrentPage(i + 1);
+                          const feedElement = document.getElementById('news-feed-top');
+                          if (feedElement) feedElement.scrollIntoView({ behavior: 'smooth' });
+                        }}
+                        className={`w-10 h-10 rounded-xl font-black text-sm transition-all shadow-sm ${currentPage === i + 1
+                          ? 'bg-primary-crimson text-white shadow-primary-crimson/20 scale-110'
+                          : 'bg-white text-primary-navy hover:bg-surface-soft border border-primary-navy/5'
+                          }`}
+                      >
+                        {i + 1}
+                      </button>
+                    ))}
                   </div>
-                )
-              }
+
+                  <button
+                    onClick={() => {
+                      setCurrentPage(prev => Math.min(prev + 1, totalPages));
+                      const feedElement = document.getElementById('news-feed-top');
+                      if (feedElement) feedElement.scrollIntoView({ behavior: 'smooth' });
+                    }}
+                    disabled={currentPage === totalPages}
+                    className="p-2.5 rounded-xl bg-white text-primary-navy hover:bg-surface-soft disabled:opacity-30 disabled:hover:bg-white transition-all shadow-sm border border-primary-navy/5"
+                  >
+                    <ChevronLeft className="w-5 h-5" />
+                  </button>
+                </div>
+              )}
             </div>
 
             {/* Left Column (Images/Widgets - Multimedia Focus) - order-3 on mobile, order-4 on desktop */}
@@ -1235,15 +1323,29 @@ function Home() {
   );
 }
 
-export default function App() {
+// ScrollToTop component to fix React Router scroll behavior
+const ScrollToTop = () => {
+  const { pathname } = useLocation();
+
+  useEffect(() => {
+    window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
+  }, [pathname]);
+
+  return null;
+};
+
+function App() {
   return (
     <Router>
+      <ScrollToTop />
       <Routes>
         <Route path="/" element={<Home />} />
         <Route path="/article/:id" element={<ArticleDetail />} />
+        <Route path="/admin/*" element={<AdminDashboard />} />
         <Route path="/category/:slug" element={<CategoryArticles />} />
-        <Route path="/admin" element={<AdminDashboard />} />
       </Routes>
     </Router>
   );
 }
+
+export default App;
