@@ -109,7 +109,41 @@ function Home() {
   const shortUrgentArticles = useMemo(() => articles.filter(a => a.category_slug === 'short-urgent'), [articles]);
   const displayArticles = useMemo(() => articles.filter(a => !(a.is_urgent == 1 || a.is_urgent === true || a.is_urgent === '1') && a.category_slug !== 'short-urgent'), [articles]);
 
-  const mainArticle = useMemo(() => shortUrgentArticles[0] || displayArticles[0], [shortUrgentArticles, displayArticles]);
+  // Force re-evaluation of time-based logic every minute globally in home
+  const [currentTime, setCurrentTime] = useState(Date.now());
+  useEffect(() => {
+    const timer = setInterval(() => setCurrentTime(Date.now()), 60000);
+    return () => clearInterval(timer);
+  }, []);
+
+  // Check if there is ANY recent urgent article (within last 5 hours) globally
+  const hasRecentUrgent = useMemo(() => {
+    return articles.some(art => {
+      // General category is used for "Urgent" news block
+      if (art.category_slug !== 'general') return false;
+      const createdAt = new Date(art.created_at || new Date());
+      const hoursDiff = (currentTime - createdAt.getTime()) / (1000 * 60 * 60);
+      return hoursDiff <= 5;
+    });
+  }, [articles, currentTime]);
+
+  const mainArticle = useMemo(() => {
+    // 1. Top priority: short-urgent (hero ONLY)
+    if (shortUrgentArticles.length > 0) return shortUrgentArticles[0];
+    
+    // 2. Main logic: if there is recent urgent (< 5 hours), show latest urgent
+    if (hasRecentUrgent) {
+      const urgentGeneral = articles.filter(a => a.category_slug === 'general').sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+      if (urgentGeneral.length > 0) return urgentGeneral[0];
+    }
+    
+    // 3. Fallback: > 5 hours passed or no urgent news -> show latest local news
+    const localNews = articles.filter(a => a.category_slug === 'local').sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+    if (localNews.length > 0) return localNews[0];
+
+    // 4. Ultimate fallback: just return the latest display article
+    return displayArticles[0];
+  }, [shortUrgentArticles, articles, hasRecentUrgent, displayArticles]);
 
   const [videoLoaded, setVideoLoaded] = useState(false);
 
@@ -152,6 +186,16 @@ function Home() {
     const pollTimer = setInterval(fetchPollComments, 60000); // Refresh comments every minute
     return () => clearInterval(pollTimer);
   }, []);
+
+  useEffect(() => {
+    if (settings) {
+      document.title = `${settings.site_name || '𐩠𐩵𐩪 هـدس'} - ${settings.site_tagline || 'الأقرب للأحدث'}`;
+      const metaDescription = document.querySelector('meta[name="description"]');
+      if (metaDescription) {
+        metaDescription.setAttribute('content', settings.site_tagline || 'موقع إخباري شامل');
+      }
+    }
+  }, [settings]);
 
   const handlePollCommentSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -198,16 +242,6 @@ function Home() {
       setSearchResults([]);
     }
   };
-
-  // 1. Check if there are ANY recent urgent articles (within last 5 hours) globally
-  const hasRecentUrgent = useMemo(() => {
-    return articles.some(art => {
-      if (art.category_slug !== 'general') return false;
-      const createdAt = new Date(art.created_at || new Date());
-      const hoursDiff = (new Date().getTime() - createdAt.getTime()) / (1000 * 60 * 60);
-      return hoursDiff <= 5;
-    });
-  }, [articles]);
 
   const filteredDisplayArticles = useMemo(() => articles.filter(a => {
     const isHeroOnly = a.category_slug === 'short-urgent';
@@ -348,7 +382,7 @@ function Home() {
               {/* Row 1: Top Label */}
               <div className="h-[40px] md:h-[60px] flex items-end justify-center mb-1 w-full">
                 <h1 className="text-sm sm:text-lg md:text-2xl lg:text-3xl font-black tracking-tighter text-transparent bg-clip-text bg-gradient-to-br from-white via-red-100 to-primary-crimson drop-shadow-[0_4px_10px_rgba(225,29,72,0.6)] leading-none select-none whitespace-nowrap">
-                  𐩠𐩵𐩪 هدس – الأقرب للأحدث
+                  {settings?.site_name || '𐩠𐩵𐩪 هـدس'}
                 </h1>
               </div>
 
@@ -358,7 +392,7 @@ function Home() {
               {/* Row 2: Bottom Detail */}
               <div className="h-[40px] md:h-[60px] flex items-start justify-center text-center w-full">
                 <h2 className="text-[9px] md:text-lg font-bold text-accent-gold/90 drop-shadow-xl tracking-widest leading-none">
-                  موقع اخباري متكامل
+                  {settings?.site_tagline || 'موقع اخباري متكامل'}
                 </h2>
               </div>
             </motion.div>
@@ -507,7 +541,7 @@ function Home() {
                   <div className="absolute top-4 right-4 md:top-8 md:right-8 z-40 flex flex-col items-end pointer-events-none group-hover:scale-110 transition-transform duration-700">
                     <div className="bg-black/30 backdrop-blur-lg px-3 md:px-4 py-1.5 md:py-2 rounded-xl border border-white/20 shadow-[0_10px_30px_rgba(0,0,0,0.5)] flex flex-col items-center">
                       <span className="text-white font-black text-xl md:text-3xl tracking-tighter flex items-center gap-1 drop-shadow-2xl">
-                        <span className="text-primary-crimson">𐩠</span>𐩵𐩪 <span className="mr-1">هـدس</span>
+                        {settings?.site_name || '𐩠𐩵𐩪 هـدس'}
                       </span>
                     </div>
                   </div>

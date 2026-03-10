@@ -148,7 +148,10 @@
     animation: marquee 60s linear infinite;
   }
 
-  .pause {
+  .pause,
+  .hover\:pause:hover,
+  .animate-marquee:hover,
+  .animate-marquee-vertical:hover {
     animation-play-state: paused !important;
   }
 

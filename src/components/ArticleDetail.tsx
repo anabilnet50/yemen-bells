@@ -400,7 +400,7 @@ export default function ArticleDetail() {
                 </div>
 
                 <div className="relative z-10">
-                  <p className="text-xl font-black mb-4 mt-4">أعلن معنا في هـدس</p>
+                  <p className="text-xl font-black mb-4 mt-4">أعلن معنا في {settings?.site_name || 'هـدس'}</p>
                   <p className="text-sm text-white/60 font-medium">نصل لآلاف القراء يومياً في مختلف المجالات</p>
                   <div className="mt-8 pt-8 border-t border-white/10">
                     <p className="text-xs text-accent-gold font-bold">للتواصل: {settings?.contact_email || 'info@hads-news.com'}</p>
