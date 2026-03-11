@@ -50,12 +50,12 @@ export default function AdminDashboard() {
   const [searchTerm, setSearchTerm] = useState('');
   const [notification, setNotification] = useState<{ message: string, type: 'success' | 'error' } | null>(null);
   const [selectedTrashIds, setSelectedTrashIds] = useState<number[]>([]);
-  const [authMode, setAuthMode] = useState<'login' | 'forgot' | 'verify' | 'reset'>('login');
+  const [authMode, setAuthMode] = useState<'login' | 'forgot' | 'verify' | 'reset' | 'change_password'>('login');
   const [resetCode, setResetCode] = useState('');
+  const [newPasswordStr, setNewPasswordStr] = useState('');
   const [resetEmail, setResetEmail] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [settings, setSettings] = useState<any>(null);
-  const [generatedCode, setGeneratedCode] = useState<string | null>(null);
   const [currentArticle, setCurrentArticle] = useState<any>({
     title: '', content: '', category_id: 1, image_url: '', video_url: '', is_urgent: false, writer_id: ''
   });
@@ -209,12 +209,7 @@ export default function AdminDashboard() {
       .then(res => res.json())
       .then(data => {
         if (data.message) {
-          if (data.code) {
-             setGeneratedCode(data.code);
-             showNotification('تم إصدار الرمز بنجاح. يرجى إدخال الرمز الموضح أدناه.');
-          } else {
-             showNotification(data.message);
-          }
+          showNotification(data.message);
           setAuthMode('verify');
         } else {
           showNotification(data.error || 'فشل في العملية', 'error');
@@ -270,13 +265,42 @@ export default function AdminDashboard() {
       .then(res => res.json())
       .then(data => {
         if (data.token) {
-          localStorage.setItem('admin_token', data.token);
-          setToken(data.token);
-          setCurrentUser(data.user);
-          showNotification('تم تسجيل الدخول بنجاح');
+          if (data.requiresPasswordChange) {
+            setToken(data.token);
+            setAuthMode('change_password');
+            showNotification('يرجى تغيير كلمة المرور لتأمين حسابك قبل الدخول', 'error');
+          } else {
+            localStorage.setItem('admin_token', data.token);
+            setToken(data.token);
+            setCurrentUser(data.user);
+            showNotification('تم تسجيل الدخول بنجاح');
+          }
         } else {
-          setLoginError('اسم المستخدم أو كلمة المرور غير صحيحة. يرجى المحاولة مرة أخرى.');
+          setLoginError(data.error || 'اسم المستخدم أو كلمة المرور غير صحيحة. يرجى المحاولة مرة أخرى.');
         }
+      });
+  };
+
+  const handleChangePassword = (e: React.FormEvent) => {
+    e.preventDefault();
+    authenticatedFetch('/api/auth/change-password', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ newPassword: newPasswordStr })
+    })
+      .then(data => {
+        if (data.success) {
+          showNotification('تم تغيير كلمة المرور بنجاح، جاري الدخول...');
+          // Finish login by officially saving token to local storage and fetching user details needed to render dashboard
+          localStorage.setItem('admin_token', token as string);
+          // A simple reload will restart the app, pick up the token, and fetch user stats
+          setTimeout(() => window.location.reload(), 1500);
+        } else {
+          showNotification(data.error || 'فشل تغيير كلمة المرور', 'error');
+        }
+      })
+      .catch(err => {
+        showNotification(err.message || 'خطأ في الاتصال بالخادم', 'error');
       });
   };
 
@@ -634,17 +658,53 @@ export default function AdminDashboard() {
           <div className="absolute top-0 right-0 w-32 h-32 bg-primary-crimson/5 rounded-full -mr-16 -mt-16"></div>
           <div className="text-center mb-10">
             <div className="text-center mb-6">
-              <h1 className="text-3xl font-black text-primary-navy flex flex-col items-center gap-2">
-                <span>{(settings && settings.site_name) || '𐩠𐩵𐩪 هـدس'}</span>
+              <h1 className="text-2xl lg:text-3xl font-black text-primary-navy">
+                <span className="inline-block break-words max-w-full">{(settings && settings.site_name) || '𐩠𐩵𐩪 هـدس'}</span>
               </h1>
               <p className="text-primary-crimson font-black text-sm mt-2 uppercase tracking-widest">{(settings && settings.site_tagline) || 'الأقرب للأحدث - موقع إخباري شامل'}</p>
             </div>
             <p className="text-gray-400 font-bold mt-2">
               {authMode === 'login' ? 'بوابة الإدارة ونشر المحتوى' :
                 authMode === 'forgot' ? 'استعادة كلمة المرور' :
-                  authMode === 'verify' ? 'إدخال رمز التحقق' : 'تعيين كلمة مرور جديدة'}
+                  authMode === 'verify' ? 'إدخال رمز التحقق' : 
+                    authMode === 'change_password' ? 'تغيير كلمة المرور الإلزامية' : 'تعيين كلمة مرور جديدة'}
             </p>
           </div>
+
+          {authMode === 'change_password' && (
+            <form onSubmit={handleChangePassword} className="space-y-6">
+              <div className="bg-blue-50 text-blue-800 p-4 rounded-xl border border-blue-100 text-sm font-bold leading-relaxed mb-6">
+                هذه كلمة مرور مولدة آلياً. لضمان أمان حسابك، يجب تغييرها الآن بكلمة مرور جديدة تختارها بنفسك لمرة واحدة فقط.
+              </div>
+              <div className="space-y-2">
+                <label className="text-sm font-black text-gray-700 block mr-1">كلمة المرور الجديدة</label>
+                <div className="relative">
+                  <input
+                    type={showPassword ? "text" : "password"}
+                    value={newPasswordStr}
+                    onChange={e => setNewPasswordStr(e.target.value)}
+                    className="w-full p-4 pl-12 bg-gray-50 border-2 border-gray-100 rounded-2xl outline-none focus:border-primary-crimson focus:bg-white transition-all font-bold"
+                    placeholder="أدخل 6 أحرف على الأقل..."
+                    required
+                    minLength={6}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-primary-crimson transition-colors"
+                  >
+                    <Eye className="w-5 h-5" />
+                  </button>
+                </div>
+              </div>
+              <button
+                type="submit"
+                className="w-full py-4 bg-primary-navy text-white rounded-2xl font-black text-lg shadow-xl shadow-primary-navy/20 hover:bg-black transition-all transform hover:-translate-y-1"
+              >
+                حفظ والدخول للوحة التحكم
+              </button>
+            </form>
+          )}
 
           {authMode === 'login' && (
             <form onSubmit={handleLogin} className="space-y-6">
@@ -736,13 +796,6 @@ export default function AdminDashboard() {
 
           {authMode === 'verify' && (
             <form onSubmit={handleVerifyCode} className="space-y-6">
-              {generatedCode && (
-                <div className="bg-blue-50 border-2 border-blue-200 p-6 rounded-2xl text-center mb-6">
-                  <p className="text-blue-800 font-bold mb-2">بما أن خدمة البريد غير مفعلة حالياً، رمز التحقق الخاص بك هو:</p>
-                  <p className="text-4xl font-black text-blue-900 tracking-[0.5em]">{generatedCode}</p>
-                  <p className="text-xs text-blue-600 mt-2 font-bold">قم بنسخ هذا الرمز ولصقه في المربع أدناه</p>
-                </div>
-              )}
               
               <div className="space-y-2">
                 <label className="text-sm font-black text-gray-700 block mr-1">رمز التحقق (6 أرقام)</label>
@@ -768,7 +821,6 @@ export default function AdminDashboard() {
                   type="button"
                   onClick={() => {
                       setAuthMode('forgot');
-                      setGeneratedCode(null);
                   }}
                   className="text-gray-500 hover:text-primary-navy text-sm font-bold"
                 >

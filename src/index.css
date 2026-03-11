@@ -2,6 +2,14 @@
 @import "tailwindcss";
 @plugin "@tailwindcss/typography";
 
+/* Hide default password reveal eye icon in Edge/Chrome */
+input[type="password"]::-ms-reveal,
+input[type="password"]::-ms-clear,
+input::-ms-reveal,
+input::-ms-clear {
+  display: none;
+}
+
 @theme {
   /* Tech Elite Color Palette - Brighter & More Attractive */
   --color-primary-navy: #005b9f;

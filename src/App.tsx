@@ -1368,16 +1368,86 @@ const ScrollToTop = () => {
   return null;
 };
 
+const MaintenanceWrapper = () => {
+  const [settings, setSettings] = useState<any>(null);
+  const location = useLocation();
+
+  useEffect(() => {
+    fetch('/api/init')
+      .then(res => res.json())
+      .then(data => setSettings(data.settings));
+  }, []);
+
+  if (!settings) {
+    return (
+      <div className="min-h-screen bg-primary-navy flex flex-col items-center justify-center bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')]">
+        <div className="relative w-24 h-24">
+          <div className="absolute inset-0 border-4 border-white/5 rounded-full"></div>
+          <div className="absolute inset-0 border-4 border-primary-crimson border-t-transparent rounded-full animate-spin"></div>
+        </div>
+      </div>
+    );
+  }
+
+  // Intercept all routes except /admin and its subroutes if maintenance mode is true
+  if (settings.maintenance_mode === 'true' && !location.pathname.startsWith('/admin')) {
+    return (
+      <div className="min-h-screen bg-primary-navy flex items-center justify-center p-6 bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')] text-center" dir="rtl">
+        <div className="max-w-2xl bg-white/5 backdrop-blur-xl border border-white/10 rounded-3xl p-12 relative overflow-hidden">
+          <div className="absolute top-0 right-0 w-64 h-64 bg-primary-crimson/20 rounded-full blur-3xl -mr-32 -mt-32"></div>
+          <div className="absolute bottom-0 left-0 w-64 h-64 bg-accent-gold/20 rounded-full blur-3xl -ml-32 -mb-32"></div>
+          
+          <div className="relative z-10 flex flex-col items-center gap-6">
+            <h1 className="text-3xl md:text-4xl font-black text-white text-center">
+              <span>{settings.site_name || '𐩠𐩵𐩪 هـدس'}</span>
+            </h1>
+            <div className="w-24 h-2 bg-gradient-to-r from-transparent via-primary-crimson to-transparent mx-auto rounded-full"></div>
+            
+            <div className="space-y-4 my-8">
+              <h2 className="text-2xl md:text-3xl font-black text-accent-gold">الموقع تحت الصيانة والتحديث</h2>
+              <p className="text-gray-300 text-lg md:text-xl font-bold leading-relaxed max-w-xl">
+                نحن نعمل حالياً على تطوير وتحديث الموقع لتقديم تجربة أفضل لكم. سنعود للعمل قريباً جداً، شاكرين تفهمكم.
+              </p>
+            </div>
+            
+            <div className="flex justify-center gap-6 mt-4">
+              {settings.facebook_url && (
+                <a href={settings.facebook_url} target="_blank" rel="noopener noreferrer" className="w-12 h-12 rounded-full bg-white/10 flex items-center justify-center text-white hover:bg-primary-crimson transition-colors border border-white/10">
+                  <Facebook className="w-5 h-5" />
+                </a>
+              )}
+              {settings.twitter_url && (
+                <a href={settings.twitter_url} target="_blank" rel="noopener noreferrer" className="w-12 h-12 rounded-full bg-white/10 flex items-center justify-center text-white hover:bg-black transition-colors border border-white/10">
+                  <span className="font-black text-xl leading-none -mt-1">𝕏</span>
+                </a>
+              )}
+              {settings.youtube_url && (
+                <a href={settings.youtube_url} target="_blank" rel="noopener noreferrer" className="w-12 h-12 rounded-full bg-white/10 flex items-center justify-center text-white hover:bg-red-600 transition-colors border border-white/10">
+                  <Youtube className="w-5 h-5" />
+                </a>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <Routes>
+      <Route path="/" element={<Home />} />
+      <Route path="/article/:id" element={<ArticleDetail />} />
+      <Route path="/admin/*" element={<AdminDashboard />} />
+      <Route path="/category/:slug" element={<CategoryArticles />} />
+    </Routes>
+  );
+};
+
 function App() {
   return (
     <Router>
       <ScrollToTop />
-      <Routes>
-        <Route path="/" element={<Home />} />
-        <Route path="/article/:id" element={<ArticleDetail />} />
-        <Route path="/admin/*" element={<AdminDashboard />} />
-        <Route path="/category/:slug" element={<CategoryArticles />} />
-      </Routes>
+      <MaintenanceWrapper />
     </Router>
   );
 }

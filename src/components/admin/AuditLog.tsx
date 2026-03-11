@@ -120,7 +120,9 @@ const AuditLog: React.FC<AuditLogProps> = ({
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-[#cfdce9] print:divide-gray-300">
-                            {history.map((log: any) => (
+                            {history
+                              .filter((log: any) => !['تسجيل دخول', 'محاولة دخول فاشلة', 'تنبيه أمني', 'تسجيل خروج'].includes(log.action))
+                              .map((log: any) => (
                                 <tr key={log.id} className="even:bg-[#e9f0f8] odd:bg-white hover:bg-blue-50 transition-colors divide-x divide-x-reverse divide-[#cfdce9] text-center border-b border-[#cfdce9]">
                                     <td className="p-2 sm:p-4 md:p-6 font-black text-primary-navy print:py-4 align-middle text-[10px] sm:text-xs md:text-base">{log.user_name || 'آلي'}</td>
                                     <td className="p-2 sm:p-4 md:p-6 print:py-4 align-middle">
@@ -142,7 +144,7 @@ const AuditLog: React.FC<AuditLogProps> = ({
                                     </td>
                                 </tr>
                             ))}
-                            {history.length === 0 && (
+                            {history.filter((log: any) => !['تسجيل دخول', 'محاولة دخول فاشلة', 'تنبيه أمني', 'تسجيل خروج'].includes(log.action)).length === 0 && (
                                 <tr><td colSpan={4} className="p-24 text-center text-gray-400 font-black text-xl">لا توجد سجلات تطابق معايير البحث الحالية</td></tr>
                             )}
                         </tbody>

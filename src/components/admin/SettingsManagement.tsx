@@ -382,6 +382,31 @@ const SettingsManagement: React.FC<SettingsManagementProps> = ({
                         </div>
                     </div>
                 </div>
+                
+                <div className="space-y-8 pt-8 border-t border-gray-100">
+                    <h3 className="text-xl font-black text-primary-navy flex items-center gap-3">
+                        <div className="w-2 h-8 bg-purple-600 rounded-full"></div>
+                        التحكم بالنظام
+                    </h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                        <div className="bg-red-50/50 border-2 border-red-100 rounded-2xl p-6 relative overflow-hidden">
+                            <div className="absolute top-0 right-0 w-32 h-32 bg-red-100 rounded-full mix-blend-multiply blur-2xl -mr-16 -mt-16 opacity-50"></div>
+                            <div className="relative z-10 flex cursor-pointer" onClick={() => setSettings((prev: any) => ({ ...prev, maintenance_mode: prev.maintenance_mode === 'true' ? 'false' : 'true' }))}>
+                                <div className="flex-1">
+                                    <h4 className="font-black text-lg text-red-900 mb-2">تفعيل وضع الصيانة</h4>
+                                    <p className="text-xs text-red-700/80 font-bold leading-relaxed">
+                                        عند تفعيل هذا الخيار، سيتم عرض صفحة "تحت الصيانة" لجميع زوار الموقع، مع استمرار إمكانية دخولك للوحة التحكم.
+                                    </p>
+                                </div>
+                                <div className="mr-6 flex items-center">
+                                    <div className={`w-14 h-8 rounded-full p-1 transition-colors duration-300 ${settings.maintenance_mode === 'true' ? 'bg-red-600' : 'bg-gray-300'}`}>
+                                        <div className={`w-6 h-6 bg-white rounded-full shadow-md transform transition-transform duration-300 ${settings.maintenance_mode === 'true' ? '-translate-x-6' : 'translate-x-0'}`}></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
 
                 <div className="flex justify-end gap-4 pt-10 border-t border-gray-100">
                     <button type="button" onClick={fetchSettings} className="bg-gray-100 text-gray-600 px-6 py-3 md:px-12 md:py-5 rounded-xl md:rounded-[2rem] font-black text-sm md:text-lg hover:bg-gray-200 transition-all">

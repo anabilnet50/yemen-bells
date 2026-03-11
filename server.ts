@@ -79,7 +79,29 @@ const upload = multer({ storage });
 
 async function startServer() {
   const app = express();
+  app.set('trust proxy', true); // Trust reverse proxy headers like Cloudflare or Nginx X-Forwarded-For
   const PORT = Number(process.env.PORT) || 3000;
+
+  // Helper to reliably extract real IP
+  const getClientIp = (req: any): string => {
+      let ipAddress = '127.0.0.1';
+      
+      const forwardedIpsStr = req.headers['x-forwarded-for'];
+      if (forwardedIpsStr) {
+         // 'x-forwarded-for' can be a comma-separated list, the first is the original client
+         ipAddress = forwardedIpsStr.split(',')[0].trim();
+      } else if (req.headers['x-real-ip']) {
+         ipAddress = req.headers['x-real-ip'];
+      } else {
+         ipAddress = String(req.ip || req.connection?.remoteAddress || req.socket?.remoteAddress || '127.0.0.1');
+      }
+
+      // Clean IPv6 mapped IPv4 (e.g. ::ffff:192.168.1.1 -> 192.168.1.1)
+      if (ipAddress.startsWith('::ffff:')) {
+          ipAddress = ipAddress.substring(7);
+      }
+      return ipAddress;
+  };
 
   // Initialize DB
   await initDb();
@@ -124,8 +146,7 @@ async function startServer() {
   };
 
   const checkBlockedIp = async (req: any, res: any, next: any) => {
-    const clientIp = req.ip || req.headers['x-forwarded-for'] || req.socket.remoteAddress;
-    const ipStr = String(clientIp);
+    const ipStr = getClientIp(req);
     const { rows } = await db.query("SELECT * FROM blocked_ips WHERE ip_address = $1", [ipStr]);
     if (rows.length > 0) {
       return res.status(403).json({ error: "تم حظر عنوان الـ IP الخاص بك لأسباب أمنية. يرجى التواصل مع الإدارة." });
@@ -141,10 +162,9 @@ async function startServer() {
   // Auth
   app.post("/api/auth/login", checkBlockedIp, async (req, res) => {
     const { username, password } = req.body;
-    const clientIp = req.ip || req.headers['x-forwarded-for'] || req.socket.remoteAddress;
-    const ipStr = String(clientIp);
+    const ipStr = getClientIp(req);
 
-    const { rows } = await db.query("SELECT id, username, password, full_name, role, permissions FROM system_users WHERE username = $1", [username]);
+    const { rows } = await db.query("SELECT id, username, password, full_name, role, permissions, requires_password_change FROM system_users WHERE username = $1", [username]);
     const user = rows[0];
 
     if (user && verifyPassword(password, user.password)) {
@@ -155,21 +175,39 @@ async function startServer() {
       // Reset failed attempts on success
       failedAttempts.delete(ipStr);
 
-      await logAction(user.id, 'تسجيل دخول', `تم تسجيل الدخول بنجاح من IP: ${clientIp}`);
-      res.json({ token, user: userWithoutPassword });
+      await logAction(user.id, 'تسجيل دخول', `تم تسجيل الدخول بنجاح من IP: ${ipStr}`);
+      res.json({ token, user: userWithoutPassword, requiresPasswordChange: user.requires_password_change });
     } else {
       // Increment failed attempts
       const attempts = (failedAttempts.get(ipStr) || 0) + 1;
       failedAttempts.set(ipStr, attempts);
 
-      await logAction(null, 'محاولة دخول فاشلة', `محاولة دخول باسم المستخدم: ${username} من IP: ${clientIp}`);
+      await logAction(null, 'محاولة دخول فاشلة', `محاولة دخول باسم المستخدم: ${username} من IP: ${ipStr}`);
 
       // Raise a high-priority security alert if threshold reached
       if (attempts >= 5) {
-        await logAction(null, 'تنبيه أمني', `⚠️ محاولات دخول متكررة فاشلة (${attempts}) من عنوان IP: ${clientIp}. يرجى التحقق من الأمان.`);
+        await logAction(null, 'تنبيه أمني', `⚠️ محاولات دخول متكررة فاشلة (${attempts}) من عنوان IP: ${ipStr}. يرجى التحقق من الأمان.`);
       }
 
-      res.status(401).json({ error: "Invalid credentials" });
+      res.status(401).json({ error: "بيانات الدخول غير صحيحة" });
+    }
+  });
+
+  // --- API Routes ---
+
+  // Request to change password with active session
+  app.post("/api/auth/change-password", requireAuth, async (req, res) => {
+    const { newPassword } = req.body;
+    if (!newPassword || newPassword.length < 6) return res.status(400).json({ error: "كلمة المرور يجب أن تكون 6 أحرف على الأقل." });
+    
+    try {
+      const hashedPassword = hashPassword(newPassword);
+      await db.query("UPDATE system_users SET password = $1, requires_password_change = false WHERE id = $2", [hashedPassword, (req as any).user.id]);
+      await logAction((req as any).user.id, 'تغيير كلمة المرور', 'تم تغيير كلمة المرور الإجبارية أو الطوعية بنجاح.');
+      res.json({ success: true, message: "تم تغيير كلمة المرور بنجاح." });
+    } catch (err) {
+      console.error(err);
+      res.status(500).json({ error: "Internal Server Error" });
     }
   });
 
@@ -238,7 +276,45 @@ async function startServer() {
       // Simulated sending - returning the code to the frontend for practical testing/usage
       console.log(`[AUTH SIMULATION] Verification Code for ${email}/${rows[0].username}: ${code}`);
 
-      res.json({ message: "تم إصدار رمز التحقق بنجاح", code });
+      try {
+        const transporter = nodemailer.createTransport({
+          host: process.env.SMTP_HOST || 'smtp.ethereal.email',
+          port: parseInt(process.env.SMTP_PORT || '587'),
+          secure: process.env.SMTP_PORT === '465',
+          auth: {
+              user: process.env.SMTP_USER,
+              pass: process.env.SMTP_PASS
+          }
+        });
+
+        await transporter.sendMail({
+          from: process.env.SMTP_FROM || '"نظام هـدس" <no-reply@hadas.com>',
+          to: rows[0].email,
+          subject: 'رمز استعادة كلمة المرور',
+          html: `
+            <div dir="rtl" style="font-family: sans-serif; line-height: 1.6; color: #333;">
+              <h2>مرحباً ${rows[0].username}،</h2>
+              <p>لقد طلبنا إعادة تعيين كلمة المرور لحسابك في <b>نظام هـدس</b>.</p>
+              <div style="background: #f4f6f8; padding: 20px; border-radius: 8px; margin: 20px 0;">
+                <p><strong>رمز التحقق الخاص بك هو:</strong></p>
+                <div style="font-size: 32px; font-weight: bold; letter-spacing: 5px; color: #2563eb; text-align: center; margin: 20px 0;">
+                  ${code}
+                </div>
+                <p style="font-size: 14px; color: #666;">رمز التحقق هذا صالح لمدة ساعة واحدة فقط.</p>
+              </div>
+              <p style="color: #666; font-size: 14px;">إذا لم تقم بطلب هذا، يرجى تجاهل هذه الرسالة أو التواصل مع الإدارة.</p>
+              <hr style="border: none; border-top: 1px solid #eee; margin-top: 30px;" />
+              <p style="color: #999; font-size: 12px;">رسالة تلقائية مقدّمة من نظام هـدس الإخباري.</p>
+            </div>
+          `
+        });
+        console.log(`Password reset email sent to ${rows[0].email}`);
+      } catch (mailErr) {
+        console.error('Failed to send password reset email:', mailErr);
+        // We still continue the flow so the user can potentially get the code from server console or test environment
+      }
+
+      res.json({ message: "تم إصدار رمز التحقق بنجاح وإرساله إلى البريد الإلكتروني" });
     } catch (e) {
       console.error('Error in forgot password:', e);
       res.status(500).json({ error: "حدث خطأ داخلي" });
@@ -312,8 +388,8 @@ async function startServer() {
       const permsString = Array.isArray(permissions) ? JSON.stringify(permissions) : '[]';
       const hashedPassword = hashPassword(password);
       const { rows } = await db.query(
-        "INSERT INTO system_users (username, password, full_name, email, role, permissions) VALUES ($1, $2, $3, $4, $5, $6) RETURNING id",
-        [username, hashedPassword, full_name, email, role || 'editor', permsString]
+        "INSERT INTO system_users (username, password, full_name, email, role, permissions, requires_password_change) VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING id",
+        [username, hashedPassword, full_name, email, role || 'editor', permsString, isAutoGenerated]
       );
 
       if (email) {
@@ -774,9 +850,17 @@ async function startServer() {
     res.json(rows);
   });
 
+  app.post("/api/admin/history", async (req, res) => {
+    const { action, details } = req.body;
+    const ipStr = getClientIp(req);
+    const userAgent = req.headers['user-agent'] || 'Unknown';
+    await logAction((req as any).user.id, action, `${details} (IP: ${ipStr}, Browser: ${userAgent})`);
+    res.json({ success: true });
+  });
+
   app.post("/api/articles/:id/comments", async (req, res) => {
     const { name, content } = req.body;
-    const clientIp = String(req.ip || req.headers['x-forwarded-for'] || req.socket.remoteAddress);
+    const clientIp = getClientIp(req);
 
     // Rate Limiting
     if (!checkRateLimit(clientIp, 3, 60000)) {
