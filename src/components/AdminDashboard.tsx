@@ -55,6 +55,7 @@ export default function AdminDashboard() {
   const [resetEmail, setResetEmail] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [settings, setSettings] = useState<any>(null);
+  const [generatedCode, setGeneratedCode] = useState<string | null>(null);
   const [currentArticle, setCurrentArticle] = useState<any>({
     title: '', content: '', category_id: 1, image_url: '', video_url: '', is_urgent: false, writer_id: ''
   });
@@ -208,7 +209,12 @@ export default function AdminDashboard() {
       .then(res => res.json())
       .then(data => {
         if (data.message) {
-          showNotification(data.code ? `تم إرسال الرمز بنجاح. رمز التحقق هو: ${data.code}` : data.message);
+          if (data.code) {
+             setGeneratedCode(data.code);
+             showNotification('تم إصدار الرمز بنجاح. يرجى إدخال الرمز الموضح أدناه.');
+          } else {
+             showNotification(data.message);
+          }
           setAuthMode('verify');
         } else {
           showNotification(data.error || 'فشل في العملية', 'error');
@@ -459,9 +465,12 @@ export default function AdminDashboard() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(currentUserData)
     })
-      .then(() => {
+      .then((data) => {
+        if (data && data.error) {
+           throw new Error(data.error);
+        }
         setIsEditingUser(false);
-        setCurrentUserData({ username: '', password: '', full_name: '', role: 'editor', permissions: [] });
+        setCurrentUserData({ username: '', password: '', full_name: '', email: '', role: 'editor', permissions: [] });
         fetchUsers();
         fetchHistory();
         showNotification(currentUserData.id ? 'تم تعديل المستخدم بنجاح' : 'تم إضافة المستخدم بنجاح');
@@ -610,6 +619,17 @@ export default function AdminDashboard() {
   if (!currentUser) {
     return (
       <div className="min-h-screen bg-primary-navy flex items-center justify-center p-6 bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')]">
+          {notification && (
+            <div className={`fixed top-10 left-1/2 -translate-x-1/2 z-[100] p-4 rounded-2xl shadow-2xl font-black text-white flex items-center gap-4 animate-in slide-in-from-top duration-500 min-w-[320px] max-w-[90vw] ${notification.type === 'success' ? 'bg-green-600' : 'bg-primary-crimson'
+              }`}>
+              {notification.type === 'success' ? (
+                <div className="w-8 h-8 bg-white/20 rounded-lg flex items-center justify-center shrink-0">✓</div>
+              ) : (
+                <AlertCircle className="w-8 h-8 shrink-0" />
+              )}
+              {notification.message}
+            </div>
+          )}
         <div className="w-full max-w-md bg-white rounded-[2.5rem] shadow-2xl p-8 lg:p-12 relative overflow-hidden">
           <div className="absolute top-0 right-0 w-32 h-32 bg-primary-crimson/5 rounded-full -mr-16 -mt-16"></div>
           <div className="text-center mb-10">
@@ -716,6 +736,14 @@ export default function AdminDashboard() {
 
           {authMode === 'verify' && (
             <form onSubmit={handleVerifyCode} className="space-y-6">
+              {generatedCode && (
+                <div className="bg-blue-50 border-2 border-blue-200 p-6 rounded-2xl text-center mb-6">
+                  <p className="text-blue-800 font-bold mb-2">بما أن خدمة البريد غير مفعلة حالياً، رمز التحقق الخاص بك هو:</p>
+                  <p className="text-4xl font-black text-blue-900 tracking-[0.5em]">{generatedCode}</p>
+                  <p className="text-xs text-blue-600 mt-2 font-bold">قم بنسخ هذا الرمز ولصقه في المربع أدناه</p>
+                </div>
+              )}
+              
               <div className="space-y-2">
                 <label className="text-sm font-black text-gray-700 block mr-1">رمز التحقق (6 أرقام)</label>
                 <input
@@ -738,7 +766,10 @@ export default function AdminDashboard() {
               <div className="text-center">
                 <button
                   type="button"
-                  onClick={() => setAuthMode('forgot')}
+                  onClick={() => {
+                      setAuthMode('forgot');
+                      setGeneratedCode(null);
+                  }}
                   className="text-gray-500 hover:text-primary-navy text-sm font-bold"
                 >
                   العودة لمعلومات البريد

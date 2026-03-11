@@ -37,7 +37,7 @@ const UserManagement: React.FC<UserManagementProps> = ({
                     <p className="text-gray-500 font-bold">إدارة صلاحيات الوصول والتحكم في فريق العمل</p>
                 </div>
                 <button
-                    onClick={() => { setIsEditingUser(true); setCurrentUserData({ username: '', password: '', full_name: '', role: 'editor', permissions: [] }); }}
+                    onClick={() => { setIsEditingUser(true); setCurrentUserData({ username: '', password: '', full_name: '', email: '', role: 'editor', permissions: [] }); }}
                     className="bg-primary-navy text-white px-8 py-4 rounded-2xl font-black flex items-center gap-3 shadow-xl shadow-primary-navy/20 hover:bg-black transition-all"
                 >
                     <Plus className="w-6 h-6" /> إضافة مسؤول جديد
@@ -60,12 +60,16 @@ const UserManagement: React.FC<UserManagementProps> = ({
                                 <input type="text" value={currentUserData.full_name} onChange={e => setCurrentUserData({ ...currentUserData, full_name: e.target.value })} className="w-full p-4 bg-gray-50 rounded-2xl border-2 border-gray-100 focus:border-primary-navy transition-all outline-none font-bold" placeholder="مثلاً: أحمد محمد" required />
                             </div>
                             <div className="space-y-3">
-                                <label className="text-sm font-black text-gray-700 block mr-1">اسم المستخدم (Login)</label>
-                                <input type="text" value={currentUserData.username} onChange={e => setCurrentUserData({ ...currentUserData, username: e.target.value })} className="w-full p-4 bg-gray-50 rounded-2xl border-2 border-gray-100 focus:border-primary-navy transition-all outline-none font-bold" placeholder="ahmed_admin" required />
+                                <label className="text-sm font-black text-gray-700 block mr-1">البريد الإلكتروني</label>
+                                <input type="email" value={currentUserData.email || ''} onChange={e => setCurrentUserData({ ...currentUserData, email: e.target.value })} className="w-full p-4 bg-gray-50 rounded-2xl border-2 border-gray-100 focus:border-primary-navy transition-all outline-none font-bold text-left" placeholder="user@example.com" required dir="ltr" />
                             </div>
                             <div className="space-y-3">
-                                <label className="text-sm font-black text-gray-700 block mr-1">{currentUserData.id ? 'كلمة المرور الجديدة (اختياري)' : 'كلمة المرور'}</label>
-                                <input type="password" value={currentUserData.password} onChange={e => setCurrentUserData({ ...currentUserData, password: e.target.value })} className="w-full p-4 bg-gray-50 rounded-2xl border-2 border-gray-100 focus:border-primary-navy transition-all outline-none font-bold" placeholder="••••••••" required={!currentUserData.id} />
+                                <label className="text-sm font-black text-gray-700 block mr-1">اسم المستخدم (Login)</label>
+                                <input type="text" value={currentUserData.username} onChange={e => setCurrentUserData({ ...currentUserData, username: e.target.value })} className="w-full p-4 bg-gray-50 rounded-2xl border-2 border-gray-100 focus:border-primary-navy transition-all outline-none font-bold text-left" placeholder="ahmed_admin" required dir="ltr" />
+                            </div>
+                            <div className="space-y-3">
+                                <label className="text-sm font-black text-gray-700 block mr-1">{currentUserData.id ? 'كلمة المرور الجديدة (اختياري)' : 'كلمة المرور (اختياري، سيتم توليدها تلقائياً)'}</label>
+                                <input type="password" value={currentUserData.password} onChange={e => setCurrentUserData({ ...currentUserData, password: e.target.value })} className="w-full p-4 bg-gray-50 rounded-2xl border-2 border-gray-100 focus:border-primary-navy transition-all outline-none font-bold" placeholder="••••••••" />
                             </div>
                             <div className="space-y-3">
                                 <label className="text-sm font-black text-gray-700 block mr-1">الدور الوظيفي</label>
@@ -115,7 +119,7 @@ const UserManagement: React.FC<UserManagementProps> = ({
                             <thead className="bg-[#5b9bd5] text-white">
                                 <tr className="divide-x divide-x-reverse divide-[#ffffff]">
                                     <th className="p-3 sm:p-6 text-[10px] sm:text-sm font-black uppercase text-center whitespace-nowrap">الاسم</th>
-                                    <th className="p-3 sm:p-6 text-[10px] sm:text-sm font-black uppercase text-center whitespace-nowrap hidden sm:table-cell">الحساب</th>
+                                    <th className="p-3 sm:p-6 text-[10px] sm:text-sm font-black uppercase text-center whitespace-nowrap hidden sm:table-cell">الحساب والإيميل</th>
                                     <th className="p-3 sm:p-6 text-[10px] sm:text-sm font-black uppercase text-center whitespace-nowrap">الدور</th>
                                     <th className="p-3 sm:p-6 text-[10px] sm:text-sm font-black uppercase text-center whitespace-nowrap hidden md:table-cell">الصلاحيات</th>
                                     <th className="p-3 sm:p-6 text-[10px] sm:text-sm font-black uppercase text-center whitespace-nowrap">إجراء</th>
@@ -128,7 +132,10 @@ const UserManagement: React.FC<UserManagementProps> = ({
                                             {user.full_name}
                                             <div className="sm:hidden text-[9px] font-mono text-gray-400 mt-1">@{user.username}</div>
                                         </td>
-                                        <td className="p-6 font-mono text-sm text-gray-500 align-middle hidden sm:table-cell">@{user.username}</td>
+                                        <td className="p-6 font-mono text-sm text-gray-500 align-middle hidden sm:table-cell">
+                                            <div>@{user.username}</div>
+                                            {user.email && <div className="text-[10px] text-gray-400 mt-1">{user.email}</div>}
+                                        </td>
                                         <td className="p-3 sm:p-6 align-middle">
                                             <span className={`px-2 sm:px-4 py-1 rounded-full text-[8px] sm:text-[10px] font-black uppercase border ${user.role === 'admin' ? 'bg-red-50 text-primary-crimson border-red-100' : 'bg-blue-50 text-blue-600 border-blue-100'}`}>
                                                 {user.role === 'admin' ? 'مدير' : 'محرر'}

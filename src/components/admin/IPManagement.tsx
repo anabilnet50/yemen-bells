@@ -10,6 +10,8 @@ const IPManagement = () => {
     const [reason, setReason] = useState('');
     const [error, setError] = useState('');
     const [searchTerm, setSearchTerm] = useState('');
+    const [adminIp, setAdminIp] = useState('');
+    const [failedAttempts, setFailedAttempts] = useState<any[]>([]);
 
     const fetchBlockedIps = async () => {
         setIsLoading(true);
@@ -21,6 +23,27 @@ const IPManagement = () => {
                 const data = await res.json();
                 setBlockedIps(data);
             }
+            
+            // Fetch failed login attempts from audit logs
+            const auditRes = await fetch('/api/admin/audit-logs', {
+                headers: { 'Authorization': `Bearer ${localStorage.getItem('admin_token')}` }
+            });
+            if (auditRes.ok) {
+                const auditData = await auditRes.json();
+                // "محاولة دخول פاشلة" in audit logs has the IP in the details
+                const failedLogins = auditData
+                    .filter((log: any) => log.action === 'محاولة دخول فاشلة')
+                    .map((log: any) => {
+                        // Extract IP from "محاولة دخول باسم المستخدم: xxx من IP: yyy"
+                        const match = log.details.match(/IP:\s*([\d\.]+|[a-fA-F0-9:]+)/);
+                        return {
+                            ...log,
+                            extracted_ip: match ? match[1] : 'غير معروف'
+                        };
+                    });
+                setFailedAttempts(failedLogins);
+            }
+
         } catch (err) {
             console.error('Error fetching blocked IPs:', err);
         } finally {
@@ -29,6 +52,11 @@ const IPManagement = () => {
     };
 
     useEffect(() => {
+        fetch('https://api.ipify.org?format=json')
+            .then(res => res.json())
+            .then(data => setAdminIp(data.ip))
+            .catch(err => console.error('Error fetching admin IP:', err));
+            
         fetchBlockedIps();
     }, []);
 
@@ -93,7 +121,14 @@ const IPManagement = () => {
                     </div>
                     <div>
                         <h2 className="text-2xl font-black text-primary-navy">إدارة الحظر والأمان</h2>
-                        <p className="text-sm text-gray-400 font-bold">حماية الموقع من الهجمات والمتسللين</p>
+                        <div className="flex flex-col sm:flex-row sm:items-center gap-2 mt-1 lg:mt-2 text-sm text-gray-400 font-bold">
+                            <span>حماية الموقع من الهجمات والمتسللين</span>
+                            {adminIp && (
+                                <span className="bg-primary-navy/5 text-primary-navy px-2 py-1 rounded-md text-xs border border-primary-navy/10 flex items-center gap-1 w-max">
+                                    عنوان جهازك الحالي: <strong className="font-mono text-primary-crimson tracking-wider bg-white px-2 rounded font-black shadow-sm">{adminIp}</strong>
+                                </span>
+                            )}
+                        </div>
                     </div>
                 </div>
                 <button
@@ -157,6 +192,43 @@ const IPManagement = () => {
                             </button>
                         </form>
                     </div>
+                    {/* Recent Failed Attempts */}
+                    {failedAttempts.length > 0 && (
+                        <div className="bg-white p-8 rounded-[2.5rem] shadow-sm border border-gray-50 mt-8">
+                            <h3 className="text-lg font-black text-primary-navy mb-6 flex items-center gap-2">
+                                <AlertTriangle className="w-5 h-5 text-amber-500" />
+                                محاولات دخول فاشلة حديثة
+                            </h3>
+                            <div className="space-y-4 max-h-[400px] overflow-y-auto custom-scrollbar pr-2">
+                                {failedAttempts.slice(0, 10).map((attempt, idx) => (
+                                    <div key={idx} className="p-4 bg-gray-50 rounded-2xl flex items-center justify-between group hover:bg-amber-50/50 transition-colors border border-transparent hover:border-amber-100">
+                                        <div>
+                                            <div className="flex items-center gap-2">
+                                                <span className="font-mono font-black text-primary-navy">{attempt.extracted_ip}</span>
+                                                {blockedIps.some(ip => ip.ip_address === attempt.extracted_ip) && (
+                                                    <span className="text-[9px] bg-red-100 text-red-600 px-2 py-0.5 rounded font-black uppercase">محظور</span>
+                                                )}
+                                            </div>
+                                            <div className="text-xs text-gray-400 font-bold mt-1">{new Date(attempt.created_at).toLocaleString('ar-YE')}</div>
+                                            <div className="text-[10px] text-gray-500 mt-1 truncate max-w-[200px] cursor-help" title={attempt.details}>{attempt.details}</div>
+                                        </div>
+                                        <button
+                                            onClick={() => {
+                                                setNewIp(attempt.extracted_ip);
+                                                setReason('محاولة اختراق / دخول متكرر فاشل');
+                                                window.scrollTo({ top: 0, behavior: 'smooth' });
+                                            }}
+                                            disabled={blockedIps.some(ip => ip.ip_address === attempt.extracted_ip) || attempt.extracted_ip === 'غير معروف'}
+                                            className="w-10 h-10 rounded-xl bg-white border border-gray-200 flex items-center justify-center text-primary-crimson shadow-sm hover:bg-primary-crimson hover:text-white disabled:opacity-30 disabled:hover:bg-white disabled:hover:text-primary-crimson transition-all"
+                                            title="إضافة للحظر"
+                                        >
+                                            <Shield className="w-4 h-4" />
+                                        </button>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    )}
                 </div>
 
                 {/* Blocked List */}

@@ -148,9 +148,12 @@ export async function initDb() {
       );
     `);
 
-    // Ensure permissions column exists for older dbs
+    // Ensure permissions and auth columns exist for older dbs
     try {
       await client.query("ALTER TABLE system_users ADD COLUMN IF NOT EXISTS permissions TEXT DEFAULT '[]'");
+      await client.query("ALTER TABLE system_users ADD COLUMN IF NOT EXISTS email TEXT");
+      await client.query("ALTER TABLE system_users ADD COLUMN IF NOT EXISTS reset_token TEXT");
+      await client.query("ALTER TABLE system_users ADD COLUMN IF NOT EXISTS reset_token_expiry TIMESTAMPTZ");
     } catch (e) { /* ignore */ }
 
     await client.query(`
