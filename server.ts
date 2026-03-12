@@ -107,18 +107,48 @@ async function startServer() {
   await initDb();
 
   app.use(express.json());
-  // --- Email Helper (Resend HTTP + NodeMailer Fallback) ---
+  // --- Email Helper (MailerSend / Resend HTTP + NodeMailer Fallback) ---
   const sendSystemEmail = async (to: string, subject: string, html: string, username: string = '') => {
+      const MAILERSEND_API_KEY = process.env.MAILERSEND_API_KEY;
+      const MAILERSEND_SENDER = process.env.MAILERSEND_SENDER_EMAIL;
       const RESEND_API_KEY = process.env.RESEND_API_KEY;
       let lastError = '';
       
-      // 1. Try Resend API (HTTP Port 443 - Not Blocked on Render)
+      // 1. Try MailerSend API
+      if (MAILERSEND_API_KEY && MAILERSEND_SENDER) {
+          try {
+              const response = await fetch('https://api.mailersend.com/v1/email', {
+                  method: 'POST',
+                  headers: {
+                      'Content-Type': 'application/json',
+                      'X-Requested-With': 'XMLHttpRequest',
+                      'Authorization': `Bearer ${MAILERSEND_API_KEY}`
+                  },
+                  body: JSON.stringify({
+                      from: { email: MAILERSEND_SENDER, name: 'نظام هـدس' },
+                      to: [{ email: to }],
+                      subject: subject,
+                      html: html
+                  })
+              });
+              
+              if (response.ok) {
+                  console.log(`Email sent via MailerSend to ${to} for user ${username}`);
+                  return true;
+              } else {
+                  const result = await response.json();
+                  lastError = `MailerSend API Error: ${result.message || JSON.stringify(result)}`;
+                  console.warn(lastError, 'Trying next method...');
+              }
+          } catch (msErr: any) {
+              lastError = `MailerSend failed: ${msErr.message}`;
+              console.warn(lastError, 'Trying next method...');
+          }
+      }
+
+      // 3. Try Resend API (HTTP Port 443 - Not Blocked on Render)
       if (RESEND_API_KEY) {
           try {
-              // Resend Free Tier requires a verified domain or using onboarding@resend.dev
-              // We will use onboarding@resend.dev as the sender to guarantee delivery on free accounts
-              const fromAddress = 'onboarding@resend.dev';
-              
               const response = await fetch('https://api.resend.com/emails', {
                   method: 'POST',
                   headers: {
@@ -126,7 +156,7 @@ async function startServer() {
                       'Authorization': `Bearer ${RESEND_API_KEY}`
                   },
                   body: JSON.stringify({
-                      from: `نظام هـدس <${fromAddress}>`,
+                      from: `نظام هـدس <onboarding@resend.dev>`,
                       to: to,
                       subject: subject,
                       html: html
@@ -139,17 +169,15 @@ async function startServer() {
                   return true;
               } else {
                   lastError = `Resend API Error: ${result.message || JSON.stringify(result)}`;
-                  console.error(lastError);
-                  throw new Error(lastError);
+                  console.warn(lastError, 'Falling back to SMTP...');
               }
           } catch (resendErr: any) {
               lastError = `Resend failed: ${resendErr.message}`;
               console.warn(lastError, 'Falling back to SMTP...');
-              // Fall through to SMTP
           }
       }
 
-      // 2. Fallback to SMTP
+      // 3. Fallback to SMTP
       try {
           const transporter = nodemailer.createTransport({
             host: process.env.SMTP_HOST || 'smtp.ethereal.email',
@@ -174,7 +202,7 @@ async function startServer() {
           return true;
       } catch (smtpErr: any) {
           let diagnostic = '';
-          if (!RESEND_API_KEY) diagnostic = 'RESEND_API_KEY is MISSING in environment. ';
+          if (!RESEND_API_KEY && !MAILERSEND_API_KEY) diagnostic = 'NO EMAIL API KEY (MailerSend/Resend) found in environment. ';
           
           const fullError = `${diagnostic}${lastError ? lastError + ' | ' : ''}SMTP Error: ${smtpErr.message}`;
           console.error(`CRITICAL: All email methods failed for ${to}:`, fullError);
@@ -237,7 +265,8 @@ async function startServer() {
 
   // Auth
   app.post("/api/auth/login", checkBlockedIp, async (req, res) => {
-    const { username, password } = req.body;
+    let { username, password } = req.body;
+    if (username) username = username.trim().toLowerCase();
     const ipStr = getClientIp(req);
 
     const { rows } = await db.query("SELECT id, username, password, full_name, role, permissions, requires_password_change FROM system_users WHERE username = $1", [username]);
@@ -334,7 +363,8 @@ async function startServer() {
   // Forgot Password
   // ... (rest of forgot password routes)
   app.post("/api/auth/forgot-password", async (req, res) => {
-    const { email } = req.body; // Using 'email' as the identifier field name from body
+    let { email } = req.body;
+    if (email) email = email.trim().toLowerCase();
     try {
       const { rows } = await db.query("SELECT id, username, email FROM system_users WHERE email = $1 OR username = $1", [email]);
       if (rows.length === 0) {
@@ -381,7 +411,9 @@ async function startServer() {
 
   // Verify Code
   app.post("/api/auth/verify-code", async (req, res) => {
-    const { email, code } = req.body;
+    let { email, code } = req.body;
+    if (email) email = email.trim().toLowerCase();
+    if (code) code = code.trim();
     try {
       const { rows } = await db.query(
         "SELECT id FROM system_users WHERE (email = $1 OR username = $1) AND reset_token = $2 AND reset_token_expiry > NOW()",
@@ -400,7 +432,9 @@ async function startServer() {
 
   // Reset Password
   app.post("/api/auth/reset-password", async (req, res) => {
-    const { email, code, newPassword } = req.body;
+    let { email, code, newPassword } = req.body;
+    if (email) email = email.trim().toLowerCase();
+    if (code) code = code.trim();
     try {
       const { rows } = await db.query(
         "SELECT id FROM system_users WHERE (email = $1 OR username = $1) AND reset_token = $2 AND reset_token_expiry > NOW()",
@@ -435,7 +469,8 @@ async function startServer() {
 
   app.post("/api/admin/users", requireAuth, async (req, res) => {
     let { username, password, full_name, email, role, permissions } = req.body;
-    if (email) email = email.trim();
+    if (username) username = username.trim().toLowerCase();
+    if (email) email = email.trim().toLowerCase();
     try {
       let isAutoGenerated = false;
       if (!password) {
