@@ -285,7 +285,11 @@ async function startServer() {
           auth: {
               user: process.env.SMTP_USER,
               pass: process.env.SMTP_PASS
-          }
+          },
+          connectionTimeout: 10000, // 10 seconds timeout
+          greetingTimeout: 10000,
+          socketTimeout: 15000,
+          family: 4 // Force IPv4 for better compatibility on cloud hosts
         });
 
         await transporter.sendMail({
@@ -310,9 +314,9 @@ async function startServer() {
           `
         });
         console.log(`Password reset email sent to ${rows[0].email}`);
-      } catch (mailErr) {
+      } catch (mailErr: any) {
         console.error('Failed to send password reset email:', mailErr);
-        // We still continue the flow so the user can potentially get the code from server console or test environment
+        await logAction(null, 'خطأ بريد', `فشل إرسال كود استعادة كلمة المرور للمستخدم ${rows[0].username} (${rows[0].email}): ${mailErr.message || 'Error'}`);
       }
 
       res.json({ message: "تم إصدار رمز التحقق بنجاح وإرساله إلى البريد الإلكتروني" });
@@ -404,7 +408,11 @@ async function startServer() {
             auth: {
                 user: process.env.SMTP_USER,
                 pass: process.env.SMTP_PASS
-            }
+            },
+            connectionTimeout: 10000,
+            greetingTimeout: 10000,
+            socketTimeout: 15000,
+            family: 4
           });
 
           await transporter.sendMail({
