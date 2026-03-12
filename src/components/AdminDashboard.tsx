@@ -149,16 +149,16 @@ export default function AdminDashboard() {
 
   const fetchAllData = () => {
     fetchArticles();
-    fetchTrashArticles();
-    fetchCategories();
-    fetchComments();
-    fetchSubscribers();
-    fetchStats();
-    fetchSettings();
-    fetchWriters();
-    fetchAds();
-    fetchHistory();
-    fetchUsers();
+    setTimeout(fetchTrashArticles, 50);
+    setTimeout(fetchCategories, 100);
+    setTimeout(fetchComments, 150);
+    setTimeout(fetchSubscribers, 200);
+    setTimeout(fetchStats, 250);
+    setTimeout(fetchSettings, 300);
+    setTimeout(fetchWriters, 350);
+    setTimeout(fetchAds, 400);
+    setTimeout(fetchHistory, 450);
+    setTimeout(fetchUsers, 500);
   };
 
   useEffect(() => {
@@ -172,6 +172,9 @@ export default function AdminDashboard() {
       // Fetch actual user data including role for RBAC
       authenticatedFetch('/api/auth/me')
         .then(user => {
+          if (user.requires_password_change) {
+            setAuthMode('change_password');
+          }
           setCurrentUser(user);
           fetchAllData();
         })
@@ -640,7 +643,7 @@ export default function AdminDashboard() {
     (a.category_name || '').toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  if (!currentUser) {
+  if (!currentUser || authMode === 'change_password') {
     return (
       <div className="min-h-screen bg-primary-navy flex items-center justify-center p-6 bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')]">
           {notification && (
@@ -673,8 +676,14 @@ export default function AdminDashboard() {
 
           {authMode === 'change_password' && (
             <form onSubmit={handleChangePassword} className="space-y-6">
+              <div className="text-center mb-6">
+                <div className="w-16 h-16 bg-blue-50 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <Shield className="w-8 h-8 text-blue-600" />
+                </div>
+                <h2 className="text-xl font-black text-gray-900">🔒 تأمين حسابك الجديد</h2>
+              </div>
               <div className="bg-blue-50 text-blue-800 p-4 rounded-xl border border-blue-100 text-sm font-bold leading-relaxed mb-6">
-                هذه كلمة مرور مولدة آلياً. لضمان أمان حسابك، يجب تغييرها الآن بكلمة مرور جديدة تختارها بنفسك لمرة واحدة فقط.
+                لقد استخدمت رمز تحقق مؤقت للدخول. لضمان أمان حسابك، يجب عليك الآن تعيين كلمة مرور قوية من اختيارك لاستخدامها في المرات القادمة.
               </div>
               <div className="space-y-2">
                 <label className="text-sm font-black text-gray-700 block mr-1">كلمة المرور الجديدة</label>
@@ -726,14 +735,14 @@ export default function AdminDashboard() {
                 </div>
               )}
               <div className="space-y-2">
-                <label className="text-sm font-black text-gray-700 block mr-1">كلمة المرور</label>
+                <label className="text-sm font-black text-gray-700 block mr-1">كلمة المرور أو رمز الدخول</label>
                 <div className="relative">
                   <input
                     type={showPassword ? "text" : "password"}
                     value={loginData.password}
                     onChange={e => setLoginData({ ...loginData, password: e.target.value })}
                     className="w-full p-4 pl-12 bg-gray-50 border-2 border-gray-100 rounded-2xl outline-none focus:border-primary-crimson focus:bg-white transition-all font-bold"
-                    placeholder="••••••••"
+                    placeholder="أدخل كلمة المرور أو رمز التحقق..."
                     required
                   />
                   <button

@@ -302,7 +302,14 @@ export default function ArticleDetail() {
                         prose-headings:text-primary-navy prose-headings:font-black
                         font-medium text-justify text-gray-900 overflow-visible">
 
-                      <div dangerouslySetInnerHTML={{ __html: firstPart.replace(/\n/g, "<br/>") }} />
+                      <div>
+                        {firstPart.split(/\n/).map((line, i) => (
+                          <React.Fragment key={i}>
+                            {line}
+                            <br />
+                          </React.Fragment>
+                        ))}
+                      </div>
 
                       {inlineAds.length > 0 && (
                         <div className="my-16 p-3 bg-gray-50 rounded-[2.5rem] border border-gray-100 overflow-hidden shadow-premium group">
@@ -338,7 +345,14 @@ export default function ArticleDetail() {
                       )}
 
                       {remainingParts.length > 0 && (
-                        <div dangerouslySetInnerHTML={{ __html: remainingParts.join("\n\n").replace(/\n/g, "<br/>") }} />
+                        <div>
+                          {remainingParts.join("\n\n").split(/\n/).map((line, i) => (
+                            <React.Fragment key={i}>
+                              {line}
+                              <br />
+                            </React.Fragment>
+                          ))}
+                        </div>
                       )}
                     </div>
                   );

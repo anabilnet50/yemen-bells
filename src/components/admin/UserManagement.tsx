@@ -131,6 +131,7 @@ const UserManagement: React.FC<UserManagementProps> = ({
                                         <td className="p-3 sm:p-6 font-black text-primary-navy align-middle text-[11px] sm:text-base">
                                             {user.full_name}
                                             <div className="sm:hidden text-[9px] font-mono text-gray-400 mt-1">@{user.username}</div>
+                                            {user.email && <div className="sm:hidden text-[9px] text-blue-500 mt-0.5">{user.email}</div>}
                                         </td>
                                         <td className="p-6 font-mono text-sm text-gray-500 align-middle hidden sm:table-cell">
                                             <div>@{user.username}</div>

@@ -166,6 +166,13 @@ export async function initDb() {
       );
     `);
 
+    // Performance Indexes
+    await client.query("CREATE INDEX IF NOT EXISTS idx_articles_category ON articles(category_id)");
+    await client.query("CREATE INDEX IF NOT EXISTS idx_articles_created_at ON articles(created_at DESC)");
+    await client.query("CREATE INDEX IF NOT EXISTS idx_articles_urgent ON articles(is_urgent) WHERE is_urgent = 1");
+    await client.query("CREATE INDEX IF NOT EXISTS idx_articles_active ON articles(is_deleted, is_active)");
+    await client.query("CREATE INDEX IF NOT EXISTS idx_audit_logs_user_date ON audit_logs(user_id, created_at DESC)");
+
     await client.query(`
       CREATE TABLE IF NOT EXISTS blocked_ips (
         id SERIAL PRIMARY KEY,
