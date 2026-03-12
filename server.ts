@@ -107,6 +107,72 @@ async function startServer() {
   await initDb();
 
   app.use(express.json());
+  // --- Email Helper (Resend HTTP + NodeMailer Fallback) ---
+  const sendSystemEmail = async (to: string, subject: string, html: string, username: string = '') => {
+      const RESEND_API_KEY = process.env.RESEND_API_KEY;
+      
+      // 1. Try Resend API (HTTP Port 443 - Not Blocked on Render)
+      if (RESEND_API_KEY) {
+          try {
+              const response = await fetch('https://api.resend.com/emails', {
+                  method: 'POST',
+                  headers: {
+                      'Content-Type': 'application/json',
+                      'Authorization': `Bearer ${RESEND_API_KEY}`
+                  },
+                  body: JSON.stringify({
+                      from: process.env.SMTP_FROM?.includes('<') ? process.env.SMTP_FROM : `"نظام هـدس" <onboarding@resend.dev>`,
+                      to: to,
+                      subject: subject,
+                      html: html
+                  })
+              });
+              
+              const result = await response.json();
+              if (response.ok) {
+                  console.log(`Email sent via Resend to ${to} for user ${username}`);
+                  return true;
+              } else {
+                  console.error('Resend API Error:', result);
+                  throw new Error(result.message || 'Resend API failure');
+              }
+          } catch (resendErr: any) {
+              console.warn('Resend failed, falling back to SMTP:', resendErr.message);
+              // Fall through to SMTP
+          }
+      }
+
+      // 2. Fallback to SMTP
+      try {
+          const transporter = nodemailer.createTransport({
+            host: process.env.SMTP_HOST || 'smtp.ethereal.email',
+            port: parseInt(process.env.SMTP_PORT || '587'),
+            secure: process.env.SMTP_PORT === '465',
+            auth: {
+                user: process.env.SMTP_USER,
+                pass: process.env.SMTP_PASS
+            },
+            connectionTimeout: 10000,
+            greetingTimeout: 10000,
+            socketTimeout: 15000,
+            family: 4
+          });
+
+          await transporter.sendMail({
+            from: process.env.SMTP_FROM || '"نظام هـدس" <no-reply@hadas.com>',
+            to: to,
+            subject: subject,
+            html: html
+          });
+          console.log(`Email sent via SMTP to ${to} for user ${username}`);
+          return true;
+      } catch (smtpErr: any) {
+          console.error(`CRITICAL: All email methods failed for ${to}:`, smtpErr.message);
+          await logAction(null, 'خطأ بريد', `فشل إرسال البريد لـ ${to}: ${smtpErr.message || 'Error'}`);
+          return false;
+      }
+  };
+
   app.use("/uploads", express.static(uploadDir));
 
   // --- Auth & Audit Helpers ---
@@ -277,26 +343,7 @@ async function startServer() {
       // Log action for verification (Production clean)
       // Verification Code for ${email}/${rows[0].username} generated
 
-      try {
-        const transporter = nodemailer.createTransport({
-          host: process.env.SMTP_HOST || 'smtp.ethereal.email',
-          port: parseInt(process.env.SMTP_PORT || '587'),
-          secure: process.env.SMTP_PORT === '465',
-          auth: {
-              user: process.env.SMTP_USER,
-              pass: process.env.SMTP_PASS
-          },
-          connectionTimeout: 10000, // 10 seconds timeout
-          greetingTimeout: 10000,
-          socketTimeout: 15000,
-          family: 4 // Force IPv4 for better compatibility on cloud hosts
-        });
-
-        await transporter.sendMail({
-          from: process.env.SMTP_FROM || '"نظام هـدس" <no-reply@hadas.com>',
-          to: rows[0].email,
-          subject: 'رمز التحقق لاستعادة كلمة المرور - نظام هـدس',
-          html: `
+      const mailHtml = `
             <div dir="rtl" style="font-family: sans-serif; line-height: 1.6; color: #333;">
               <h2>مرحباً ${rows[0].username}،</h2>
               <p>لقد طلبنا إعادة تعيين كلمة المرور لحسابك في <b>نظام هـدس</b>.</p>
@@ -311,13 +358,9 @@ async function startServer() {
               <hr style="border: none; border-top: 1px solid #eee; margin-top: 30px;" />
               <p style="color: #999; font-size: 12px;">رسالة تلقائية مقدّمة من نظام هـدس الإخباري.</p>
             </div>
-          `
-        });
-        console.log(`Password reset email sent to ${rows[0].email}`);
-      } catch (mailErr: any) {
-        console.error('Failed to send password reset email:', mailErr);
-        await logAction(null, 'خطأ بريد', `فشل إرسال كود استعادة كلمة المرور للمستخدم ${rows[0].username} (${rows[0].email}): ${mailErr.message || 'Error'}`);
-      }
+          `;
+
+      await sendSystemEmail(rows[0].email, 'رمز التحقق لاستعادة كلمة المرور - نظام هـدس', mailHtml, rows[0].username);
 
       res.json({ message: "تم إصدار رمز التحقق بنجاح وإرساله إلى البريد الإلكتروني" });
     } catch (e) {
@@ -399,47 +442,21 @@ async function startServer() {
       );
 
       if (email) {
-        try {
-          // Fallback to a testing service if credentials aren't set
-          const transporter = nodemailer.createTransport({
-            host: process.env.SMTP_HOST || 'smtp.ethereal.email',
-            port: parseInt(process.env.SMTP_PORT || '587'),
-            secure: process.env.SMTP_PORT === '465',
-            auth: {
-                user: process.env.SMTP_USER,
-                pass: process.env.SMTP_PASS
-            },
-            connectionTimeout: 10000,
-            greetingTimeout: 10000,
-            socketTimeout: 15000,
-            family: 4
-          });
-
-          await transporter.sendMail({
-            from: process.env.SMTP_FROM || '"نظام إدارة هـدس" <no-reply@hadas.com>',
-            to: email,
-            subject: 'رمز التحقق للدخول لأول مرة - نظام هـدس',
-            html: `
-              <div dir="rtl" style="font-family: sans-serif; line-height: 1.6; color: #333;">
-                <h2>مرحباً ${full_name}،</h2>
-                <p>تم إنشاء حساب جديد لك في لوحة تحكم موقع <b>هـدس</b>.</p>
-                <div style="background: #f4f6f8; padding: 20px; border-radius: 8px; margin: 20px 0;">
-                  <p><strong>الرابط:</strong> <a href="${process.env.PUBLIC_URL || 'http://localhost:3000'}/admin">${process.env.PUBLIC_URL || 'http://localhost:3000'}/admin</a></p>
-                  <p><strong>اسم المستخدم:</strong> ${username}</p>
-                  <p><strong>رمز التحقق (للدخول لأول مرة):</strong> <code style="background:#e2e8f0;padding:2px 10px;border-radius:4px;font-size:24px;color:#2563eb;font-weight:bold;">${password}</code></p>
-                </div>
-                <p style="color: #666; font-size: 14px;">يرجى استخدام هذا الرمز لتسجيل الدخول، وسيُطلب منك تعيين كلمة مرور خاصة بك فور الدخول.</p>
-                <hr style="border: none; border-top: 1px solid #eee; margin-top: 30px;" />
-                <p style="color: #999; font-size: 12px;">رسالة تلقائية مقدّمة من نظام هـدس الإخباري.</p>
+          const userMailHtml = `
+            <div dir="rtl" style="font-family: sans-serif; line-height: 1.6; color: #333;">
+              <h2>مرحباً ${full_name}،</h2>
+              <p>تم إنشاء حساب جديد لك في لوحة تحكم موقع <b>هـدس</b>.</p>
+              <div style="background: #f4f6f8; padding: 20px; border-radius: 8px; margin: 20px 0;">
+                <p><strong>الرابط:</strong> <a href="${process.env.PUBLIC_URL || 'http://localhost:3000'}/admin">${process.env.PUBLIC_URL || 'http://localhost:3000'}/admin</a></p>
+                <p><strong>اسم المستخدم:</strong> ${username}</p>
+                <p><strong>رمز التحقق (للدخول لأول مرة):</strong> <code style="background:#e2e8f0;padding:2px 10px;border-radius:4px;font-size:24px;color:#2563eb;font-weight:bold;">${password}</code></p>
               </div>
-            `
-          });
-          console.log(`Credentials email sent to ${email} for user ${username}`);
-        } catch (mailErr: any) {
-          console.error(`CRITICAL: Failed to send credentials email to ${email}:`, mailErr.message || mailErr);
-          // Log to audit logs for visibility
-          await logAction((req as any).user.id, 'خطأ بريد', `فشل إرسال بريد الترحيب للمستخدم ${username} (${email}): ${mailErr.message || 'Error'}`);
-        }
+              <p style="color: #666; font-size: 14px;">يرجى استخدام هذا الرمز لتسجيل الدخول، وسيُطلب منك تعيين كلمة مرور خاصة بك فور الدخول.</p>
+              <hr style="border: none; border-top: 1px solid #eee; margin-top: 30px;" />
+              <p style="color: #999; font-size: 12px;">رسالة تلقائية مقدّمة من نظام هـدس الإخباري.</p>
+            </div>
+          `;
+          await sendSystemEmail(email, 'رمز التحقق للدخول لأول مرة - نظام هـدس', userMailHtml, username);
       }
       await logAction((req as any).user.id, 'إضافة مستخدم', `تم إضافة المستخدم: ${username}`);
       res.json({ id: rows[0].id });
