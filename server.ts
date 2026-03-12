@@ -110,10 +110,15 @@ async function startServer() {
   // --- Email Helper (Resend HTTP + NodeMailer Fallback) ---
   const sendSystemEmail = async (to: string, subject: string, html: string, username: string = '') => {
       const RESEND_API_KEY = process.env.RESEND_API_KEY;
+      let lastError = '';
       
       // 1. Try Resend API (HTTP Port 443 - Not Blocked on Render)
       if (RESEND_API_KEY) {
           try {
+              // Resend Free Tier requires a verified domain or using onboarding@resend.dev
+              // We will use onboarding@resend.dev as the sender to guarantee delivery on free accounts
+              const fromAddress = 'onboarding@resend.dev';
+              
               const response = await fetch('https://api.resend.com/emails', {
                   method: 'POST',
                   headers: {
@@ -121,7 +126,7 @@ async function startServer() {
                       'Authorization': `Bearer ${RESEND_API_KEY}`
                   },
                   body: JSON.stringify({
-                      from: process.env.SMTP_FROM?.includes('<') ? process.env.SMTP_FROM : `"نظام هـدس" <onboarding@resend.dev>`,
+                      from: `نظام هـدس <${fromAddress}>`,
                       to: to,
                       subject: subject,
                       html: html
@@ -133,11 +138,13 @@ async function startServer() {
                   console.log(`Email sent via Resend to ${to} for user ${username}`);
                   return true;
               } else {
-                  console.error('Resend API Error:', result);
-                  throw new Error(result.message || 'Resend API failure');
+                  lastError = `Resend API Error: ${result.message || JSON.stringify(result)}`;
+                  console.error(lastError);
+                  throw new Error(lastError);
               }
           } catch (resendErr: any) {
-              console.warn('Resend failed, falling back to SMTP:', resendErr.message);
+              lastError = `Resend failed: ${resendErr.message}`;
+              console.warn(lastError, 'Falling back to SMTP...');
               // Fall through to SMTP
           }
       }
@@ -153,7 +160,6 @@ async function startServer() {
                 pass: process.env.SMTP_PASS
             },
             connectionTimeout: 10000,
-            greetingTimeout: 10000,
             socketTimeout: 15000,
             family: 4
           });
@@ -167,8 +173,12 @@ async function startServer() {
           console.log(`Email sent via SMTP to ${to} for user ${username}`);
           return true;
       } catch (smtpErr: any) {
-          console.error(`CRITICAL: All email methods failed for ${to}:`, smtpErr.message);
-          await logAction(null, 'خطأ بريد', `فشل إرسال البريد لـ ${to}: ${smtpErr.message || 'Error'}`);
+          let diagnostic = '';
+          if (!RESEND_API_KEY) diagnostic = 'RESEND_API_KEY is MISSING in environment. ';
+          
+          const fullError = `${diagnostic}${lastError ? lastError + ' | ' : ''}SMTP Error: ${smtpErr.message}`;
+          console.error(`CRITICAL: All email methods failed for ${to}:`, fullError);
+          await logAction(null, 'خطأ بريد', `فشل إرسال البريد لـ ${to}: ${fullError}`);
           return false;
       }
   };
