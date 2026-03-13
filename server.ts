@@ -136,7 +136,9 @@ async function startServer() {
               
               const result = await response.json();
               if (response.ok) {
-                  console.log(`Email sent via Brevo to ${to} for user ${username}`);
+                  const msg = `Email sent via Brevo to ${to} for user ${username}`;
+                  console.log(msg);
+                  await logAction(null, 'نظام البريد', `نجح الإرسال عبر Brevo إلى ${to}`);
                   return true;
               } else {
                   lastError = `Brevo API Error: ${result.message || JSON.stringify(result)}`;
@@ -167,7 +169,9 @@ async function startServer() {
               });
               
               if (response.ok) {
-                  console.log(`Email sent via MailerSend to ${to} for user ${username}`);
+                  const msg = `Email sent via MailerSend to ${to} for user ${username}`;
+                  console.log(msg);
+                  await logAction(null, 'نظام البريد', `نجح الإرسال عبر MailerSend إلى ${to}`);
                   return true;
               } else {
                   const result = await response.json();
@@ -199,7 +203,9 @@ async function startServer() {
               
               const result = await response.json();
               if (response.ok) {
-                  console.log(`Email sent via Resend to ${to} for user ${username}`);
+                  const msg = `Email sent via Resend to ${to} for user ${username}`;
+                  console.log(msg);
+                  await logAction(null, 'نظام البريد', `نجح الإرسال عبر Resend إلى ${to}`);
                   return true;
               } else {
                   lastError = `Resend API Error: ${result.message || JSON.stringify(result)}`;
@@ -231,7 +237,9 @@ async function startServer() {
               });
               
               if (response.ok) {
-                  console.log(`Email sent via SendGrid to ${to} for user ${username}`);
+                  const msg = `Email sent via SendGrid to ${to} for user ${username}`;
+                  console.log(msg);
+                  await logAction(null, 'نظام البريد', `نجح الإرسال عبر SendGrid إلى ${to}`);
                   return true;
               } else {
                   const result = await response.json();
@@ -265,11 +273,14 @@ async function startServer() {
             subject: subject,
             html: html
           });
-          console.log(`Email sent via SMTP to ${to} for user ${username}`);
+          const msg = `Email sent via SMTP to ${to} for user ${username}`;
+          console.log(msg);
+          await logAction(null, 'نظام البريد', `نجح الإرسال عبر SMTP إلى ${to}`);
           return true;
       } catch (smtpErr: any) {
           let diagnostic = '';
-          if (!RESEND_API_KEY && !MAILERSEND_API_KEY) diagnostic = 'NO EMAIL API KEY (MailerSend/Resend) found in environment. ';
+          if (!RESEND_API_KEY && !MAILERSEND_API_KEY && !SENDGRID_API_KEY && !BREVO_API_KEY) 
+              diagnostic = 'NO EMAIL API KEYS found in environment. ';
           
           const fullError = `${diagnostic}${lastError ? lastError + ' | ' : ''}SMTP Error: ${smtpErr.message}`;
           console.error(`CRITICAL: All email methods failed for ${to}:`, fullError);
