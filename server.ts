@@ -107,14 +107,48 @@ async function startServer() {
   await initDb();
 
   app.use(express.json());
-  // --- Email Helper (MailerSend / Resend HTTP + NodeMailer Fallback) ---
+  // --- Email Helper (Brevo / MailerSend / Resend HTTP + NodeMailer Fallback) ---
   const sendSystemEmail = async (to: string, subject: string, html: string, username: string = '') => {
+      const BREVO_API_KEY = process.env.BREVO_API_KEY;
+      const BREVO_SENDER = process.env.BREVO_SENDER_EMAIL;
       const MAILERSEND_API_KEY = process.env.MAILERSEND_API_KEY;
       const MAILERSEND_SENDER = process.env.MAILERSEND_SENDER_EMAIL;
       const RESEND_API_KEY = process.env.RESEND_API_KEY;
       let lastError = '';
       
-      // 1. Try MailerSend API
+      // 1. Try Brevo API (BEST for accounts without a domain name)
+      if (BREVO_API_KEY && BREVO_SENDER) {
+          try {
+              const response = await fetch('https://api.brevo.com/v3/smtp/email', {
+                  method: 'POST',
+                  headers: {
+                      'accept': 'application/json',
+                      'api-key': BREVO_API_KEY,
+                      'content-type': 'application/json'
+                  },
+                  body: JSON.stringify({
+                      sender: { name: 'نظام هـدس', email: BREVO_SENDER },
+                      to: [{ email: to }],
+                      subject: subject,
+                      htmlContent: html
+                  })
+              });
+              
+              const result = await response.json();
+              if (response.ok) {
+                  console.log(`Email sent via Brevo to ${to} for user ${username}`);
+                  return true;
+              } else {
+                  lastError = `Brevo API Error: ${result.message || JSON.stringify(result)}`;
+                  console.warn(lastError, 'Trying next method...');
+              }
+          } catch (brevoErr: any) {
+              lastError = `Brevo failed: ${brevoErr.message}`;
+              console.warn(lastError, 'Trying next method...');
+          }
+      }
+
+      // 2. Try MailerSend API
       if (MAILERSEND_API_KEY && MAILERSEND_SENDER) {
           try {
               const response = await fetch('https://api.mailersend.com/v1/email', {
@@ -177,7 +211,40 @@ async function startServer() {
           }
       }
 
-      // 3. Fallback to SMTP
+      // 4. Try SendGrid API
+      const SENDGRID_API_KEY = process.env.SENDGRID_API_KEY;
+      const SENDGRID_SENDER = process.env.SENDGRID_SENDER_EMAIL;
+      if (SENDGRID_API_KEY && SENDGRID_SENDER) {
+          try {
+              const response = await fetch('https://api.sendgrid.com/v3/mail/send', {
+                  method: 'POST',
+                  headers: {
+                      'Content-Type': 'application/json',
+                      'Authorization': `Bearer ${SENDGRID_API_KEY}`
+                  },
+                  body: JSON.stringify({
+                      personalizations: [{ to: [{ email: to }] }],
+                      from: { email: SENDGRID_SENDER, name: 'نظام هـدس' },
+                      subject: subject,
+                      content: [{ type: 'text/html', value: html }]
+                  })
+              });
+              
+              if (response.ok) {
+                  console.log(`Email sent via SendGrid to ${to} for user ${username}`);
+                  return true;
+              } else {
+                  const result = await response.json();
+                  lastError = `SendGrid API Error: ${JSON.stringify(result)}`;
+                  console.warn(lastError, 'Falling back to SMTP...');
+              }
+          } catch (sgErr: any) {
+              lastError = `SendGrid failed: ${sgErr.message}`;
+              console.warn(lastError, 'Falling back to SMTP...');
+          }
+      }
+
+      // 5. Fallback to SMTP
       try {
           const transporter = nodemailer.createTransport({
             host: process.env.SMTP_HOST || 'smtp.ethereal.email',
