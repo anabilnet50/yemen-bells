@@ -130,7 +130,18 @@ export default function AdminDashboard() {
   };
 
   const fetchCategories = () => {
-    authenticatedFetch('/api/categories').then(setCategories).catch(() => { });
+    authenticatedFetch('/api/categories').then(data => {
+      const order = ['short-urgent', 'general', 'local', 'intl'];
+      const sorted = [...data].sort((a, b) => {
+        const aIdx = order.indexOf(a.slug);
+        const bIdx = order.indexOf(b.slug);
+        if (aIdx !== -1 && bIdx !== -1) return aIdx - bIdx;
+        if (aIdx !== -1) return -1;
+        if (bIdx !== -1) return 1;
+        return a.name.localeCompare(b.name, 'ar');
+      });
+      setCategories(sorted);
+    }).catch(() => { });
   };
 
   const fetchStats = () => {
@@ -696,6 +707,9 @@ export default function AdminDashboard() {
                     placeholder="أدخل 6 أحرف على الأقل..."
                     required
                     minLength={6}
+                    autoCapitalize="none"
+                    autoCorrect="off"
+                    spellCheck="false"
                   />
                   <button
                     type="button"
@@ -726,6 +740,9 @@ export default function AdminDashboard() {
                   className="w-full p-4 bg-gray-50 border-2 border-gray-100 rounded-2xl outline-none focus:border-primary-crimson focus:bg-white transition-all font-bold"
                   placeholder="أدخل اسم المستخدم..."
                   required
+                  autoCapitalize="none"
+                  autoCorrect="off"
+                  spellCheck="false"
                 />
               </div>
               {loginError && (
@@ -783,6 +800,9 @@ export default function AdminDashboard() {
                   className="w-full p-4 bg-gray-50 border-2 border-gray-100 rounded-2xl outline-none focus:border-primary-crimson focus:bg-white transition-all font-bold"
                   placeholder="أدخل اسم المستخدم أو البريد"
                   required
+                  autoCapitalize="none"
+                  autoCorrect="off"
+                  spellCheck="false"
                 />
               </div>
               <button
@@ -816,6 +836,9 @@ export default function AdminDashboard() {
                   className="w-full p-4 bg-gray-50 border-2 border-gray-100 rounded-2xl outline-none focus:border-primary-crimson focus:bg-white transition-all font-bold text-center tracking-[1em] text-2xl"
                   placeholder="------"
                   required
+                  autoCapitalize="none"
+                  autoCorrect="off"
+                  spellCheck="false"
                 />
                 <p className="text-xs text-gray-400 font-bold mt-2 text-center">أدخل الرمز الذي تم إرساله إلى بريدك الإلكتروني</p>
               </div>
@@ -851,6 +874,9 @@ export default function AdminDashboard() {
                     className="w-full p-4 pl-12 bg-gray-50 border-2 border-gray-100 rounded-2xl outline-none focus:border-primary-crimson focus:bg-white transition-all font-bold"
                     placeholder="••••••••"
                     required
+                    autoCapitalize="none"
+                    autoCorrect="off"
+                    spellCheck="false"
                   />
                   <button
                     type="button"

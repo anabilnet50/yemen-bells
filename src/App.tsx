@@ -102,6 +102,7 @@ function Home() {
   const [showContactModal, setShowContactModal] = useState(false);
   const [showBackToTop, setShowBackToTop] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
+  const [heroIndex, setHeroIndex] = useState(0);
   const articlesPerPage = 3;
   const navigate = useNavigate();
 
@@ -128,8 +129,11 @@ function Home() {
   }, [articles, currentTime]);
 
   const mainArticle = useMemo(() => {
-    // 1. Top priority: short-urgent (hero ONLY)
-    if (shortUrgentArticles.length > 0) return shortUrgentArticles[0];
+    // 1. Top priority: short-urgent (hero ONLY) - allow cycling via heroIndex
+    if (shortUrgentArticles.length > 0) {
+      const idx = heroIndex % shortUrgentArticles.length;
+      return shortUrgentArticles[idx < 0 ? idx + shortUrgentArticles.length : idx];
+    }
     
     // 2. Main logic: if there is recent urgent (< 5 hours), show latest urgent
     if (hasRecentUrgent) {
@@ -143,7 +147,7 @@ function Home() {
 
     // 4. Ultimate fallback: just return the latest display article
     return displayArticles[0];
-  }, [shortUrgentArticles, articles, hasRecentUrgent, displayArticles]);
+  }, [shortUrgentArticles, articles, hasRecentUrgent, displayArticles, heroIndex]);
 
   const [videoLoaded, setVideoLoaded] = useState(false);
 
@@ -164,6 +168,16 @@ function Home() {
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
+
+  const handleNextHero = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setHeroIndex(prev => prev + 1);
+  };
+
+  const handlePrevHero = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setHeroIndex(prev => prev - 1);
+  };
 
   const fetchPollComments = () => {
     fetch('/api/poll/comments')
@@ -284,7 +298,7 @@ function Home() {
           <div className="absolute inset-0 border-4 border-accent-gold border-t-transparent rounded-full animate-spin"></div>
         </div>
         <p className="mt-8 font-black text-white/40 uppercase tracking-[0.4em] animate-pulse">
-          جاري تجهيز التجربة الفاخرة...
+          يرجي الانتضار...
         </p>
       </div>
     );
@@ -537,14 +551,24 @@ function Home() {
                   onClick={mainArticle.category_slug === 'short-urgent' ? undefined : () => navigate(`/article/${mainArticle.id}`)}
                   className={`relative h-[250px] sm:h-[350px] md:h-[480px] bg-primary-navy rounded-none md:rounded-3xl overflow-hidden ${mainArticle.category_slug === 'short-urgent' ? '' : 'cursor-pointer shadow-none md:shadow-premium border-none md:border border-white/5'} group`}
                 >
-                  {/* Watermark Logo - Compact & Focused - Always visible over image or video */}
-                  <div className="absolute top-4 right-4 md:top-8 md:right-8 z-40 flex flex-col items-end pointer-events-none group-hover:scale-110 transition-transform duration-700">
-                    <div className="bg-black/30 backdrop-blur-lg px-3 md:px-4 py-1.5 md:py-2 rounded-xl border border-white/20 shadow-[0_10px_30px_rgba(0,0,0,0.5)] flex flex-col items-center">
-                      <span className="text-white font-black text-xl md:text-3xl tracking-tighter flex items-center gap-1 drop-shadow-2xl">
-                        {settings?.site_name || '𐩠𐩵𐩪 هـدس'}
-                      </span>
+                  {/* Watermark Logo - Animated Hadas & Musnad */}
+                  <motion.div 
+                    animate={{ 
+                      scale: [1, 1.05, 1],
+                      boxShadow: ["0px 0px 0px rgba(0,0,0,0)", "0px 0px 20px rgba(225,29,72,0.3)", "0px 0px 0px rgba(0,0,0,0)"]
+                    }}
+                    transition={{ 
+                      duration: 4, 
+                      repeat: Infinity,
+                      ease: "easeInOut" 
+                    }}
+                    className="absolute top-4 right-4 md:top-8 md:right-8 z-40 flex flex-col items-end pointer-events-none group-hover:scale-110 transition-transform duration-700"
+                  >
+                    <div className="bg-black/30 backdrop-blur-lg px-3 md:px-5 py-2 md:py-3 rounded-2xl border border-white/10 shadow-2xl flex items-center gap-3 md:gap-4 animate-gloss">
+                      <span className="text-white font-black text-lg md:text-3xl tracking-widest opacity-80">𐩠𐩵𐩪</span>
+                      <span className="text-white font-black text-xl md:text-4xl tracking-tighter">هـدس</span>
                     </div>
-                  </div>
+                  </motion.div>
 
                   {mainArticle.video_url && videoLoaded ? (
                     (() => {
@@ -683,10 +707,22 @@ function Home() {
                     </div>
                   </div>
 
-                  {/* Hero Navigation Buttons - Sleek Style */}
-                  <div className="absolute top-1/2 -translate-y-1/2 left-4 right-4 flex justify-between opacity-0 group-hover:opacity-100 transition-opacity duration-500">
-                    <button className="w-10 h-10 bg-white/10 backdrop-blur-xl text-white rounded-xl border border-white/10 flex items-center justify-center hover:bg-primary-crimson hover:scale-110 transition-all"><ChevronRight className="w-5 h-5" /></button>
-                    <button className="w-10 h-10 bg-white/10 backdrop-blur-xl text-white rounded-xl border border-white/10 flex items-center justify-center hover:bg-primary-crimson hover:scale-110 transition-all"><ChevronLeft className="w-5 h-5" /></button>
+                  {/* Hero Navigation Buttons - Sleek Style - Always visible on mobile for UX */}
+                  <div className="absolute top-1/2 -translate-y-1/2 left-4 right-4 flex justify-between z-[60] opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity duration-500">
+                    <button 
+                      onClick={handleNextHero}
+                      className="w-10 h-10 md:w-12 md:h-12 bg-black/40 backdrop-blur-xl text-white rounded-2xl border border-white/20 flex items-center justify-center hover:bg-primary-crimson hover:scale-110 active:scale-95 transition-all shadow-2xl"
+                      title="التالي"
+                    >
+                      <ChevronRight className="w-6 h-6 md:w-7 md:h-7" />
+                    </button>
+                    <button 
+                      onClick={handlePrevHero}
+                      className="w-10 h-10 md:w-12 md:h-12 bg-black/40 backdrop-blur-xl text-white rounded-2xl border border-white/20 flex items-center justify-center hover:bg-primary-crimson hover:scale-110 active:scale-95 transition-all shadow-2xl"
+                      title="السابق"
+                    >
+                      <ChevronLeft className="w-6 h-6 md:w-7 md:h-7" />
+                    </button>
                   </div>
                 </div>
               )}

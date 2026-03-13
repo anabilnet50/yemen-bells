@@ -407,6 +407,30 @@ export async function initDb() {
         tags: 'اقتصاد، أسعار، تموين'
       },
       {
+        title: 'عاجل: انفجارات تهز العاصمة والانباء تشير إلى استهداف مواقع عسكرية',
+        content: 'تفاصيل الخبر العاجل هنا...',
+        category_slug: 'short-urgent',
+        image_url: 'https://images.unsplash.com/photo-1585007600263-512a0e35c5d0',
+        is_urgent: 1,
+        tags: 'عاجل، اليمن'
+      },
+      {
+        title: 'عاجل: صرف مرتبات الموظفين لشهر مارس في جميع المحافظات',
+        content: 'تفاصيل الخبر العاجل هنا...',
+        category_slug: 'short-urgent',
+        image_url: 'https://images.unsplash.com/photo-1580519542036-c47de6196ba5',
+        is_urgent: 1,
+        tags: 'عاجل، اقتصاد'
+      },
+      {
+        title: 'عاجل: هزة أرضية خفيفة يشعر بها سكان المناطق الساحلية',
+        content: 'تفاصيل الخبر العاجل هنا...',
+        category_slug: 'short-urgent',
+        image_url: 'https://images.unsplash.com/photo-1525935944571-4e99237764c9',
+        is_urgent: 1,
+        tags: 'عاجل، زلزال'
+      },
+      {
         title: 'وزارة التربية تعلن خطة لتحديث المناهج لمواكبة التطور العلمي',
         content: 'دمج مفاهيم التكنولوجيا الحديثة في المناهج التعليمية الوطنية.',
         category_slug: 'studies',

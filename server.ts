@@ -107,14 +107,85 @@ async function startServer() {
   await initDb();
 
   app.use(express.json());
-  // --- Email Helper (Brevo / MailerSend / Resend HTTP + NodeMailer Fallback) ---
+  // --- Email Helper (Gmail API / Brevo / MailerSend / Resend / SendGrid HTTP + NodeMailer Fallback) ---
   const sendSystemEmail = async (to: string, subject: string, html: string, username: string = '') => {
+      const GMAIL_CLIENT_ID = process.env.GMAIL_CLIENT_ID;
+      const GMAIL_CLIENT_SECRET = process.env.GMAIL_CLIENT_SECRET;
+      const GMAIL_REFRESH_TOKEN = process.env.GMAIL_REFRESH_TOKEN;
+      const GMAIL_USER = process.env.GMAIL_SENDER_EMAIL || process.env.SMTP_USER;
+
       const BREVO_API_KEY = process.env.BREVO_API_KEY;
       const BREVO_SENDER = process.env.BREVO_SENDER_EMAIL;
       const MAILERSEND_API_KEY = process.env.MAILERSEND_API_KEY;
       const MAILERSEND_SENDER = process.env.MAILERSEND_SENDER_EMAIL;
       const RESEND_API_KEY = process.env.RESEND_API_KEY;
+      const SENDGRID_API_KEY = process.env.SENDGRID_API_KEY;
+      const SENDGRID_SENDER = process.env.SENDGRID_SENDER_EMAIL;
+      
       let lastError = '';
+
+      // 0. Try Gmail API (Ultimate fix for Render + Gmail)
+      if (GMAIL_CLIENT_ID && GMAIL_CLIENT_SECRET && GMAIL_REFRESH_TOKEN) {
+          try {
+              // 0a. Get Access Token
+              const tokenResponse = await fetch('https://oauth2.googleapis.com/token', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({
+                      client_id: GMAIL_CLIENT_ID,
+                      client_secret: GMAIL_CLIENT_SECRET,
+                      refresh_token: GMAIL_REFRESH_TOKEN,
+                      grant_type: 'refresh_token'
+                  })
+              });
+              const tokenData = await tokenResponse.json();
+              if (!tokenResponse.ok) throw new Error(`Token Error: ${tokenData.error_description || tokenData.error}`);
+              
+              const accessToken = tokenData.access_token;
+              
+              // 0b. Construct Email
+              const utf8Subject = `=?utf-8?B?${Buffer.from(subject).toString('base64')}?=`;
+              const messageParts = [
+                  `From: "نظام هـدس" <${GMAIL_USER}>`,
+                  `To: ${to}`,
+                  `Content-Type: text/html; charset=utf-8`,
+                  `MIME-Version: 1.0`,
+                  `Subject: ${utf8Subject}`,
+                  '',
+                  html
+              ];
+              const message = messageParts.join('\n');
+              const encodedMessage = Buffer.from(message)
+                  .toString('base64')
+                  .replace(/\+/g, '-')
+                  .replace(/\//g, '_')
+                  .replace(/=+$/, '');
+
+              // 0c. Send
+              const sendResponse = await fetch('https://gmail.googleapis.com/gmail/v1/users/me/messages/send', {
+                  method: 'POST',
+                  headers: {
+                      'Authorization': `Bearer ${accessToken}`,
+                      'Content-Type': 'application/json'
+                  },
+                  body: JSON.stringify({ raw: encodedMessage })
+              });
+
+              if (sendResponse.ok) {
+                  const msg = `Email sent via Gmail API to ${to} for user ${username}`;
+                  console.log(msg);
+                  await logAction(null, 'نظام البريد', `نجح الإرسال عبر Gmail API إلى ${to}`);
+                  return true;
+              } else {
+                  const sendData = await sendResponse.json();
+                  lastError = `Gmail API Error: ${JSON.stringify(sendData)}`;
+                  console.warn(lastError, 'Trying next method...');
+              }
+          } catch (gmailErr: any) {
+              lastError = `Gmail API failed: ${gmailErr.message}`;
+              console.warn(lastError, 'Trying next method...');
+          }
+      }
       
       // 1. Try Brevo API (BEST for accounts without a domain name)
       if (BREVO_API_KEY && BREVO_SENDER) {
@@ -218,8 +289,6 @@ async function startServer() {
       }
 
       // 4. Try SendGrid API
-      const SENDGRID_API_KEY = process.env.SENDGRID_API_KEY;
-      const SENDGRID_SENDER = process.env.SENDGRID_SENDER_EMAIL;
       if (SENDGRID_API_KEY && SENDGRID_SENDER) {
           try {
               const response = await fetch('https://api.sendgrid.com/v3/mail/send', {
@@ -279,7 +348,7 @@ async function startServer() {
           return true;
       } catch (smtpErr: any) {
           let diagnostic = '';
-          if (!RESEND_API_KEY && !MAILERSEND_API_KEY && !SENDGRID_API_KEY && !BREVO_API_KEY) 
+          if (!RESEND_API_KEY && !MAILERSEND_API_KEY && !SENDGRID_API_KEY && !BREVO_API_KEY && !GMAIL_CLIENT_ID) 
               diagnostic = 'NO EMAIL API KEYS found in environment. ';
           
           const fullError = `${diagnostic}${lastError ? lastError + ' | ' : ''}SMTP Error: ${smtpErr.message}`;

@@ -61,11 +61,11 @@ const UserManagement: React.FC<UserManagementProps> = ({
                             </div>
                             <div className="space-y-3">
                                 <label className="text-sm font-black text-gray-700 block mr-1">البريد الإلكتروني</label>
-                                <input type="email" value={currentUserData.email || ''} onChange={e => setCurrentUserData({ ...currentUserData, email: e.target.value })} className="w-full p-4 bg-gray-50 rounded-2xl border-2 border-gray-100 focus:border-primary-navy transition-all outline-none font-bold text-left" placeholder="user@example.com" required dir="ltr" />
+                                <input type="email" value={currentUserData.email || ''} onChange={e => setCurrentUserData({ ...currentUserData, email: e.target.value })} className="w-full p-4 bg-gray-50 rounded-2xl border-2 border-gray-100 focus:border-primary-navy transition-all outline-none font-bold text-left" placeholder="user@example.com" required dir="ltr" autoCapitalize="none" autoCorrect="off" spellCheck="false" />
                             </div>
                             <div className="space-y-3">
                                 <label className="text-sm font-black text-gray-700 block mr-1">اسم المستخدم (Login)</label>
-                                <input type="text" value={currentUserData.username} onChange={e => setCurrentUserData({ ...currentUserData, username: e.target.value })} className="w-full p-4 bg-gray-50 rounded-2xl border-2 border-gray-100 focus:border-primary-navy transition-all outline-none font-bold text-left" placeholder="ahmed_admin" required dir="ltr" />
+                                <input type="text" value={currentUserData.username} onChange={e => setCurrentUserData({ ...currentUserData, username: e.target.value })} className="w-full p-4 bg-gray-50 rounded-2xl border-2 border-gray-100 focus:border-primary-navy transition-all outline-none font-bold text-left" placeholder="ahmed_admin" required dir="ltr" autoCapitalize="none" autoCorrect="off" spellCheck="false" />
                             </div>
                             <div className="space-y-3">
                                 <label className="text-sm font-black text-gray-700 block mr-1">{currentUserData.id ? 'كلمة المرور الجديدة (اختياري)' : 'كلمة المرور (اختياري، سيتم توليدها تلقائياً)'}</label>

@@ -81,6 +81,33 @@ input::-ms-clear {
   --animate-logo-gif: logo-pulse 2.5s ease-in-out infinite,
   logo-gif-shimmer 4s linear infinite;
 
+  @keyframes gloss-shimmer {
+    0% { transform: translateX(-150%) skewX(-25deg); }
+    50% { transform: translateX(150%) skewX(-25deg); }
+    100% { transform: translateX(150%) skewX(-25deg); }
+  }
+
+  .animate-gloss {
+    position: relative;
+    overflow: hidden;
+  }
+
+  .animate-gloss::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 50%;
+    height: 100%;
+    background: linear-gradient(
+      to right,
+      transparent,
+      rgba(255, 255, 255, 0.4),
+      transparent
+    );
+    animation: gloss-shimmer 4s infinite linear;
+  }
+
   @keyframes spin-slow {
     from {
       transform: rotate(0deg);
