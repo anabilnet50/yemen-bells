@@ -1219,6 +1219,9 @@ async function startServer() {
       res.status(500).json({ error: "خطأ في اختبار البريد" });
     }
   });
+
+  // Poll Comments with 48h Auto-Cleanup
+  app.get("/api/poll/comments", async (req, res) => {
     try {
       // Auto-cleanup: delete comments older than 48 hours
       await db.query("DELETE FROM poll_comments WHERE created_at < NOW() - INTERVAL '48 hours'");
