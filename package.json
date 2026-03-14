@@ -8,7 +8,8 @@
     "start": "NODE_ENV=production node --experimental-strip-types server.ts",
     "build": "vite build && npm run build-server",
     "build-server": "echo Server already using tsx/experimental-strip-types",
-    "clean": "rm -rf dist"
+    "clean": "rm -rf dist",
+    "test-email": "node test_email.js"
   },
   "dependencies": {
     "@google/genai": "^1.29.0",

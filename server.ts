@@ -49,8 +49,16 @@ const checkRateLimit = (ip: string, limit: number = 5, windowMs: number = 60000)
 // --- Auth Secret ---
 const AUTH_SECRET = process.env.AUTH_SECRET || crypto.randomBytes(32).toString('hex');
 
+const TOKEN_EXPIRY_SECONDS = Number(process.env.AUTH_TOKEN_EXPIRY_SEC || '3600'); // default 1 hour
+
 const signToken = (payload: any) => {
-  const data = JSON.stringify(payload);
+  const now = Math.floor(Date.now() / 1000);
+  const tokenPayload = {
+    ...payload,
+    iat: now,
+    exp: now + TOKEN_EXPIRY_SECONDS,
+  };
+  const data = JSON.stringify(tokenPayload);
   const signature = crypto.createHmac('sha256', AUTH_SECRET).update(data).digest('hex');
   return Buffer.from(`${data}.${signature}`).toString('base64');
 };
@@ -61,7 +69,10 @@ const verifyToken = (token: string) => {
     const [data, signature] = decoded.split('.');
     const expectedSignature = crypto.createHmac('sha256', AUTH_SECRET).update(data).digest('hex');
     if (signature !== expectedSignature) return null;
-    return JSON.parse(data);
+    const parsed = JSON.parse(data);
+    const now = Math.floor(Date.now() / 1000);
+    if (typeof parsed.exp === 'number' && parsed.exp < now) return null;
+    return parsed;
   } catch (e) {
     return null;
   }
@@ -75,7 +86,19 @@ if (!fs.existsSync(uploadDir)) {
 
 // Multer configuration using memory storage for direct DB upload
 const storage = multer.memoryStorage();
-const upload = multer({ storage });
+const upload = multer({
+  storage,
+  limits: {
+    fileSize: 5 * 1024 * 1024 // max 5 MB per upload
+  },
+  fileFilter: (req, file, cb) => {
+    // Allow images only (prevent arbitrary file uploads)
+    if (!file.mimetype.startsWith('image/')) {
+      return cb(new Error('Only image uploads are allowed'), false);
+    }
+    cb(null, true);
+  }
+});
 
 async function startServer() {
   const app = express();
@@ -106,9 +129,22 @@ async function startServer() {
   // Initialize DB
   await initDb();
 
-  app.use(express.json());
+  app.use(express.json({ limit: '512kb' }));
+  app.use(express.urlencoded({ extended: false, limit: '512kb' }));
+
+  // Basic security headers
+  app.use((req, res, next) => {
+    res.setHeader('X-Content-Type-Options', 'nosniff');
+    res.setHeader('X-Frame-Options', 'DENY');
+    res.setHeader('Referrer-Policy', 'no-referrer');
+    res.setHeader('Cross-Origin-Opener-Policy', 'same-origin');
+    next();
+  });
+
   // --- Email Helper (Gmail API / Brevo / MailerSend / Resend / SendGrid HTTP + NodeMailer Fallback) ---
   const sendSystemEmail = async (to: string, subject: string, html: string, username: string = '') => {
+      console.log(`Attempting to send email to ${to} for user ${username}`);
+
       const GMAIL_CLIENT_ID = process.env.GMAIL_CLIENT_ID;
       const GMAIL_CLIENT_SECRET = process.env.GMAIL_CLIENT_SECRET;
       const GMAIL_REFRESH_TOKEN = process.env.GMAIL_REFRESH_TOKEN;
@@ -121,6 +157,17 @@ async function startServer() {
       const RESEND_API_KEY = process.env.RESEND_API_KEY;
       const SENDGRID_API_KEY = process.env.SENDGRID_API_KEY;
       const SENDGRID_SENDER = process.env.SENDGRID_SENDER_EMAIL;
+
+      // Log available email providers
+      const availableProviders = [];
+      if (GMAIL_CLIENT_ID) availableProviders.push('Gmail');
+      if (BREVO_API_KEY) availableProviders.push('Brevo');
+      if (MAILERSEND_API_KEY) availableProviders.push('MailerSend');
+      if (RESEND_API_KEY) availableProviders.push('Resend');
+      if (SENDGRID_API_KEY) availableProviders.push('SendGrid');
+      if (process.env.SMTP_HOST) availableProviders.push('SMTP');
+
+      console.log(`Available email providers: ${availableProviders.join(', ') || 'None'}`);
       
       let lastError = '';
 
@@ -258,6 +305,7 @@ async function startServer() {
       // 3. Try Resend API (HTTP Port 443 - Not Blocked on Render)
       if (RESEND_API_KEY) {
           try {
+              const fromEmail = process.env.RESEND_FROM_EMAIL || 'onboarding@resend.dev';
               const response = await fetch('https://api.resend.com/emails', {
                   method: 'POST',
                   headers: {
@@ -265,7 +313,7 @@ async function startServer() {
                       'Authorization': `Bearer ${RESEND_API_KEY}`
                   },
                   body: JSON.stringify({
-                      from: `نظام هـدس <onboarding@resend.dev>`,
+                      from: `نظام هـدس <${fromEmail}>`,
                       to: to,
                       subject: subject,
                       html: html
@@ -323,7 +371,7 @@ async function startServer() {
 
       // 5. Fallback to SMTP
       try {
-          const transporter = nodemailer.createTransport({
+          const transporter = nodemailer.createTransporter({
             host: process.env.SMTP_HOST || 'smtp.ethereal.email',
             port: parseInt(process.env.SMTP_PORT || '587'),
             secure: process.env.SMTP_PORT === '465',
@@ -374,11 +422,11 @@ async function startServer() {
     if (!authHeader || !authHeader.startsWith("Bearer ")) {
       return res.status(401).json({ error: "Unauthorized" });
     }
-    // Secure token verification
+
     try {
       const token = authHeader.split(" ")[1];
       const decodedUser = verifyToken(token);
-      if (!decodedUser) return res.status(401).json({ error: "Invalid token" });
+      if (!decodedUser) return res.status(401).json({ error: "Invalid or expired token" });
       req.user = decodedUser;
       next();
     } catch (e) {
@@ -412,9 +460,15 @@ async function startServer() {
 
   // Auth
   app.post("/api/auth/login", checkBlockedIp, async (req, res) => {
+    const ipStr = getClientIp(req);
+
+    // Basic brute-force protection
+    if (!checkRateLimit(ipStr, 10, 60_000)) {
+      return res.status(429).json({ error: "Too many login attempts. Please wait a minute." });
+    }
+
     let { username, password } = req.body;
     if (username) username = username.trim().toLowerCase();
-    const ipStr = getClientIp(req);
 
     const { rows } = await db.query("SELECT id, username, password, full_name, role, permissions, requires_password_change FROM system_users WHERE username = $1", [username]);
     const user = rows[0];
@@ -1106,8 +1160,65 @@ async function startServer() {
     res.json({ success: true });
   });
 
-  // Poll Comments with 48h Auto-Cleanup
-  app.get("/api/poll/comments", async (req, res) => {
+  // Email Configuration Status (for debugging)
+  app.get("/api/admin/email-status", requireAuth, async (req, res) => {
+    const status = {
+      gmail: {
+        configured: !!(process.env.GMAIL_CLIENT_ID && process.env.GMAIL_CLIENT_SECRET && process.env.GMAIL_REFRESH_TOKEN),
+        sender: process.env.GMAIL_SENDER_EMAIL || process.env.SMTP_USER
+      },
+      brevo: {
+        configured: !!(process.env.BREVO_API_KEY && process.env.BREVO_SENDER_EMAIL),
+        sender: process.env.BREVO_SENDER_EMAIL
+      },
+      mailersend: {
+        configured: !!(process.env.MAILERSEND_API_KEY && process.env.MAILERSEND_SENDER_EMAIL),
+        sender: process.env.MAILERSEND_SENDER_EMAIL
+      },
+      resend: {
+        configured: !!process.env.RESEND_API_KEY
+      },
+      sendgrid: {
+        configured: !!(process.env.SENDGRID_API_KEY && process.env.SENDGRID_SENDER_EMAIL),
+        sender: process.env.SENDGRID_SENDER_EMAIL
+      },
+      smtp: {
+        configured: !!(process.env.SMTP_HOST && process.env.SMTP_USER && process.env.SMTP_PASS),
+        host: process.env.SMTP_HOST,
+        port: process.env.SMTP_PORT,
+        from: process.env.SMTP_FROM
+      }
+    };
+
+    const configuredCount = Object.values(status).filter((s: any) => s.configured).length;
+    status.totalConfigured = configuredCount;
+
+    res.json(status);
+  });
+    const { testEmail } = req.body;
+    if (!testEmail) return res.status(400).json({ error: "Test email address required" });
+
+    try {
+      const testHtml = `
+        <div dir="rtl" style="font-family: sans-serif; line-height: 1.6; color: #333;">
+          <h2>اختبار إرسال البريد</h2>
+          <p>هذه رسالة اختبار من نظام هـدس.</p>
+          <p>إذا وصلتك هذه الرسالة، فإن إعدادات البريد تعمل بشكل صحيح.</p>
+          <p>الوقت: ${new Date().toLocaleString('ar-SA')}</p>
+        </div>
+      `;
+
+      const success = await sendSystemEmail(testEmail, 'اختبار إرسال البريد - نظام هـدس', testHtml, 'اختبار');
+      if (success) {
+        res.json({ message: "تم إرسال رسالة الاختبار بنجاح" });
+      } else {
+        res.status(500).json({ error: "فشل في إرسال رسالة الاختبار - تحقق من السجلات للتفاصيل" });
+      }
+    } catch (e) {
+      console.error('Test email error:', e);
+      res.status(500).json({ error: "خطأ في اختبار البريد" });
+    }
+  });
     try {
       // Auto-cleanup: delete comments older than 48 hours
       await db.query("DELETE FROM poll_comments WHERE created_at < NOW() - INTERVAL '48 hours'");
