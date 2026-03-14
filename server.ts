@@ -1195,6 +1195,7 @@ async function startServer() {
 
     res.json(status);
   });
+  app.post("/api/admin/test-email", requireAuth, async (req, res) => {
     const { testEmail } = req.body;
     if (!testEmail) return res.status(400).json({ error: "Test email address required" });
 
