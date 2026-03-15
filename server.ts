@@ -91,11 +91,11 @@ const upload = multer({
   limits: {
     fileSize: 5 * 1024 * 1024 // max 5 MB per upload
   },
-  fileFilter: (req, file, cb) => {
-    // Allow images only (prevent arbitrary file uploads)
-    if (!file.mimetype.startsWith('image/')) {
-      return cb(new Error('Only image uploads are allowed'), false);
-    }
+    fileFilter: (req, file, cb: any) => {
+      // Allow images only (prevent arbitrary file uploads)
+      if (!file.mimetype.startsWith('image/')) {
+        return cb(new Error('Only image uploads are allowed'), false);
+      }
     cb(null, true);
   }
 });
@@ -192,8 +192,9 @@ async function startServer() {
               
               // 0b. Construct Email
               const utf8Subject = `=?utf-8?B?${Buffer.from(subject).toString('base64')}?=`;
+              const utf8FromName = `=?utf-8?B?${Buffer.from('موقع هـدس').toString('base64')}?=`;
               const messageParts = [
-                  `From: "نظام هـدس" <${GMAIL_USER}>`,
+                  `From: "${utf8FromName}" <${GMAIL_USER}>`,
                   `To: ${to}`,
                   `Content-Type: text/html; charset=utf-8`,
                   `MIME-Version: 1.0`,
@@ -245,7 +246,7 @@ async function startServer() {
                       'content-type': 'application/json'
                   },
                   body: JSON.stringify({
-                      sender: { name: 'نظام هـدس', email: BREVO_SENDER },
+                      sender: { name: 'موقع هـدس', email: BREVO_SENDER },
                       to: [{ email: to }],
                       subject: subject,
                       htmlContent: html
@@ -279,7 +280,7 @@ async function startServer() {
                       'Authorization': `Bearer ${MAILERSEND_API_KEY}`
                   },
                   body: JSON.stringify({
-                      from: { email: MAILERSEND_SENDER, name: 'نظام هـدس' },
+                      from: { email: MAILERSEND_SENDER, name: 'موقع هـدس' },
                       to: [{ email: to }],
                       subject: subject,
                       html: html
@@ -313,7 +314,7 @@ async function startServer() {
                       'Authorization': `Bearer ${RESEND_API_KEY}`
                   },
                   body: JSON.stringify({
-                      from: `نظام هـدس <${fromEmail}>`,
+                      from: `موقع هـدس <${fromEmail}>`,
                       to: to,
                       subject: subject,
                       html: html
@@ -347,7 +348,7 @@ async function startServer() {
                   },
                   body: JSON.stringify({
                       personalizations: [{ to: [{ email: to }] }],
-                      from: { email: SENDGRID_SENDER, name: 'نظام هـدس' },
+                      from: { email: SENDGRID_SENDER, name: 'موقع هـدس' },
                       subject: subject,
                       content: [{ type: 'text/html', value: html }]
                   })
@@ -1191,7 +1192,7 @@ async function startServer() {
     };
 
     const configuredCount = Object.values(status).filter((s: any) => s.configured).length;
-    status.totalConfigured = configuredCount;
+    (status as any).totalConfigured = configuredCount;
 
     res.json(status);
   });
@@ -1203,7 +1204,7 @@ async function startServer() {
       const testHtml = `
         <div dir="rtl" style="font-family: sans-serif; line-height: 1.6; color: #333;">
           <h2>اختبار إرسال البريد</h2>
-          <p>هذه رسالة اختبار من نظام هـدس.</p>
+          <p>هذه رسالة اختبار من موقع هـدس.</p>
           <p>إذا وصلتك هذه الرسالة، فإن إعدادات البريد تعمل بشكل صحيح.</p>
           <p>الوقت: ${new Date().toLocaleString('ar-SA')}</p>
         </div>
