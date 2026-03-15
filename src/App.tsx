@@ -551,22 +551,47 @@ function Home() {
                   onClick={mainArticle.category_slug === 'short-urgent' ? undefined : () => navigate(`/article/${mainArticle.id}`)}
                   className={`relative h-[250px] sm:h-[350px] md:h-[480px] bg-primary-navy rounded-none md:rounded-3xl overflow-hidden ${mainArticle.category_slug === 'short-urgent' ? '' : 'cursor-pointer shadow-none md:shadow-premium border-none md:border border-white/5'} group`}
                 >
-                  {/* Watermark Logo - Animated Hadas & Musnad */}
+                  {/* Watermark Logo - Premium Corner Branding (Glass Style) */}
                   <motion.div 
-                    animate={{ 
-                      scale: [1, 1.05, 1],
-                      boxShadow: ["0px 0px 0px rgba(0,0,0,0)", "0px 0px 20px rgba(225,29,72,0.3)", "0px 0px 0px rgba(0,0,0,0)"]
-                    }}
-                    transition={{ 
-                      duration: 4, 
-                      repeat: Infinity,
-                      ease: "easeInOut" 
-                    }}
-                    className="absolute top-4 right-4 md:top-8 md:right-8 z-40 flex flex-col items-end pointer-events-none group-hover:scale-110 transition-transform duration-700"
+                    initial={{ opacity: 0, scale: 0.9 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    className="absolute top-2 right-2 md:top-3 md:right-3 z-40 p-0.5 pointer-events-none group-hover:scale-105 transition-transform duration-1000"
                   >
-                    <div className="bg-black/30 backdrop-blur-lg px-3 md:px-5 py-2 md:py-3 rounded-2xl border border-white/10 shadow-2xl flex items-center gap-3 md:gap-4 animate-gloss">
-                      <span className="text-white font-black text-lg md:text-3xl tracking-widest opacity-80">𐩠𐩵𐩪</span>
-                      <span className="text-white font-black text-xl md:text-4xl tracking-tighter">هـدس</span>
+                    <div className="bg-black/40 backdrop-blur-2xl px-4 md:px-5 py-1.5 md:py-2 rounded-2xl border border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.4)] flex items-center gap-3 overflow-hidden">
+                      <div className="flex items-center gap-3 relative">
+                        {/* The Musnad "𐩠𐩵𐩪" anchor */}
+                        <motion.span 
+                          animate={{ 
+                            textShadow: ["0 0 5px rgba(255,255,255,0.2)", "0 0 15px rgba(255,255,255,0.5)", "0 0 5px rgba(255,255,255,0.2)"]
+                          }}
+                          transition={{ duration: 3, repeat: Infinity }}
+                          className="text-white font-black text-xl md:text-2xl tracking-[0.2em] relative z-20"
+                        >
+                          𐩠𐩵𐩪
+                        </motion.span>
+
+                        {/* Divider */}
+                        <div className="w-px h-5 md:h-7 bg-white/20"></div>
+
+                        {/* The "هـدس" part */}
+                        <div className="relative overflow-hidden pr-0.5">
+                          <motion.span 
+                            animate={{ 
+                              x: ["100%", "0%", "0%", "100%"],
+                              opacity: [0, 1, 1, 0]
+                            }}
+                            transition={{ 
+                              duration: 5, 
+                              repeat: Infinity,
+                              times: [0, 0.2, 0.8, 1],
+                              ease: "easeInOut"
+                            }}
+                            className="block text-white font-black text-xl md:text-3xl tracking-tighter"
+                          >
+                            هـدس
+                          </motion.span>
+                        </div>
+                      </div>
                     </div>
                   </motion.div>
 
@@ -643,7 +668,7 @@ function Home() {
                                   <span className="w-1.5 h-1.5 bg-primary-crimson rotate-45 group-hover/tickeritem:scale-125 transition-transform"></span>
                                   {a.title}
                                   {['opinion', 'studies'].includes(a.category_slug) && (
-                                    <span className="text-primary-crimson/80 mr-2"> - {a.writer_name || a.author || "هدس"}</span>
+                                    <span className="text-primary-crimson/80 mr-2"> - {a.writer_name || a.author || "موقع هـدس"}</span>
                                   )}
                                 </Link>
                               ))}
@@ -913,6 +938,13 @@ function Home() {
                         {/* Image Content - Cinematic Frame */}
                         {article.image_url && (
                           <div className={`w-full md:w-56 lg:w-48 xl:w-64 shrink-0 overflow-hidden rounded-3xl shadow-xl relative group-hover/item:shadow-[0_20px_50px_rgba(0,0,0,0.15)] transition-all duration-700 flex items-center justify-center bg-gray-50 h-48 md:h-auto`}>
+                            {/* Category Badge on Image */}
+                            <div className="absolute top-3 right-3 z-30">
+                              <span className="bg-primary-crimson/90 backdrop-blur-md text-white px-3 py-1 rounded-lg text-[10px] font-black uppercase tracking-widest shadow-premium border border-white/20">
+                                {article.category_name}
+                              </span>
+                            </div>
+                            
                             <div className="w-full h-full relative flex items-center justify-center">
                               <img
                                 src={article.image_url}
@@ -923,7 +955,7 @@ function Home() {
                             </div>
                             <div className="absolute inset-0 bg-primary-navy/20 group-hover/item:bg-transparent transition-colors duration-700"></div>
                             {article.video_url && (
-                              <div className="absolute inset-0 flex items-center justify-center">
+                              <div className="absolute inset-0 flex items-center justify-center z-20">
                                 <motion.div
                                   whileHover={{ scale: 1.1 }}
                                   className="w-16 h-16 bg-white/10 backdrop-blur-xl rounded-full flex items-center justify-center text-white border border-white/30 shadow-2xl group-hover/item:bg-primary-crimson group-hover/item:border-primary-crimson transition-all duration-500"
@@ -938,8 +970,6 @@ function Home() {
                         {/* Text Content - Refined Spacing */}
                         <div className="flex-1 min-w-0 flex flex-col justify-center text-right">
                           <div className="flex items-center gap-3 mb-4 justify-end">
-                            <span className="text-sm font-black text-primary-crimson uppercase tracking-[0.25em] bg-primary-crimson/5 px-3 py-1 rounded-full">{article.category_name}</span>
-                            <div className="w-1 h-1 bg-gray-200 rounded-full"></div>
                             <span className="text-sm text-gray-400 font-black uppercase tracking-widest">{new Date(article.created_at).toLocaleDateString('ar-YE', { day: '2-digit', month: 'short' })}</span>
                           </div>
                           <h5 className="text-primary-navy font-black text-base md:text-xl lg:text-2xl mb-4 group-hover/item:text-primary-crimson transition-colors duration-300 leading-[1.3] drop-shadow-sm">
@@ -950,7 +980,7 @@ function Home() {
                           </p>
                           <div className={`flex items-center justify-between text-[10px] sm:text-sm font-black uppercase tracking-[0.1em] sm:tracking-[0.2em] border-t border-gray-100/50 pt-6 mt-auto ${index % 2 !== 0 ? '' : 'flex-row-reverse'}`}>
                             <div className="flex items-center gap-3 md:gap-6 text-gray-400 overflow-hidden">
-                              <span className="flex items-center gap-1 sm:gap-2 group-hover/item:text-primary-navy transition-colors truncate max-w-[80px] sm:max-w-none"><User className="w-3 h-3 sm:w-4 sm:h-4 text-primary-crimson/50" /> {article.writer_name || article.author || "هدس"}</span>
+                              <span className="flex items-center gap-1 sm:gap-2 group-hover/item:text-primary-navy transition-colors truncate max-w-[80px] sm:max-w-none"><User className="w-3 h-3 sm:w-4 sm:h-4 text-primary-crimson/50" /> {article.writer_name || article.author || "موقع هـدس"}</span>
                               <span className="flex items-center gap-1 sm:gap-2 group-hover/item:text-primary-navy transition-colors shrink-0"><Eye className="w-3 h-3 sm:w-4 sm:h-4 text-primary-crimson/50" /> {article.views || 0} قراءة</span>
                               <span className="hidden sm:flex items-center gap-2 group-hover/item:text-primary-navy transition-colors shrink-0"><MapPin className="w-4 h-4 text-primary-crimson/50" /> {settings?.site_location || "صنعاء"}</span>
                             </div>

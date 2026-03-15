@@ -150,21 +150,9 @@ async function startServer() {
       const GMAIL_REFRESH_TOKEN = process.env.GMAIL_REFRESH_TOKEN;
       const GMAIL_USER = process.env.GMAIL_SENDER_EMAIL || process.env.SMTP_USER;
 
-      const BREVO_API_KEY = process.env.BREVO_API_KEY;
-      const BREVO_SENDER = process.env.BREVO_SENDER_EMAIL;
-      const MAILERSEND_API_KEY = process.env.MAILERSEND_API_KEY;
-      const MAILERSEND_SENDER = process.env.MAILERSEND_SENDER_EMAIL;
-      const RESEND_API_KEY = process.env.RESEND_API_KEY;
-      const SENDGRID_API_KEY = process.env.SENDGRID_API_KEY;
-      const SENDGRID_SENDER = process.env.SENDGRID_SENDER_EMAIL;
-
       // Log available email providers
       const availableProviders = [];
       if (GMAIL_CLIENT_ID) availableProviders.push('Gmail');
-      if (BREVO_API_KEY) availableProviders.push('Brevo');
-      if (MAILERSEND_API_KEY) availableProviders.push('MailerSend');
-      if (RESEND_API_KEY) availableProviders.push('Resend');
-      if (SENDGRID_API_KEY) availableProviders.push('SendGrid');
       if (process.env.SMTP_HOST) availableProviders.push('SMTP');
 
       console.log(`Available email providers: ${availableProviders.join(', ') || 'None'}`);
@@ -235,140 +223,7 @@ async function startServer() {
           }
       }
       
-      // 1. Try Brevo API (BEST for accounts without a domain name)
-      if (BREVO_API_KEY && BREVO_SENDER) {
-          try {
-              const response = await fetch('https://api.brevo.com/v3/smtp/email', {
-                  method: 'POST',
-                  headers: {
-                      'accept': 'application/json',
-                      'api-key': BREVO_API_KEY,
-                      'content-type': 'application/json'
-                  },
-                  body: JSON.stringify({
-                      sender: { name: 'موقع هـدس', email: BREVO_SENDER },
-                      to: [{ email: to }],
-                      subject: subject,
-                      htmlContent: html
-                  })
-              });
-              
-              const result = await response.json();
-              if (response.ok) {
-                  const msg = `Email sent via Brevo to ${to} for user ${username}`;
-                  console.log(msg);
-                  await logAction(null, 'نظام البريد', `نجح الإرسال عبر Brevo إلى ${to}`);
-                  return true;
-              } else {
-                  lastError = `Brevo API Error: ${result.message || JSON.stringify(result)}`;
-                  console.warn(lastError, 'Trying next method...');
-              }
-          } catch (brevoErr: any) {
-              lastError = `Brevo failed: ${brevoErr.message}`;
-              console.warn(lastError, 'Trying next method...');
-          }
-      }
-
-      // 2. Try MailerSend API
-      if (MAILERSEND_API_KEY && MAILERSEND_SENDER) {
-          try {
-              const response = await fetch('https://api.mailersend.com/v1/email', {
-                  method: 'POST',
-                  headers: {
-                      'Content-Type': 'application/json',
-                      'X-Requested-With': 'XMLHttpRequest',
-                      'Authorization': `Bearer ${MAILERSEND_API_KEY}`
-                  },
-                  body: JSON.stringify({
-                      from: { email: MAILERSEND_SENDER, name: 'موقع هـدس' },
-                      to: [{ email: to }],
-                      subject: subject,
-                      html: html
-                  })
-              });
-              
-              if (response.ok) {
-                  const msg = `Email sent via MailerSend to ${to} for user ${username}`;
-                  console.log(msg);
-                  await logAction(null, 'نظام البريد', `نجح الإرسال عبر MailerSend إلى ${to}`);
-                  return true;
-              } else {
-                  const result = await response.json();
-                  lastError = `MailerSend API Error: ${result.message || JSON.stringify(result)}`;
-                  console.warn(lastError, 'Trying next method...');
-              }
-          } catch (msErr: any) {
-              lastError = `MailerSend failed: ${msErr.message}`;
-              console.warn(lastError, 'Trying next method...');
-          }
-      }
-
-      // 3. Try Resend API (HTTP Port 443 - Not Blocked on Render)
-      if (RESEND_API_KEY) {
-          try {
-              const fromEmail = process.env.RESEND_FROM_EMAIL || 'onboarding@resend.dev';
-              const response = await fetch('https://api.resend.com/emails', {
-                  method: 'POST',
-                  headers: {
-                      'Content-Type': 'application/json',
-                      'Authorization': `Bearer ${RESEND_API_KEY}`
-                  },
-                  body: JSON.stringify({
-                      from: `موقع هـدس <${fromEmail}>`,
-                      to: to,
-                      subject: subject,
-                      html: html
-                  })
-              });
-              
-              const result = await response.json();
-              if (response.ok) {
-                  const msg = `Email sent via Resend to ${to} for user ${username}`;
-                  console.log(msg);
-                  await logAction(null, 'نظام البريد', `نجح الإرسال عبر Resend إلى ${to}`);
-                  return true;
-              } else {
-                  lastError = `Resend API Error: ${result.message || JSON.stringify(result)}`;
-                  console.warn(lastError, 'Falling back to SMTP...');
-              }
-          } catch (resendErr: any) {
-              lastError = `Resend failed: ${resendErr.message}`;
-              console.warn(lastError, 'Falling back to SMTP...');
-          }
-      }
-
-      // 4. Try SendGrid API
-      if (SENDGRID_API_KEY && SENDGRID_SENDER) {
-          try {
-              const response = await fetch('https://api.sendgrid.com/v3/mail/send', {
-                  method: 'POST',
-                  headers: {
-                      'Content-Type': 'application/json',
-                      'Authorization': `Bearer ${SENDGRID_API_KEY}`
-                  },
-                  body: JSON.stringify({
-                      personalizations: [{ to: [{ email: to }] }],
-                      from: { email: SENDGRID_SENDER, name: 'موقع هـدس' },
-                      subject: subject,
-                      content: [{ type: 'text/html', value: html }]
-                  })
-              });
-              
-              if (response.ok) {
-                  const msg = `Email sent via SendGrid to ${to} for user ${username}`;
-                  console.log(msg);
-                  await logAction(null, 'نظام البريد', `نجح الإرسال عبر SendGrid إلى ${to}`);
-                  return true;
-              } else {
-                  const result = await response.json();
-                  lastError = `SendGrid API Error: ${JSON.stringify(result)}`;
-                  console.warn(lastError, 'Falling back to SMTP...');
-              }
-          } catch (sgErr: any) {
-              lastError = `SendGrid failed: ${sgErr.message}`;
-              console.warn(lastError, 'Falling back to SMTP...');
-          }
-      }
+      // Note: Other providers (Brevo, MailerSend, Resend, SendGrid) removed for clean focus on Gmail API.
 
       // 5. Fallback to SMTP
       try {
@@ -397,8 +252,8 @@ async function startServer() {
           return true;
       } catch (smtpErr: any) {
           let diagnostic = '';
-          if (!RESEND_API_KEY && !MAILERSEND_API_KEY && !SENDGRID_API_KEY && !BREVO_API_KEY && !GMAIL_CLIENT_ID) 
-              diagnostic = 'NO EMAIL API KEYS found in environment. ';
+          if (!GMAIL_CLIENT_ID) 
+              diagnostic = 'GMAIL_CLIENT_ID not found in environment. ';
           
           const fullError = `${diagnostic}${lastError ? lastError + ' | ' : ''}SMTP Error: ${smtpErr.message}`;
           console.error(`CRITICAL: All email methods failed for ${to}:`, fullError);
@@ -1167,21 +1022,6 @@ async function startServer() {
       gmail: {
         configured: !!(process.env.GMAIL_CLIENT_ID && process.env.GMAIL_CLIENT_SECRET && process.env.GMAIL_REFRESH_TOKEN),
         sender: process.env.GMAIL_SENDER_EMAIL || process.env.SMTP_USER
-      },
-      brevo: {
-        configured: !!(process.env.BREVO_API_KEY && process.env.BREVO_SENDER_EMAIL),
-        sender: process.env.BREVO_SENDER_EMAIL
-      },
-      mailersend: {
-        configured: !!(process.env.MAILERSEND_API_KEY && process.env.MAILERSEND_SENDER_EMAIL),
-        sender: process.env.MAILERSEND_SENDER_EMAIL
-      },
-      resend: {
-        configured: !!process.env.RESEND_API_KEY
-      },
-      sendgrid: {
-        configured: !!(process.env.SENDGRID_API_KEY && process.env.SENDGRID_SENDER_EMAIL),
-        sender: process.env.SENDGRID_SENDER_EMAIL
       },
       smtp: {
         configured: !!(process.env.SMTP_HOST && process.env.SMTP_USER && process.env.SMTP_PASS),

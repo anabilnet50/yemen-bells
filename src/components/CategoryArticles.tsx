@@ -122,6 +122,13 @@ export default function CategoryArticles() {
                                                 className="group bg-white rounded-[2.5rem] overflow-hidden border border-gray-50 shadow-premium cursor-pointer flex flex-col h-full"
                                             >
                                                 <div className="h-auto overflow-hidden relative">
+                                                    {/* Category Badge on Image */}
+                                                    <div className="absolute top-4 right-4 z-30">
+                                                        <span className="bg-primary-crimson/90 backdrop-blur-md text-white px-3 py-1 rounded-lg text-[10px] font-black uppercase tracking-widest border border-white/20 shadow-lg">
+                                                            {article.category_name}
+                                                        </span>
+                                                    </div>
+
                                                     <img
                                                         src={article.category_slug === 'opinion' ? (article.writer_image || article.image_url) : (article.image_url || `https://picsum.photos/seed/${article.id}/600/400`)}
                                                         className={`w-full h-full object-cover transition-all duration-1000 ${article.category_slug === 'opinion' ? 'group-hover:scale-105 group-hover:brightness-110' : 'group-hover:scale-110'}`}

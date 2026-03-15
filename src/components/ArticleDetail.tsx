@@ -244,10 +244,6 @@ export default function ArticleDetail() {
                 </h1>
 
                 <div className="flex items-center gap-2 md:gap-6 text-gray-500 font-bold text-[10px] md:text-sm overflow-x-auto scrollbar-hide pb-2">
-                  <div className="flex items-center gap-1 shrink-0">
-                    <Calendar className="w-3 h-3 md:w-4 md:h-4 text-primary-crimson" />
-                    <span className="whitespace-nowrap">{new Date(article.created_at).toLocaleDateString("ar-YE", { day: "numeric", month: "short" })}</span>
-                  </div>
                   <div className="flex items-center gap-2 bg-gray-50/80 px-2 md:px-4 py-1.5 md:py-2 rounded-xl md:rounded-2xl border border-gray-100/50 shrink-0">
                     {article.category_slug === 'opinion' && article.writer_image ? (
                       <div className="w-5 h-5 md:w-8 md:h-8 rounded-full overflow-hidden border border-white shadow-sm ring-1 ring-primary-crimson/10">
@@ -256,7 +252,16 @@ export default function ArticleDetail() {
                     ) : (
                       <User className="w-3 h-3 md:w-5 md:h-5 text-primary-crimson" />
                     )}
-                    <span className="font-black text-primary-navy truncate max-w-[80px] md:max-w-none">{article.writer_name || article.author || "هدس"}</span>
+                    <span className="font-black text-primary-navy truncate max-w-[80px] md:max-w-none">
+                      {article.category_slug === 'opinion' 
+                        ? (article.writer_name || article.author || "كاتب هدس")
+                        : "𐩠𐩵𐩪 هـدس"
+                      }
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-1 shrink-0">
+                    <Calendar className="w-3 h-3 md:w-4 md:h-4 text-primary-crimson" />
+                    <span className="whitespace-nowrap">{new Date(article.created_at).toLocaleDateString("ar-YE", { day: "numeric", month: "short" })}</span>
                   </div>
                   <div className="flex items-center gap-1.5 text-primary-navy bg-gray-50/80 px-2 md:px-4 py-1.5 md:py-2 rounded-xl md:rounded-2xl border border-gray-100/50 shrink-0">
                     <Eye className="w-3 h-3 md:w-4 md:h-4 text-primary-crimson" />
