@@ -226,38 +226,40 @@ const ArticleManagement: React.FC<ArticleManagementProps> = ({
                                     />
                                 </div>
                             </div>
-                            <div className="space-y-3">
-                                <label className="block text-sm font-black text-gray-700">الكاتب / صاحب العمود</label>
-                                <div className="space-y-4">
-                                    <select
-                                        value={currentArticle.writer_id || ''}
-                                        onChange={e => setCurrentArticle({ ...currentArticle, writer_id: e.target.value })}
-                                        className={`w-full p-4 bg-gray-50 border-2 rounded-2xl focus:border-red-500 focus:bg-white transition-all outline-none font-bold appearance-none bg-[url('data:image/svg+xml;charset=UTF-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2224%22%20height%3D%2224%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22%236b7280%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Cpolyline%20points%3D%226%209%2012%2015%2018%209%22%3E%3C%2Fpolyline%3E%3C%2Fsvg%3E')] bg-[length:20px] bg-[left_15px_center] bg-no-repeat ${categories.find(c => String(c.id) === String(currentArticle.category_id))?.slug === 'opinion' ? 'border-primary-crimson/30 ring-4 ring-primary-crimson/5' : 'border-gray-100'}`}
-                                    >
-                                        <option value="">هـدس (افتراضي)</option>
-                                        {writers.map(writer => <option key={writer.id} value={writer.id}>{writer.name}</option>)}
-                                    </select>
+                            {categories.find(c => String(c.id) === String(currentArticle.category_id))?.slug === 'opinion' && (
+                                <div className="space-y-3">
+                                    <label className="block text-sm font-black text-gray-700">الكاتب / صاحب العمود</label>
+                                    <div className="space-y-4">
+                                        <select
+                                            value={currentArticle.writer_id || ''}
+                                            onChange={e => setCurrentArticle({ ...currentArticle, writer_id: e.target.value })}
+                                            className="w-full p-4 bg-gray-50 border-2 border-primary-crimson/30 ring-4 ring-primary-crimson/5 rounded-2xl focus:border-red-500 focus:bg-white transition-all outline-none font-bold appearance-none bg-[url('data:image/svg+xml;charset=UTF-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2224%22%20height%3D%2224%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22%236b7280%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Cpolyline%20points%3D%226%209%2012%2015%2018%209%22%3E%3C%2Fpolyline%3E%3C%2Fsvg%3E')] bg-[length:20px] bg-[left_15px_center] bg-no-repeat"
+                                        >
+                                            <option value="">موقع هدس (افتراضي)</option>
+                                            {writers.map(writer => <option key={writer.id} value={writer.id}>{writer.name}</option>)}
+                                        </select>
 
-                                    {/* Writer Preview Box */}
-                                    {currentArticle.writer_id && (
-                                        <div className="flex items-center gap-4 p-4 bg-gray-50 rounded-2xl border-2 border-gray-100 animate-in fade-in slide-in-from-top-2 duration-300">
-                                            <div className="w-12 h-12 rounded-full overflow-hidden border-2 border-white shadow-sm">
-                                                <img
-                                                    src={writers.find(w => String(w.id) === String(currentArticle.writer_id))?.image_url || 'https://via.placeholder.com/150'}
-                                                    className="w-full h-full object-cover"
-                                                    alt="Preview"
-                                                />
+                                        {/* Writer Preview Box */}
+                                        {currentArticle.writer_id && (
+                                            <div className="flex items-center gap-4 p-4 bg-gray-50 rounded-2xl border-2 border-gray-100 animate-in fade-in slide-in-from-top-2 duration-300">
+                                                <div className="w-12 h-12 rounded-full overflow-hidden border-2 border-white shadow-sm">
+                                                    <img
+                                                        src={writers.find(w => String(w.id) === String(currentArticle.writer_id))?.image_url || 'https://via.placeholder.com/150'}
+                                                        className="w-full h-full object-cover"
+                                                        alt="Preview"
+                                                    />
+                                                </div>
+                                                <div>
+                                                    <p className="text-xs text-gray-400 font-bold">معاينة الكاتب المختارة:</p>
+                                                    <p className="text-sm font-black text-primary-navy">
+                                                        {writers.find(w => String(w.id) === String(currentArticle.writer_id))?.name}
+                                                    </p>
+                                                </div>
                                             </div>
-                                            <div>
-                                                <p className="text-xs text-gray-400 font-bold">معاينة الكاتب المختارة:</p>
-                                                <p className="text-sm font-black text-primary-navy">
-                                                    {writers.find(w => String(w.id) === String(currentArticle.writer_id))?.name}
-                                                </p>
-                                            </div>
-                                        </div>
-                                    )}
+                                        )}
+                                    </div>
                                 </div>
-                            </div>
+                            )}
                         </div>
 
                         {!categories.find(c => String(c.id) === String(currentArticle.category_id))?.slug.includes('youtube') &&
@@ -361,9 +363,15 @@ const ArticleManagement: React.FC<ArticleManagementProps> = ({
                                                     <h3 className="text-gray-900 font-black text-[10px] sm:text-sm line-clamp-2 group-hover:text-primary-crimson transition-colors leading-relaxed">
                                                         {article.title}
                                                     </h3>
-                                                    <div className="flex items-center gap-1 sm:gap-2">
+                                                    <div className="flex items-center gap-1 sm:gap-2 flex-wrap">
                                                         <span className="text-[8px] sm:text-[10px] font-black text-primary-navy/40 bg-gray-100 px-1.5 py-0.5 rounded-md">#{article.id}</span>
                                                         <span className="sm:hidden text-[8px] font-black text-primary-navy bg-blue-50 px-1 py-0.5 rounded-md truncate max-w-[50px]">{article.category_name}</span>
+                                                            <div className="lg:hidden text-[8px] font-black text-primary-crimson bg-red-50 px-1 py-0.5 rounded-md truncate max-w-[100px]">
+                                                                <div className="text-[7px] font-bold text-gray-600">{article.publisher_name || article.author || 'موقع هدس'}</div>
+                                                                {article.last_editor_name && (
+                                                                    <div className="text-[6px] font-bold text-gray-500">المعدل: {article.last_editor_name}</div>
+                                                                )}
+                                                            </div>
                                                     </div>
                                                 </div>
                                             </div>
@@ -387,18 +395,16 @@ const ArticleManagement: React.FC<ArticleManagementProps> = ({
                                                 </div>
                                             </div>
                                         </td>
-                                        <td className="p-5 hidden lg:table-cell">
-                                            <div className="flex flex-col items-center gap-1">
-                                                <div className="w-8 h-8 rounded-full overflow-hidden border-2 border-white shadow-sm flex items-center justify-center bg-gray-50 text-blue-600">
-                                                    {article.writer_image ? (
-                                                        <img src={article.writer_image} className="w-full h-full object-cover" alt={article.writer_name} />
-                                                    ) : (
-                                                        <User className="w-4 h-4" />
-                                                    )}
-                                                </div>
-                                                <span className="text-[10px] font-black text-gray-600 truncate max-w-[80px]">
-                                                    {article.writer_name || article.author || 'المسؤول'}
+                                        <td className="p-5 hidden lg:table-cell text-center">
+                                            <div className="flex flex-col items-center">
+                                                <span className="text-[10px] font-black text-primary-navy block truncate max-w-[120px]" title={article.last_editor_name ? `${article.publisher_name || article.author || 'موقع هدس'} - المعدل: ${article.last_editor_name}` : (article.publisher_name || article.author)}>
+                                                    {article.publisher_name || article.author || 'موقع هدس'}
                                                 </span>
+                                                {article.last_editor_name && (
+                                                    <span className="text-[8px] font-bold text-gray-500 block truncate max-w-[120px]" title={`المعدل: ${article.last_editor_name}`}>
+                                                        المعدل: {article.last_editor_name}
+                                                    </span>
+                                                )}
                                             </div>
                                         </td>
                                         <td className="p-2 sm:p-5 text-center">

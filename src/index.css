@@ -11,16 +11,16 @@ input::-ms-clear {
 }
 
 @theme {
-  /* Tech Elite Color Palette - Brighter & More Attractive */
-  --color-primary-navy: #005b9f;
-  /* Classic Sky/News Blue */
-  --color-primary-crimson: #e11d48;
-  /* Vibrant Rose/Red */
-  --color-accent-gold: #f59e0b;
-  /* Bright Amber/Gold */
+  /* News Website Color Palette - Professional & Trustworthy */
+  --color-primary-navy: #1e40af;
+  /* Deep News Blue - Trust & Authority */
+  --color-primary-crimson: #dc2626;
+  /* Breaking News Red - Urgency & Importance */
+  --color-accent-gold: #ca8a04;
+  /* Professional Gold - Excellence & Quality */
   --color-surface-soft: #f8fafc;
-  /* Very light slate background */
-  --color-border-premium: rgba(0, 91, 159, 0.1);
+  /* Clean White Background */
+  --color-border-premium: rgba(30, 64, 175, 0.1);
 
   --font-sans: "Tajawal", "Readex Pro", "Inter", ui-sans-serif, system-ui, sans-serif;
   --font-serif: "Tajawal", "Readex Pro", ui-serif, Georgia, serif;
@@ -43,27 +43,27 @@ input::-ms-clear {
 
   @keyframes logo-pulse {
     0% {
-      filter: drop-shadow(0 0 20px rgba(225, 29, 72, 0.6)) drop-shadow(0 0 5px rgba(251, 191, 36, 0.3));
+      filter: drop-shadow(0 0 20px rgba(245, 158, 11, 0.6)) drop-shadow(0 0 5px rgba(202, 138, 4, 0.3));
       transform: scale(1);
     }
 
     25% {
-      filter: drop-shadow(0 0 40px rgba(251, 191, 36, 0.8)) drop-shadow(0 0 10px rgba(225, 29, 72, 0.5));
+      filter: drop-shadow(0 0 40px rgba(202, 138, 4, 0.8)) drop-shadow(0 0 10px rgba(245, 158, 11, 0.5));
       transform: scale(1.04) rotate(-1deg);
     }
 
     50% {
-      filter: drop-shadow(0 0 60px rgba(225, 29, 72, 1)) drop-shadow(0 0 20px rgba(251, 191, 36, 0.6));
+      filter: drop-shadow(0 0 60px rgba(245, 158, 11, 1)) drop-shadow(0 0 20px rgba(202, 138, 4, 0.6));
       transform: scale(1.07);
     }
 
     75% {
-      filter: drop-shadow(0 0 40px rgba(251, 191, 36, 0.8)) drop-shadow(0 0 10px rgba(225, 29, 72, 0.5));
+      filter: drop-shadow(0 0 40px rgba(202, 138, 4, 0.8)) drop-shadow(0 0 10px rgba(245, 158, 11, 0.5));
       transform: scale(1.04) rotate(1deg);
     }
 
     100% {
-      filter: drop-shadow(0 0 20px rgba(225, 29, 72, 0.6)) drop-shadow(0 0 5px rgba(251, 191, 36, 0.3));
+      filter: drop-shadow(0 0 20px rgba(245, 158, 11, 0.6)) drop-shadow(0 0 5px rgba(202, 138, 4, 0.3));
       transform: scale(1);
     }
   }
@@ -258,4 +258,20 @@ input::-ms-clear {
     page-break-inside: avoid;
     page-break-after: auto;
   }
+}
+
+.urgent-fallback {
+  @apply bg-primary-crimson flex flex-col items-center justify-center text-white font-black overflow-hidden relative min-h-[150px];
+  background: linear-gradient(135deg, #e11d48, #9b1c31);
+}
+
+.urgent-fallback::before {
+  content: "عاجل";
+  @apply text-4xl lg:text-5xl opacity-20 absolute rotate-[-25deg] scale-150 select-none;
+}
+
+.urgent-fallback::after {
+  content: "عاجل";
+  @apply text-3xl lg:text-4xl shadow-xl z-10;
+  text-shadow: 0 4px 10px rgba(0,0,0,0.3);
 }

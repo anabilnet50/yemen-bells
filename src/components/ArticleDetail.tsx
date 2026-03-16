@@ -210,18 +210,22 @@ export default function ArticleDetail() {
           <div className="lg:col-span-8">
             <div className="bg-white rounded-[2rem] shadow-premium overflow-hidden border border-gray-100">
               {/* Article Image - Now Inside Card */}
-              {(article.image_url || (article.category_slug === 'opinion' && article.writer_image)) && (
+              {(article.image_url || (article.category_slug === 'opinion' && article.writer_image) || ['general', 'short-urgent'].includes(article.category_slug)) && (
                 <div className="p-4 md:p-8 pb-0 relative group">
-                  <img
-                    src={article.category_slug === 'opinion' ? (article.writer_image || article.image_url) : article.image_url}
-                    className={article.category_slug === 'opinion'
-                      ? "w-48 h-48 md:w-64 md:h-64 rounded-full mx-auto object-cover shadow-2xl border-4 border-white transform hover:scale-105 transition-transform duration-700"
-                      : "w-full h-auto rounded-3xl shadow-sm border border-gray-100"}
-                    alt={article.title}
-                    referrerPolicy="no-referrer"
-                  />
+                  { (article.image_url || (article.category_slug === 'opinion' && article.writer_image)) ? (
+                    <img
+                      src={article.category_slug === 'opinion' ? (article.writer_image || article.image_url) : article.image_url}
+                      className={article.category_slug === 'opinion'
+                        ? "w-48 h-48 md:w-64 md:h-64 rounded-full mx-auto object-cover shadow-2xl border-4 border-white transform hover:scale-105 transition-transform duration-700"
+                        : "w-full h-auto rounded-3xl shadow-sm border border-gray-100"}
+                      alt={article.title}
+                      referrerPolicy="no-referrer"
+                    />
+                  ) : (
+                    <img src="/images/urgent-fallback.png" alt="عاجل" className="w-full aspect-video object-cover rounded-3xl" />
+                  )}
                   <div className="absolute top-8 right-8 md:top-12 md:right-12 z-10">
-                    <span className="bg-[#e11d48] text-white px-4 py-1.5 rounded-lg text-xs font-black uppercase tracking-widest shadow-lg">
+                    <span className={`bg-[#e11d48] text-white px-4 py-1.5 rounded-full text-xs font-black uppercase tracking-widest shadow-[0_0_15px_rgba(225,29,72,0.5)] ${['general', 'short-urgent'].includes(article.category_slug) ? 'animate-pulse' : ''}`}>
                       {article.category_name}
                     </span>
                   </div>
@@ -252,10 +256,10 @@ export default function ArticleDetail() {
                     ) : (
                       <User className="w-3 h-3 md:w-5 md:h-5 text-primary-crimson" />
                     )}
-                    <span className="font-black text-primary-navy truncate max-w-[80px] md:max-w-none">
+                    <span className="font-black text-primary-navy truncate max-w-[150px] md:max-w-none">
                       {article.category_slug === 'opinion' 
-                        ? (article.writer_name || article.author || "كاتب هدس")
-                        : "𐩠𐩵𐩪 هـدس"
+                        ? (article.writer_name || article.author || "موقع هدس")
+                        : "موقع هدس"
                       }
                     </span>
                   </div>

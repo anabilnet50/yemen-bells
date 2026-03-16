@@ -122,19 +122,23 @@ export default function CategoryArticles() {
                                                 className="group bg-white rounded-[2.5rem] overflow-hidden border border-gray-50 shadow-premium cursor-pointer flex flex-col h-full"
                                             >
                                                 <div className="h-auto overflow-hidden relative">
-                                                    {/* Category Badge on Image */}
+                                                    {/* Category Badge on Image - Pulsing for urgent */}
                                                     <div className="absolute top-4 right-4 z-30">
-                                                        <span className="bg-primary-crimson/90 backdrop-blur-md text-white px-3 py-1 rounded-lg text-[10px] font-black uppercase tracking-widest border border-white/20 shadow-lg">
+                                                        <span className={`bg-primary-crimson/90 backdrop-blur-md text-white px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest border border-white/20 shadow-[0_0_15px_rgba(225,29,72,0.5)] ${['general', 'short-urgent'].includes(article.category_slug) ? 'animate-pulse' : ''}`}>
                                                             {article.category_name}
                                                         </span>
                                                     </div>
 
-                                                    <img
-                                                        src={article.category_slug === 'opinion' ? (article.writer_image || article.image_url) : (article.image_url || `https://picsum.photos/seed/${article.id}/600/400`)}
-                                                        className={`w-full h-full object-cover transition-all duration-1000 ${article.category_slug === 'opinion' ? 'group-hover:scale-105 group-hover:brightness-110' : 'group-hover:scale-110'}`}
-                                                        alt={article.title}
-                                                        referrerPolicy="no-referrer"
-                                                    />
+                                                    {(!article.image_url && ['general', 'short-urgent'].includes(article.category_slug)) ? (
+                                                        <img src="/images/urgent-fallback.png" alt="عاجل" className="w-full aspect-[16/10] object-cover group-hover:scale-110 transition-transform duration-1000" />
+                                                    ) : (
+                                                        <img
+                                                            src={article.category_slug === 'opinion' ? (article.writer_image || article.image_url) : (article.image_url || `https://picsum.photos/seed/${article.id}/600/400`)}
+                                                            className={`w-full h-full object-cover transition-all duration-1000 ${article.category_slug === 'opinion' ? 'group-hover:scale-105 group-hover:brightness-110' : 'group-hover:scale-110'}`}
+                                                            alt={article.title}
+                                                            referrerPolicy="no-referrer"
+                                                        />
+                                                    )}
                                                     <div className="absolute inset-0 bg-primary-navy/20 group-hover:bg-transparent transition-colors"></div>
                                                     {article.video_url && (
                                                         <div className="absolute inset-0 flex items-center justify-center">
@@ -153,7 +157,9 @@ export default function CategoryArticles() {
                                                         {article.title}
                                                     </h3>
                                                     <div className="flex items-center justify-between pt-6 border-t border-gray-50 mt-auto overflow-hidden">
-                                                        <span className="text-xs font-black text-primary-navy/60 group-hover:text-primary-navy transition-colors truncate">بواسطة: {article.writer_name || article.author || "هدس"}</span>
+                                                        <span className="text-xs font-black text-primary-navy/60 group-hover:text-primary-navy transition-colors truncate">
+                                                            بواسطة: {article.category_slug === 'opinion' ? (article.writer_name || article.author || "موقع هدس") : "موقع هدس"}
+                                                        </span>
                                                         <ArrowLeft className="w-4 h-4 text-primary-crimson group-hover:translate-x-[-5px] transition-transform shrink-0" />
                                                     </div>
                                                 </div>
@@ -187,10 +193,21 @@ export default function CategoryArticles() {
                             </>
                         ) : (
                             <div className="py-20 text-center">
-                                <div className="p-12 bg-white rounded-[3rem] shadow-premium inline-block mb-8">
-                                    <Search className="w-14 h-14 opacity-10 mx-auto" />
-                                </div>
-                                <p className="text-xl font-black text-gray-400">لا توجد أخبار حالياً في هذا القسم</p>
+                                {slug === 'short-urgent' ? (
+                                    <div className="max-w-md mx-auto">
+                                        <div className="relative aspect-[16/10] rounded-[2.5rem] overflow-hidden shadow-premium border border-gray-100 mb-8 group">
+                                            <img src="/images/urgent-fallback.png" alt="عاجل" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-1000" />
+                                            <div className="absolute inset-0 bg-primary-navy/10"></div>
+                                        </div>
+                                    </div>
+                                ) : (
+                                    <>
+                                        <div className="p-12 bg-white rounded-[3rem] shadow-premium inline-block mb-8">
+                                            <Search className="w-14 h-14 opacity-10 mx-auto" />
+                                        </div>
+                                        <p className="text-xl font-black text-gray-400">لا توجد أخبار حالياً في هذا القسم</p>
+                                    </>
+                                )}
                             </div>
                         )}
                     </div>

@@ -712,10 +712,12 @@ async function startServer() {
     try {
       const [articles, categories, settings, ads] = await Promise.all([
         db.query(`
-          SELECT articles.*, categories.name as category_name, categories.slug as category_slug, writers.name as writer_name, writers.image_url as writer_image
+          SELECT articles.*, categories.name as category_name, categories.slug as category_slug, writers.name as writer_name, writers.image_url as writer_image, system_users.full_name as publisher_name, editors.full_name as last_editor_name
           FROM articles 
           LEFT JOIN categories ON articles.category_id = categories.id
           LEFT JOIN writers ON articles.writer_id = writers.id
+          LEFT JOIN system_users ON articles.author_user_id = system_users.id
+          LEFT JOIN system_users as editors ON articles.last_editor_user_id = editors.id
           WHERE articles.is_deleted = 0
           ORDER BY created_at DESC
           LIMIT 100
@@ -746,10 +748,12 @@ async function startServer() {
   app.get("/api/articles", async (req, res) => {
     const { category, limit, includeDeleted } = req.query;
     let query = `
-      SELECT articles.*, categories.name as category_name, categories.slug as category_slug, writers.name as writer_name, writers.image_url as writer_image
+      SELECT articles.*, categories.name as category_name, categories.slug as category_slug, writers.name as writer_name, writers.image_url as writer_image, system_users.full_name as publisher_name, editors.full_name as last_editor_name
       FROM articles 
       LEFT JOIN categories ON articles.category_id = categories.id
       LEFT JOIN writers ON articles.writer_id = writers.id
+      LEFT JOIN system_users ON articles.author_user_id = system_users.id
+      LEFT JOIN system_users as editors ON articles.last_editor_user_id = editors.id
     `;
     const params: any[] = [];
 
@@ -792,10 +796,12 @@ async function startServer() {
 
     const [articleRes, adsRes, settingsRes] = await Promise.all([
       db.query(`
-        SELECT articles.*, categories.name as category_name, categories.slug as category_slug, writers.name as writer_name, writers.bio as writer_bio, writers.image_url as writer_image
+        SELECT articles.*, categories.name as category_name, categories.slug as category_slug, writers.name as writer_name, writers.bio as writer_bio, writers.image_url as writer_image, system_users.full_name as publisher_name, editors.full_name as last_editor_name
         FROM articles 
         LEFT JOIN categories ON articles.category_id = categories.id 
         LEFT JOIN writers ON articles.writer_id = writers.id
+        LEFT JOIN system_users ON articles.author_user_id = system_users.id
+        LEFT JOIN system_users as editors ON articles.last_editor_user_id = editors.id
         WHERE articles.id = $1
       `, [req.params.id]),
       db.query("SELECT * FROM ads WHERE is_active = 1"),
@@ -820,10 +826,10 @@ async function startServer() {
   app.post("/api/articles", requireAuth, async (req, res) => {
     const { title, content, category_id, image_url, video_url, is_urgent, tags, writer_id, is_active } = req.body;
     const res_db = await db.query(`
-      INSERT INTO articles (title, content, category_id, image_url, video_url, is_urgent, tags, writer_id, is_active)
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+      INSERT INTO articles (title, content, category_id, image_url, video_url, is_urgent, tags, writer_id, is_active, author_user_id)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
       RETURNING id
-    `, [title, content, category_id, image_url, video_url, is_urgent ? 1 : 0, tags, writer_id || null, is_active !== undefined ? (is_active ? 1 : 0) : 1]);
+    `, [title, content, category_id, image_url, video_url, is_urgent ? 1 : 0, tags, writer_id || null, is_active !== undefined ? (is_active ? 1 : 0) : 1, (req as any).user.id]);
     await logAction((req as any).user.id, 'إضافة خبر', `تم إضافة الخبر: ${title}`);
     res.json({ id: res_db.rows[0].id });
   });
@@ -834,9 +840,9 @@ async function startServer() {
     // Fetch old title for logging if needed or just use the new one
     await db.query(`
       UPDATE articles 
-      SET title = $1, content = $2, category_id = $3, image_url = $4, video_url = $5, is_urgent = $6, tags = $7, writer_id = $8, is_active = $9
-      WHERE id = $10
-    `, [title, content, category_id, image_url, video_url, is_urgent ? 1 : 0, tags, writer_id || null, is_active !== undefined ? (is_active ? 1 : 0) : 1, req.params.id]);
+      SET title = $1, content = $2, category_id = $3, image_url = $4, video_url = $5, is_urgent = $6, tags = $7, writer_id = $8, is_active = $9, last_editor_user_id = $10
+      WHERE id = $11
+    `, [title, content, category_id, image_url, video_url, is_urgent ? 1 : 0, tags, writer_id || null, is_active !== undefined ? (is_active ? 1 : 0) : 1, (req as any).user.id, req.params.id]);
 
     await logAction((req as any).user.id, 'تعديل خبر', `تم تعديل الخبر: ${title} (رقم: ${req.params.id})`);
     res.json({ success: true });

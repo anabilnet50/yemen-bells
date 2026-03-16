@@ -135,11 +135,19 @@ function Home() {
       return shortUrgentArticles[idx < 0 ? idx + shortUrgentArticles.length : idx];
     }
     
-    // 2. Main logic: if there is recent urgent (< 5 hours), show latest urgent
-    if (hasRecentUrgent) {
-      const urgentGeneral = articles.filter(a => a.category_slug === 'general').sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
-      if (urgentGeneral.length > 0) return urgentGeneral[0];
-    }
+    // 1b. If no short-urgent articles, provide a placeholder to maintain the "Short Urgent" branding
+    // as requested by the user to avoid duplication from below.
+    return {
+      id: 'placeholder-short-urgent',
+      title: 'عاجل قصير',
+      content: 'لا توجد أخبار عاجلة قصيرة حالياً',
+      category_slug: 'short-urgent',
+      category_name: 'عاجل قصير',
+      // When there are no short urgent news items, show a fixed default breaking-news graphic.
+      // This uses a local SVG so it always renders correctly and is easy to adjust.
+      image_url: '/images/urgent-fallback.svg',
+      created_at: new Date().toISOString()
+    };
     
     // 3. Fallback: > 5 hours passed or no urgent news -> show latest local news
     const localNews = articles.filter(a => a.category_slug === 'local').sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
@@ -351,14 +359,18 @@ function Home() {
           <div className="bg-black/30 backdrop-blur-sm text-white py-2 px-8 border-b border-white/5 relative z-30">
             <div className="flex justify-between items-center text-xs md:text-sm font-black uppercase tracking-[0.2em]">
               <div className="flex items-center gap-6">
-                <span className="flex items-center gap-2 text-accent-gold transition-all hover:scale-105 cursor-default"><Calendar className="w-3.5 h-3.5" /> {new Date().toLocaleDateString('ar-YE', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</span>
+                <span className="flex items-center gap-2 text-accent-gold transition-all hover:scale-105 cursor-default relative">
+                  <Calendar className="w-3.5 h-3.5 animate-pulse" />
+                  <div className="absolute inset-0 bg-accent-gold/20 rounded-full blur-sm scale-0 hover:scale-150 transition-transform duration-300"></div>
+                  {new Date().toLocaleDateString('ar-YE', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
+                </span>
               </div>
               <div className="flex items-center gap-5">
-                {settings.facebook_url && <a href={settings.facebook_url} target="_blank" rel="noopener noreferrer" className="text-white/40 hover:text-blue-400 hover:scale-110 transition-all duration-300"><Facebook className="w-3.5 h-3.5" /></a>}
-                {settings.twitter_url && <a href={settings.twitter_url} target="_blank" rel="noopener noreferrer" className="text-white/40 hover:text-sky-400 hover:scale-110 transition-all duration-300"><Twitter className="w-3.5 h-3.5" /></a>}
-                {settings.youtube_url && <a href={settings.youtube_url} target="_blank" rel="noopener noreferrer" className="text-white/40 hover:text-primary-crimson hover:scale-110 transition-all duration-300"><Youtube className="w-3.5 h-3.5" /></a>}
-                {settings.telegram_url && <a href={settings.telegram_url} target="_blank" rel="noopener noreferrer" className="text-white/40 hover:text-sky-400 hover:scale-110 transition-all duration-300"><Send className="w-3.5 h-3.5" /></a>}
-                {settings.linkedin_url && <a href={settings.linkedin_url} target="_blank" rel="noopener noreferrer" className="text-white/40 hover:text-blue-500 hover:scale-110 transition-all duration-300"><Linkedin className="w-3.5 h-3.5" /></a>}
+                {settings.facebook_url && <a href={settings.facebook_url} target="_blank" rel="noopener noreferrer" className="text-white/40 hover:text-blue-400 hover:scale-110 transition-all duration-300 relative"><Facebook className="w-3.5 h-3.5 animate-pulse" /><div className="absolute inset-0 bg-blue-400/20 rounded-full blur-sm scale-0 hover:scale-150 transition-transform duration-300 pointer-events-none"></div></a>}
+                {settings.twitter_url && <a href={settings.twitter_url} target="_blank" rel="noopener noreferrer" className="text-white/40 hover:text-sky-400 hover:scale-110 transition-all duration-300 relative"><Twitter className="w-3.5 h-3.5 animate-pulse" /><div className="absolute inset-0 bg-sky-400/20 rounded-full blur-sm scale-0 hover:scale-150 transition-transform duration-300 pointer-events-none"></div></a>}
+                {settings.youtube_url && <a href={settings.youtube_url} target="_blank" rel="noopener noreferrer" className="text-white/40 hover:text-primary-crimson hover:scale-110 transition-all duration-300 relative"><Youtube className="w-3.5 h-3.5 animate-pulse" /><div className="absolute inset-0 bg-primary-crimson/20 rounded-full blur-sm scale-0 hover:scale-150 transition-transform duration-300 pointer-events-none"></div></a>}
+                {settings.telegram_url && <a href={settings.telegram_url} target="_blank" rel="noopener noreferrer" className="text-white/40 hover:text-sky-400 hover:scale-110 transition-all duration-300 relative"><Send className="w-3.5 h-3.5 animate-pulse" /><div className="absolute inset-0 bg-sky-400/20 rounded-full blur-sm scale-0 hover:scale-150 transition-transform duration-300 pointer-events-none"></div></a>}
+                {settings.linkedin_url && <a href={settings.linkedin_url} target="_blank" rel="noopener noreferrer" className="text-white/40 hover:text-blue-500 hover:scale-110 transition-all duration-300 relative"><Linkedin className="w-3.5 h-3.5 animate-pulse" /><div className="absolute inset-0 bg-blue-500/20 rounded-full blur-sm scale-0 hover:scale-150 transition-transform duration-300 pointer-events-none"></div></a>}
               </div>
             </div>
           </div>
@@ -385,6 +397,12 @@ function Home() {
 
           {/* Central Identity Stack - Strict 2-Column Row Alignment */}
           <div className="relative z-20 w-full h-full flex flex-row items-center justify-between pt-24 md:pt-48 pb-2 md:pb-4 px-2 md:px-16 pointer-events-none">
+            {/* Background Effects */}
+            <div className="absolute inset-0 bg-gradient-to-r from-primary-navy/5 via-transparent to-primary-crimson/5 rounded-2xl blur-3xl animate-pulse pointer-events-none"></div>
+            <div className="absolute top-1/4 left-1/4 w-32 h-32 bg-accent-gold/10 rounded-full blur-2xl animate-pulse delay-1000 pointer-events-none"></div>
+            <div className="absolute bottom-1/4 right-1/4 w-24 h-24 bg-primary-crimson/10 rounded-full blur-xl animate-pulse delay-500 pointer-events-none"></div>
+            <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-40 h-40 bg-gradient-to-r from-primary-navy/5 to-accent-gold/5 rounded-full blur-3xl animate-pulse delay-1500 pointer-events-none"></div>
+            <div className="absolute top-3/4 right-1/4 w-20 h-20 bg-primary-crimson/8 rounded-full blur-lg animate-pulse delay-2000 pointer-events-none"></div>
 
             {/* Right Side: Site Name & Tagline */}
             <motion.div
@@ -395,18 +413,34 @@ function Home() {
             >
               {/* Row 1: Top Label */}
               <div className="h-[40px] md:h-[60px] flex items-end justify-center mb-1 w-full">
-                <h1 className="text-sm sm:text-lg md:text-2xl lg:text-3xl font-black tracking-tighter text-transparent bg-clip-text bg-gradient-to-br from-white via-red-100 to-primary-crimson drop-shadow-[0_4px_10px_rgba(225,29,72,0.6)] leading-none select-none whitespace-nowrap">
-                  {settings?.site_name || '𐩠𐩵𐩪 هـدس'}
+                <h1 className="text-sm sm:text-lg md:text-2xl lg:text-3xl font-black tracking-tighter leading-none select-none whitespace-nowrap relative">
+                  <span className="absolute inset-0 bg-gradient-to-r from-accent-gold via-yellow-300 to-accent-gold bg-clip-text text-transparent animate-pulse opacity-75">
+                    {settings?.site_name || '𐩠𐩵𐩪 هـدس'}
+                  </span>
+                  <span className="relative bg-gradient-to-br from-white via-yellow-50 to-accent-gold bg-clip-text text-transparent drop-shadow-[0_4px_15px_rgba(202,138,4,0.8)] animate-pulse">
+                    {settings?.site_name || '𐩠𐩵𐩪 هـدس'}
+                  </span>
+                  <div className="absolute -inset-1 bg-gradient-to-r from-accent-gold/20 via-yellow-300/20 to-accent-gold/20 rounded-lg blur-lg animate-pulse"></div>
+                  <div className="absolute -inset-2 bg-gradient-to-r from-accent-gold/10 via-yellow-300/10 to-accent-gold/10 rounded-xl blur-2xl animate-pulse delay-300"></div>
                 </h1>
               </div>
 
-              {/* Divider / Spacer */}
-              <div className="w-12 md:w-32 h-[2px] md:h-1 bg-gradient-to-r from-transparent via-primary-crimson to-transparent rounded-full opacity-80 mb-1 drop-shadow-[0_0_10px_rgba(225,29,72,0.8)] mx-auto"></div>
+              {/* Enhanced Divider */}
+              <div className="w-16 md:w-40 h-[3px] md:h-2 bg-gradient-to-r from-transparent via-accent-gold to-transparent rounded-full opacity-90 mb-2 drop-shadow-[0_0_15px_rgba(202,138,4,0.9)] mx-auto relative">
+                <div className="absolute inset-0 bg-gradient-to-r from-accent-gold/50 to-yellow-300/50 rounded-full blur-sm animate-pulse"></div>
+                <div className="absolute inset-0 bg-gradient-to-r from-accent-gold/20 to-yellow-300/20 rounded-full blur-md animate-pulse delay-500"></div>
+              </div>
 
-              {/* Row 2: Bottom Detail */}
+              {/* Row 2: Bottom Detail - Enhanced */}
               <div className="h-[40px] md:h-[60px] flex items-start justify-center text-center w-full">
-                <h2 className="text-[9px] md:text-lg font-bold text-accent-gold/90 drop-shadow-xl tracking-widest leading-none">
-                  {settings?.site_tagline || 'موقع اخباري متكامل'}
+                <h2 className="text-[9px] md:text-lg font-bold leading-none relative">
+                  <span className="absolute inset-0 bg-gradient-to-r from-accent-gold via-yellow-300 to-accent-gold bg-clip-text text-transparent animate-pulse opacity-80">
+                    {settings?.site_tagline || 'موقع اخباري متكامل'}
+                  </span>
+                  <span className="relative text-accent-gold drop-shadow-[0_2px_8px_rgba(202,138,4,0.8)] animate-pulse tracking-wider">
+                    {settings?.site_tagline || 'موقع اخباري متكامل'}
+                  </span>
+                  <div className="absolute -inset-0.5 bg-accent-gold/20 rounded blur-sm animate-pulse delay-200"></div>
                 </h2>
               </div>
             </motion.div>
@@ -420,26 +454,35 @@ function Home() {
             >
               {/* Row 1: Top Label */}
               <div className="h-[40px] md:h-[60px] flex items-end justify-center mb-1 w-full">
-                <span className="text-accent-gold/90 text-[10px] md:text-2xl font-black tracking-widest drop-shadow-[0_1px_4px_rgba(0,0,0,1)] uppercase leading-none relative -top-1 md:-top-3">
+                <span className="text-accent-gold/90 text-[10px] md:text-2xl font-black tracking-widest drop-shadow-[0_1px_4px_rgba(0,0,0,1)] uppercase leading-none relative -top-1 md:-top-3 animate-pulse">
                   رئيس التحرير
                 </span>
+                <div className="absolute inset-0 bg-accent-gold/10 rounded blur-sm animate-pulse delay-500 pointer-events-none"></div>
               </div>
 
-              {/* Divider / Spacer to match structurally */}
-              <div className="h-[2px] md:h-1 opacity-0 mb-1"></div>
+              {/* Enhanced Divider */}
+              <div className="w-12 md:w-24 h-[2px] md:h-1 bg-gradient-to-r from-transparent via-accent-gold to-transparent rounded-full opacity-80 mb-1 drop-shadow-[0_0_10px_rgba(202,138,4,0.8)] mx-auto animate-pulse relative">
+                <div className="absolute inset-0 bg-accent-gold/30 rounded-full blur-sm animate-pulse delay-300"></div>
+              </div>
 
-              {/* Row 2: Bottom Detail */}
+              {/* Row 2: Bottom Detail - Enhanced */}
               <div className="h-[40px] md:h-[60px] flex items-start justify-center w-full">
                 <span
-                  className="text-lg md:text-5xl text-white drop-shadow-[0_2px_8px_rgba(0,0,0,0.8)] whitespace-nowrap leading-none relative -top-2 md:-top-4"
+                  className="text-lg md:text-5xl leading-none relative -top-2 md:-top-4 animate-pulse"
                   style={{
                     fontFamily: "'Aref Ruqaa', 'Amiri', 'Tajawal', cursive, serif",
                     fontWeight: 700,
-                    textShadow: '1px 1px 0px rgba(0,0,0,0.5), -1px -1px 0 rgba(225,29,72,0.5)'
+                    background: 'linear-gradient(135deg, #ffffff 0%, #f8fafc 50%, #e2e8f0 100%)',
+                    WebkitBackgroundClip: 'text',
+                    WebkitTextFillColor: 'transparent',
+                    backgroundClip: 'text',
+                    textShadow: '2px 2px 4px rgba(0,0,0,0.3), 0 0 20px rgba(202,138,4,0.5), 0 0 40px rgba(202,138,4,0.2)',
+                    filter: 'drop-shadow(0 0 10px rgba(202,138,4,0.3))'
                   }}
                 >
-                  {settings.chief_editor || 'صلاح حيدرة'}
+                  {settings.chief_editor || 'موقع هدس'}
                 </span>
+                <div className="absolute inset-0 bg-gradient-to-r from-primary-crimson/10 via-transparent to-accent-gold/10 rounded-lg blur-xl animate-pulse pointer-events-none opacity-50"></div>
               </div>
             </motion.div>
 
@@ -622,16 +665,14 @@ function Home() {
                       animate={{ opacity: 1 }}
                       className="w-full h-full relative"
                     >
-                      {mainArticle.image_url && (
-                        <div className="w-full h-full relative">
-                          <img
-                            src={mainArticle.image_url}
-                            alt={mainArticle.title}
-                            className={`w-full h-auto object-contain transition-transform duration-1000 scale-100 ${mainArticle.category_slug === 'short-urgent' ? '' : 'group-hover:scale-105'}`}
-                            referrerPolicy="no-referrer"
-                          />
-                        </div>
-                      )}
+                      <div className="w-full h-full relative">
+                        <img
+                          src={mainArticle.image_url || '/images/urgent-fallback.svg'}
+                          alt={mainArticle.title || 'عاجل'}
+                          className={`w-full h-full object-cover transition-transform duration-1000 scale-100 ${mainArticle.category_slug === 'short-urgent' ? '' : 'group-hover:scale-105'}`}
+                          referrerPolicy="no-referrer"
+                        />
+                      </div>
                       {mainArticle.video_url && !videoLoaded && (
                         <div className="absolute inset-0 flex items-center justify-center bg-black/50 backdrop-blur-sm z-30">
                           <div className="w-16 h-16 bg-white/10 rounded-full flex items-center justify-center border border-white/30">
@@ -667,8 +708,8 @@ function Home() {
                                 <Link key={`urgent-${a.id}`} to={`/article/${a.id}`} className="flex items-center gap-4 hover:text-primary-crimson transition-colors group/tickeritem shrink-0">
                                   <span className="w-1.5 h-1.5 bg-primary-crimson rotate-45 group-hover/tickeritem:scale-125 transition-transform"></span>
                                   {a.title}
-                                  {['opinion', 'studies'].includes(a.category_slug) && (
-                                    <span className="text-primary-crimson/80 mr-2"> - {a.writer_name || a.author || "موقع هـدس"}</span>
+                                  {a.category_slug === 'opinion' && (
+                                    <span className="text-primary-crimson/80 mr-2"> - {a.writer_name || a.author || "موقع هدس"}</span>
                                   )}
                                 </Link>
                               ))}
@@ -715,17 +756,21 @@ function Home() {
                     </div>
                   </div>
 
-                  {/* High-End Overlay - Moved Up slightly to accommodate the ticker */}
-                  <div className="absolute inset-0 bg-gradient-to-t from-primary-navy/90 via-transparent to-transparent flex flex-col justify-end p-8 md:p-10 pb-16 md:pb-20">
-                    <div className="flex items-center gap-3 mb-3">
-                      <span className="bg-primary-crimson text-white border border-primary-crimson px-3 py-1 text-[10px] md:text-sm font-black uppercase tracking-[0.2em] rounded-full shadow-[0_0_15px_rgba(225,29,72,0.4)] animate-pulse">
-                        عاجل
-                      </span>
-                    </div>
-
-                    <h2 className={`text-white text-xl md:text-3xl font-black leading-[1.2] mb-4 ${mainArticle.category_slug === 'short-urgent' ? '' : 'group-hover:text-accent-gold'} transition-colors duration-500 drop-shadow-2xl line-clamp-3`}>
-                      {mainArticle.short_title || mainArticle.title}
-                    </h2>
+                   {/* High-End Overlay - Moved Up slightly to accommodate the ticker */}
+                   <div className="absolute inset-0 bg-gradient-to-t from-primary-navy/90 via-transparent to-transparent flex flex-col justify-end p-8 md:p-10 pb-16 md:pb-20">
+                     {mainArticle.id !== 'placeholder-short-urgent' && (
+                       <>
+                         <div className="flex items-center gap-3 mb-3">
+                           <span className="bg-primary-crimson text-white border border-primary-crimson px-3 py-1 text-[10px] md:text-sm font-black uppercase tracking-[0.2em] rounded-full shadow-[0_0_15px_rgba(225,29,72,0.4)] animate-pulse">
+                             عاجل
+                           </span>
+                         </div>
+ 
+                         <h2 className={`text-white text-xl md:text-3xl font-black leading-[1.2] mb-4 group-hover:text-accent-gold transition-colors duration-500 drop-shadow-2xl line-clamp-3`}>
+                           {mainArticle.short_title || mainArticle.title}
+                         </h2>
+                       </>
+                     )}
 
                     <div className="flex items-center justify-between opacity-0 group-hover:opacity-100 transition-opacity duration-500">
                       {/* Metadata removed as per user request */}
@@ -835,7 +880,7 @@ function Home() {
                           <div className="flex-1 text-right order-1">
                             <h4 className="text-primary-navy font-black text-xs line-clamp-2 leading-relaxed group-hover/vitem:text-primary-crimson transition-colors">{v.title}</h4>
                             <p className="text-[10px] text-gray-400 font-bold mt-1 flex items-center justify-end gap-1">
-                              <span>{v.writer_name || v.author || settings?.site_name || 'هيئة التحرير'}</span>
+                              <span>{v.writer_name || v.author || 'موقع هدس'}</span>
                               <User className="w-3 h-3" />
                             </p>
                           </div>
@@ -875,12 +920,20 @@ function Home() {
                           className="flex items-center gap-4 group/vitem bg-white/50 p-3 rounded-2xl hover:bg-white/80 transition-all border border-gray-100 shadow-sm"
                         >
                           <div className="w-20 h-14 rounded-lg overflow-hidden shrink-0 relative order-1">
-                            <img src={v.image_url || undefined} alt={v.title} className="w-full h-full object-cover group-hover/vitem:scale-110 transition-transform duration-500" referrerPolicy="no-referrer" />
+                            {v.image_url ? (
+                              <img src={v.image_url || undefined} alt={v.title} className="w-full h-full object-cover group-hover/vitem:scale-110 transition-transform duration-500" referrerPolicy="no-referrer" />
+                            ) : (['general', 'short-urgent'].includes(v.category_slug)) ? (
+                              <div className="w-full h-full urgent-fallback"></div>
+                            ) : (
+                              <div className="w-full h-full bg-gray-100 flex items-center justify-center">
+                                <Search className="w-4 h-4 text-gray-300" />
+                              </div>
+                            )}
                           </div>
                           <div className="flex-1 text-right order-2">
                             <h4 className="text-primary-navy font-black text-xs line-clamp-2 leading-relaxed group-hover/vitem:text-primary-crimson transition-colors">{v.title}</h4>
                             <p className="text-[10px] text-gray-400 font-bold mt-1 flex items-center justify-end gap-1">
-                              <span>{v.writer_name || v.author || settings?.site_name || 'هيئة التحرير'}</span>
+                              <span>{"موقع هدس"}</span>
                               <User className="w-3 h-3" />
                             </p>
                           </div>
@@ -936,22 +989,26 @@ function Home() {
                         <div className="absolute left-0 top-0 bottom-0 w-0 group-hover/item:w-1.5 bg-primary-crimson shadow-[0_0_15px_rgba(225,29,72,0.4)] transition-all duration-500 ease-out"></div>
 
                         {/* Image Content - Cinematic Frame */}
-                        {article.image_url && (
+                        {(article.image_url || ['general', 'short-urgent'].includes(article.category_slug)) && (
                           <div className={`w-full md:w-56 lg:w-48 xl:w-64 shrink-0 overflow-hidden rounded-3xl shadow-xl relative group-hover/item:shadow-[0_20px_50px_rgba(0,0,0,0.15)] transition-all duration-700 flex items-center justify-center bg-gray-50 h-48 md:h-auto`}>
-                            {/* Category Badge on Image */}
+                            {/* Category Badge on Image - Pulsing for urgent */}
                             <div className="absolute top-3 right-3 z-30">
-                              <span className="bg-primary-crimson/90 backdrop-blur-md text-white px-3 py-1 rounded-lg text-[10px] font-black uppercase tracking-widest shadow-premium border border-white/20">
+                              <span className={`bg-primary-crimson/90 backdrop-blur-md text-white px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest shadow-[0_0_15px_rgba(225,29,72,0.5)] border border-white/20 ${['general', 'short-urgent'].includes(article.category_slug) ? 'animate-pulse' : ''}`}>
                                 {article.category_name}
                               </span>
                             </div>
                             
                             <div className="w-full h-full relative flex items-center justify-center">
-                              <img
-                                src={article.image_url}
-                                alt={article.title}
-                                className="w-full h-full object-cover transition-transform duration-1000 scale-100 group-hover/item:scale-105"
-                                referrerPolicy="no-referrer"
-                              />
+                              {article.image_url ? (
+                                <img
+                                  src={article.image_url}
+                                  alt={article.title}
+                                  className="w-full h-full object-cover transition-transform duration-1000 scale-100 group-hover/item:scale-105"
+                                  referrerPolicy="no-referrer"
+                                />
+                              ) : (
+                                <img src="/urgent_fallback.jpg" alt="عاجل" className="w-full h-full object-cover transition-transform duration-1000 scale-100 group-hover/item:scale-105" />
+                              )}
                             </div>
                             <div className="absolute inset-0 bg-primary-navy/20 group-hover/item:bg-transparent transition-colors duration-700"></div>
                             {article.video_url && (
@@ -980,7 +1037,10 @@ function Home() {
                           </p>
                           <div className={`flex items-center justify-between text-[10px] sm:text-sm font-black uppercase tracking-[0.1em] sm:tracking-[0.2em] border-t border-gray-100/50 pt-6 mt-auto ${index % 2 !== 0 ? '' : 'flex-row-reverse'}`}>
                             <div className="flex items-center gap-3 md:gap-6 text-gray-400 overflow-hidden">
-                              <span className="flex items-center gap-1 sm:gap-2 group-hover/item:text-primary-navy transition-colors truncate max-w-[80px] sm:max-w-none"><User className="w-3 h-3 sm:w-4 sm:h-4 text-primary-crimson/50" /> {article.writer_name || article.author || "موقع هـدس"}</span>
+                              <span className="flex items-center gap-1 sm:gap-2 group-hover/item:text-primary-navy transition-colors truncate max-w-[150px] sm:max-w-none">
+                                <User className="w-3 h-3 sm:w-4 sm:h-4 text-primary-crimson/50" /> 
+                                {article.category_slug === 'opinion' ? (article.writer_name || article.author || "موقع هدس") : "موقع هدس"}
+                              </span>
                               <span className="flex items-center gap-1 sm:gap-2 group-hover/item:text-primary-navy transition-colors shrink-0"><Eye className="w-3 h-3 sm:w-4 sm:h-4 text-primary-crimson/50" /> {article.views || 0} قراءة</span>
                               <span className="hidden sm:flex items-center gap-2 group-hover/item:text-primary-navy transition-colors shrink-0"><MapPin className="w-4 h-4 text-primary-crimson/50" /> {settings?.site_location || "صنعاء"}</span>
                             </div>
@@ -1374,25 +1434,41 @@ function Home() {
                 </div>
                 <div className="p-8 space-y-6">
                   <div className="space-y-4">
-                    <div className="flex items-center gap-4 p-4 bg-gray-50 rounded-2xl border border-gray-100">
-                      <div className="w-12 h-12 bg-primary-crimson/10 text-primary-crimson rounded-xl flex items-center justify-center"><Globe className="w-6 h-6" /></div>
-                      <div>
-                        <p className="text-sm text-gray-400 font-bold">البريد الإلكتروني</p>
-                        <p className="font-black text-gray-900">{settings.contact_email || 'info@hads-news.com'}</p>
+                    <div className="flex items-center gap-4 p-4 bg-gradient-to-r from-gray-50 to-white rounded-2xl border border-gray-200 shadow-lg hover:shadow-xl transition-all duration-300 relative overflow-hidden">
+                      <div className="absolute inset-0 bg-gradient-to-r from-primary-navy/5 to-primary-crimson/5 animate-pulse"></div>
+                      <div className="absolute top-2 right-2 w-8 h-8 bg-accent-gold/10 rounded-full blur-lg animate-pulse delay-1000"></div>
+                      <div className="w-12 h-12 bg-gradient-to-br from-primary-navy to-primary-crimson text-white rounded-xl flex items-center justify-center shadow-lg animate-pulse relative z-10">
+                        <Globe className="w-6 h-6 animate-pulse" />
+                        <div className="absolute inset-0 bg-gradient-to-r from-primary-navy/20 to-primary-crimson/20 rounded-xl blur-sm animate-pulse delay-200"></div>
+                      </div>
+                      <div className="relative z-10">
+                        <p className="text-sm text-gray-500 font-bold mb-1">البريد الإلكتروني</p>
+                        <p className="font-black text-gray-900 text-lg">{settings.contact_email || 'info@hads-news.com'}</p>
                       </div>
                     </div>
-                    <div className="flex items-center gap-4 p-4 bg-gray-50 rounded-2xl border border-gray-100">
-                      <div className="w-12 h-12 bg-blue-100 text-blue-600 rounded-xl flex items-center justify-center"><User className="w-6 h-6" /></div>
-                      <div>
-                        <p className="text-sm text-gray-400 font-bold">رئيس التحرير</p>
-                        <p className="font-black text-gray-900">{settings.chief_editor || 'صلاح حيدرة'}</p>
+                    <div className="flex items-center gap-4 p-4 bg-gradient-to-r from-gray-50 to-white rounded-2xl border border-gray-200 shadow-lg hover:shadow-xl transition-all duration-300 relative overflow-hidden">
+                      <div className="absolute inset-0 bg-gradient-to-r from-primary-crimson/5 to-accent-gold/5 animate-pulse"></div>
+                      <div className="absolute top-2 right-2 w-8 h-8 bg-primary-navy/10 rounded-full blur-lg animate-pulse delay-1000"></div>
+                      <div className="w-12 h-12 bg-gradient-to-br from-primary-crimson to-primary-navy text-white rounded-xl flex items-center justify-center shadow-lg animate-pulse relative z-10">
+                        <User className="w-6 h-6 animate-pulse" />
+                        <div className="absolute inset-0 bg-gradient-to-r from-primary-crimson/20 to-primary-navy/20 rounded-xl blur-sm animate-pulse delay-200"></div>
+                      </div>
+                      <div className="relative z-10">
+                        <p className="text-sm text-gray-500 font-bold mb-1">رئيس التحرير</p>
+                        <p className="font-black text-transparent bg-clip-text bg-gradient-to-r from-primary-navy to-primary-crimson text-lg animate-pulse">
+                          {settings.chief_editor || 'موقع هدس'}
+                        </p>
                       </div>
                     </div>
                   </div>
                   <form className="space-y-4" onSubmit={(e) => { e.preventDefault(); alert('تم إرسال رسالتك بنجاح'); setShowContactModal(false); }}>
                     <input type="text" placeholder="الاسم الكامل" className="w-full p-4 bg-gray-50 border border-gray-100 rounded-xl outline-none focus:border-red-500 font-bold" required />
                     <textarea placeholder="رسالتك..." rows={4} className="w-full p-4 bg-gray-50 border border-gray-100 rounded-xl outline-none focus:border-red-500 font-bold" required></textarea>
-                    <button className="w-full bg-primary-crimson text-white py-4 rounded-xl font-black shadow-xl shadow-primary-crimson/20 hover:bg-primary-crimson/80 transition-all">إرسال الرسالة</button>
+                    <button className="w-full bg-gradient-to-r from-primary-crimson to-primary-navy text-white py-4 rounded-xl font-black shadow-xl shadow-primary-crimson/20 hover:shadow-2xl hover:shadow-primary-crimson/30 transition-all duration-300 relative overflow-hidden animate-pulse">
+                      <div className="absolute inset-0 bg-gradient-to-r from-primary-crimson/20 to-accent-gold/20 animate-pulse"></div>
+                      <span className="relative z-10">إرسال الرسالة</span>
+                      <div className="absolute inset-0 bg-white/10 scale-x-0 hover:scale-x-100 transition-transform duration-500 origin-left"></div>
+                    </button>
                   </form>
                 </div>
               </motion.div>
@@ -1411,11 +1487,13 @@ function Home() {
               window.scrollTo({ top: 0, behavior: 'smooth' });
               setSelectedCategory(null);
             }}
-            className="fixed bottom-10 right-10 z-[100] w-20 h-20 bg-primary-navy text-white rounded-[2rem] shadow-[0_20px_60px_rgba(0,0,0,0.3)] flex flex-col items-center justify-center group border border-white/5 hover:bg-primary-crimson transition-all duration-700"
+            className="fixed bottom-10 right-10 z-[100] w-20 h-20 bg-primary-navy text-white rounded-[2rem] shadow-[0_20px_60px_rgba(0,0,0,0.3)] flex flex-col items-center justify-center group border border-white/5 hover:bg-primary-crimson transition-all duration-700 relative overflow-hidden"
           >
-            <ChevronRight className="w-8 h-8 -rotate-90 group-hover:-translate-y-2 transition-transform duration-500" />
-            <span className="text-[10px] font-black uppercase tracking-widest mt-1">البداية</span>
+            <div className="absolute inset-0 bg-gradient-to-r from-primary-navy/20 to-primary-crimson/20 animate-pulse"></div>
+            <ChevronRight className="w-8 h-8 -rotate-90 group-hover:-translate-y-2 transition-transform duration-500 relative z-10 animate-pulse" />
+            <span className="text-[10px] font-black uppercase tracking-widest mt-1 relative z-10">البداية</span>
             <div className="absolute inset-x-0 bottom-0 h-1 bg-accent-gold scale-x-0 group-hover:scale-x-75 transition-transform duration-700"></div>
+            <div className="absolute inset-0 bg-accent-gold/10 rounded-[2rem] blur-lg scale-0 group-hover:scale-110 transition-transform duration-500"></div>
           </motion.button>
         )}
       </AnimatePresence>
@@ -1458,38 +1536,64 @@ const MaintenanceWrapper = () => {
   // Intercept all routes except /admin and its subroutes if maintenance mode is true
   if (settings.maintenance_mode === 'true' && !location.pathname.startsWith('/admin')) {
     return (
-      <div className="min-h-screen bg-primary-navy flex items-center justify-center p-6 bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')] text-center" dir="rtl">
+      <div className="min-h-screen bg-primary-navy flex items-center justify-center p-6 bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')] text-center relative overflow-hidden" dir="rtl">
+        <div className="absolute inset-0 bg-gradient-to-br from-primary-navy/80 via-primary-crimson/10 to-accent-gold/10 animate-pulse"></div>
+        <div className="absolute top-1/4 left-1/4 w-64 h-64 bg-primary-crimson/20 rounded-full blur-3xl animate-pulse delay-1000"></div>
+        <div className="absolute bottom-1/4 right-1/4 w-48 h-48 bg-accent-gold/20 rounded-full blur-3xl animate-pulse delay-500"></div>
+        <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-gradient-to-r from-primary-navy/20 to-primary-crimson/20 rounded-full blur-3xl animate-pulse delay-1500"></div>
         <div className="max-w-2xl bg-white/5 backdrop-blur-xl border border-white/10 rounded-3xl p-12 relative overflow-hidden">
           <div className="absolute top-0 right-0 w-64 h-64 bg-primary-crimson/20 rounded-full blur-3xl -mr-32 -mt-32"></div>
           <div className="absolute bottom-0 left-0 w-64 h-64 bg-accent-gold/20 rounded-full blur-3xl -ml-32 -mb-32"></div>
           
           <div className="relative z-10 flex flex-col items-center gap-6">
-            <h1 className="text-3xl md:text-4xl font-black text-white text-center">
-              <span>{settings.site_name || '𐩠𐩵𐩪 هـدس'}</span>
+            <h1 className="text-3xl md:text-4xl font-black text-center relative">
+              <span className="absolute inset-0 bg-gradient-to-r from-primary-crimson via-accent-gold to-primary-navy bg-clip-text text-transparent animate-pulse opacity-75">
+                {settings.site_name || '𐩠𐩵𐩪 هـدس'}
+              </span>
+              <span className="relative text-white drop-shadow-[0_4px_15px_rgba(0,0,0,0.8)] animate-pulse">
+                {settings.site_name || '𐩠𐩵𐩪 هـدس'}
+              </span>
+              <div className="absolute -inset-1 bg-gradient-to-r from-primary-crimson/20 to-accent-gold/20 rounded-lg blur-lg animate-pulse"></div>
             </h1>
-            <div className="w-24 h-2 bg-gradient-to-r from-transparent via-primary-crimson to-transparent mx-auto rounded-full"></div>
+            <div className="w-32 h-2 bg-gradient-to-r from-transparent via-primary-crimson to-transparent mx-auto rounded-full relative">
+              <div className="absolute inset-0 bg-gradient-to-r from-primary-crimson/50 to-accent-gold/50 rounded-full blur-sm animate-pulse"></div>
+              <div className="absolute inset-0 bg-gradient-to-r from-primary-crimson/20 to-accent-gold/20 rounded-full blur-md animate-pulse delay-300"></div>
+            </div>
             
             <div className="space-y-4 my-8">
-              <h2 className="text-2xl md:text-3xl font-black text-accent-gold">الموقع تحت الصيانة والتحديث</h2>
-              <p className="text-gray-300 text-lg md:text-xl font-bold leading-relaxed max-w-xl">
-                نحن نعمل حالياً على تطوير وتحديث الموقع لتقديم تجربة أفضل لكم. سنعود للعمل قريباً جداً، شاكرين تفهمكم.
+              <h2 className="text-2xl md:text-3xl font-black text-accent-gold relative">
+                <span className="absolute inset-0 bg-gradient-to-r from-accent-gold to-yellow-300 bg-clip-text text-transparent animate-pulse opacity-80">
+                  الموقع تحت الصيانة والتحديث
+                </span>
+                <span className="relative text-accent-gold drop-shadow-[0_2px_8px_rgba(202,138,4,0.8)] animate-pulse">
+                  الموقع تحت الصيانة والتحديث
+                </span>
+              </h2>
+              <p className="text-gray-300 text-lg md:text-xl font-bold leading-relaxed max-w-xl relative">
+                <span className="absolute inset-0 bg-gradient-to-r from-gray-300/50 to-gray-400/50 bg-clip-text text-transparent animate-pulse opacity-60"></span>
+                <span className="relative text-gray-300 drop-shadow-[0_1px_4px_rgba(0,0,0,0.5)] animate-pulse">
+                  نحن نعمل حالياً على تطوير وتحديث الموقع لتقديم تجربة أفضل لكم. سنعود للعمل قريباً جداً، شاكرين تفهمكم.
+                </span>
               </p>
             </div>
             
             <div className="flex justify-center gap-6 mt-4">
               {settings.facebook_url && (
-                <a href={settings.facebook_url} target="_blank" rel="noopener noreferrer" className="w-12 h-12 rounded-full bg-white/10 flex items-center justify-center text-white hover:bg-primary-crimson transition-colors border border-white/10">
+                <a href={settings.facebook_url} target="_blank" rel="noopener noreferrer" className="w-12 h-12 rounded-full bg-white/10 flex items-center justify-center text-white hover:bg-primary-crimson transition-colors border border-white/10 relative animate-pulse">
                   <Facebook className="w-5 h-5" />
+                  <div className="absolute inset-0 bg-primary-crimson/20 rounded-full blur-lg scale-0 hover:scale-150 transition-transform duration-300"></div>
                 </a>
               )}
               {settings.twitter_url && (
-                <a href={settings.twitter_url} target="_blank" rel="noopener noreferrer" className="w-12 h-12 rounded-full bg-white/10 flex items-center justify-center text-white hover:bg-black transition-colors border border-white/10">
+                <a href={settings.twitter_url} target="_blank" rel="noopener noreferrer" className="w-12 h-12 rounded-full bg-white/10 flex items-center justify-center text-white hover:bg-black transition-colors border border-white/10 relative animate-pulse">
                   <span className="font-black text-xl leading-none -mt-1">𝕏</span>
+                  <div className="absolute inset-0 bg-black/20 rounded-full blur-lg scale-0 hover:scale-150 transition-transform duration-300"></div>
                 </a>
               )}
               {settings.youtube_url && (
-                <a href={settings.youtube_url} target="_blank" rel="noopener noreferrer" className="w-12 h-12 rounded-full bg-white/10 flex items-center justify-center text-white hover:bg-red-600 transition-colors border border-white/10">
+                <a href={settings.youtube_url} target="_blank" rel="noopener noreferrer" className="w-12 h-12 rounded-full bg-white/10 flex items-center justify-center text-white hover:bg-red-600 transition-colors border border-white/10 relative animate-pulse">
                   <Youtube className="w-5 h-5" />
+                  <div className="absolute inset-0 bg-red-600/20 rounded-full blur-lg scale-0 hover:scale-150 transition-transform duration-300"></div>
                 </a>
               )}
             </div>

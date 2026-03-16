@@ -18,40 +18,27 @@ export async function initDb() {
 
   const client = await pool.connect();
   try {
-    // Quick check if already initialized
-    const tableCheck = await client.query("SELECT 1 FROM information_schema.tables WHERE table_name = 'categories'");
-    if (tableCheck.rows.length > 0) {
-      console.log('Database already initialized. Skipping heavy init.');
-      return;
-    }
-
-    await client.query('BEGIN');
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS system_users (
+        id SERIAL PRIMARY KEY,
+        username TEXT NOT NULL UNIQUE,
+        password TEXT NOT NULL,
+        full_name TEXT NOT NULL,
+        role TEXT DEFAULT 'editor',
+        permissions TEXT DEFAULT '[]',
+        email TEXT,
+        reset_token TEXT,
+        reset_token_expiry TIMESTAMPTZ,
+        created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+      );
+    `);
 
     await client.query(`
       CREATE TABLE IF NOT EXISTS categories (
         id SERIAL PRIMARY KEY,
         name TEXT NOT NULL UNIQUE,
-        slug TEXT NOT NULL UNIQUE
-      );
-    `);
-
-    await client.query(`
-      CREATE TABLE IF NOT EXISTS articles (
-        id SERIAL PRIMARY KEY,
-        title TEXT NOT NULL,
-        content TEXT NOT NULL,
-        category_id INTEGER REFERENCES categories(id),
-        image_url TEXT,
-        video_url TEXT,
-        author TEXT,
-        writer_id INTEGER,
-        created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
-        is_urgent INTEGER DEFAULT 0,
-        is_deleted INTEGER DEFAULT 0,
-        is_active INTEGER DEFAULT 1,
-        views INTEGER DEFAULT 0,
-        tags TEXT,
-        short_title TEXT
+        slug TEXT NOT NULL UNIQUE,
+        background_url TEXT
       );
     `);
 
@@ -65,25 +52,55 @@ export async function initDb() {
       );
     `);
 
-    // Add foreign key and background_url if not exists
-    try {
-      await client.query('ALTER TABLE articles ADD COLUMN IF NOT EXISTS writer_id INTEGER');
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS articles (
+        id SERIAL PRIMARY KEY,
+        title TEXT NOT NULL,
+        content TEXT NOT NULL,
+        category_id INTEGER REFERENCES categories(id),
+        image_url TEXT,
+        video_url TEXT,
+        author TEXT,
+        writer_id INTEGER REFERENCES writers(id) ON DELETE SET NULL,
+        author_user_id INTEGER REFERENCES system_users(id) ON DELETE SET NULL,
+        created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+        is_urgent INTEGER DEFAULT 0,
+        is_deleted INTEGER DEFAULT 0,
+        is_active INTEGER DEFAULT 1,
+        views INTEGER DEFAULT 0,
+        tags TEXT,
+        short_title TEXT
+      );
+    `);
+
+    // Quick check logic moved after essential tables but before heavy init
+    const tableCheck = await client.query("SELECT 1 FROM information_schema.tables WHERE table_name = 'categories'");
+    const columnCheck = await client.query("SELECT 1 FROM information_schema.columns WHERE table_name = 'articles' AND column_name = 'author_user_id'");
+    
+    // Supplemental migrations that should ALWAYS run if the column is missing
+    if (columnCheck.rows.length === 0) {
+      console.log('Applying supplemental database migrations...');
       try {
-        await client.query('ALTER TABLE articles DROP CONSTRAINT IF EXISTS articles_writer_id_fkey');
-        await client.query('ALTER TABLE articles ADD CONSTRAINT articles_writer_id_fkey FOREIGN KEY (writer_id) REFERENCES writers(id) ON DELETE SET NULL');
-      } catch (e) { /* ignore constraint issues */ }
-      await client.query('ALTER TABLE articles ADD COLUMN IF NOT EXISTS is_deleted INTEGER DEFAULT 0');
-      await client.query('ALTER TABLE articles ADD COLUMN IF NOT EXISTS is_active INTEGER DEFAULT 1');
-      await client.query('ALTER TABLE categories ADD COLUMN IF NOT EXISTS background_url TEXT');
-      await client.query('ALTER TABLE ads ADD COLUMN IF NOT EXISTS start_date TIMESTAMPTZ');
-      await client.query('ALTER TABLE ads ADD COLUMN IF NOT EXISTS end_date TIMESTAMPTZ');
-      await client.query('ALTER TABLE articles ADD COLUMN IF NOT EXISTS short_title TEXT');
-    } catch (e) {
-      console.log('Columns might already exist');
+        await client.query('ALTER TABLE articles ADD COLUMN IF NOT EXISTS writer_id INTEGER REFERENCES writers(id) ON DELETE SET NULL');
+        await client.query('ALTER TABLE articles ADD COLUMN IF NOT EXISTS is_deleted INTEGER DEFAULT 0');
+        await client.query('ALTER TABLE articles ADD COLUMN IF NOT EXISTS is_active INTEGER DEFAULT 1');
+        await client.query('ALTER TABLE categories ADD COLUMN IF NOT EXISTS background_url TEXT');
+        await client.query('ALTER TABLE articles ADD COLUMN IF NOT EXISTS author_user_id INTEGER REFERENCES system_users(id) ON DELETE SET NULL');
+        await client.query('ALTER TABLE articles ADD COLUMN IF NOT EXISTS last_editor_user_id INTEGER REFERENCES system_users(id) ON DELETE SET NULL');
+        await client.query('ALTER TABLE articles ADD COLUMN IF NOT EXISTS short_title TEXT');
+        await client.query("ALTER TABLE system_users ADD COLUMN IF NOT EXISTS permissions TEXT DEFAULT '[]'");
+        await client.query("ALTER TABLE system_users ADD COLUMN IF NOT EXISTS email TEXT");
+        await client.query("ALTER TABLE system_users ADD COLUMN IF NOT EXISTS reset_token TEXT");
+        await client.query("ALTER TABLE system_users ADD COLUMN IF NOT EXISTS reset_token_expiry TIMESTAMPTZ");
+      } catch (e) {
+        console.log('Some migration columns might already exist:', e.message);
+      }
     }
 
-    // Migration: Clear hardcoded default author name if it exists
-    await client.query("UPDATE articles SET author = NULL WHERE author = 'صلاح حيدرة'");
+    if (tableCheck.rows.length > 0 && columnCheck.rows.length > 0) {
+      console.log('Database already initialized and up to date. Skipping heavy init.');
+      return;
+    }
 
     await client.query(`
       CREATE TABLE IF NOT EXISTS ads (
@@ -134,29 +151,6 @@ export async function initDb() {
     `);
 
     await client.query(`
-      CREATE TABLE IF NOT EXISTS system_users (
-        id SERIAL PRIMARY KEY,
-        username TEXT NOT NULL UNIQUE,
-        password TEXT NOT NULL,
-        full_name TEXT NOT NULL,
-        role TEXT DEFAULT 'editor',
-        permissions TEXT DEFAULT '[]',
-        email TEXT,
-        reset_token TEXT,
-        reset_token_expiry TIMESTAMPTZ,
-        created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
-      );
-    `);
-
-    // Ensure permissions and auth columns exist for older dbs
-    try {
-      await client.query("ALTER TABLE system_users ADD COLUMN IF NOT EXISTS permissions TEXT DEFAULT '[]'");
-      await client.query("ALTER TABLE system_users ADD COLUMN IF NOT EXISTS email TEXT");
-      await client.query("ALTER TABLE system_users ADD COLUMN IF NOT EXISTS reset_token TEXT");
-      await client.query("ALTER TABLE system_users ADD COLUMN IF NOT EXISTS reset_token_expiry TIMESTAMPTZ");
-    } catch (e) { /* ignore */ }
-
-    await client.query(`
       CREATE TABLE IF NOT EXISTS audit_logs (
         id SERIAL PRIMARY KEY,
         user_id INTEGER REFERENCES system_users(id) ON DELETE SET NULL,
@@ -171,6 +165,7 @@ export async function initDb() {
     await client.query("CREATE INDEX IF NOT EXISTS idx_articles_created_at ON articles(created_at DESC)");
     await client.query("CREATE INDEX IF NOT EXISTS idx_articles_urgent ON articles(is_urgent) WHERE is_urgent = 1");
     await client.query("CREATE INDEX IF NOT EXISTS idx_articles_active ON articles(is_deleted, is_active)");
+    await client.query("CREATE INDEX IF NOT EXISTS idx_articles_author_user ON articles(author_user_id)");
     await client.query("CREATE INDEX IF NOT EXISTS idx_audit_logs_user_date ON audit_logs(user_id, created_at DESC)");
 
     await client.query(`
@@ -260,12 +255,11 @@ export async function initDb() {
       ON CONFLICT (key) DO NOTHING
     `);
 
-    // Default Admin User (Password: admin123)
     await client.query(`
       INSERT INTO system_users (username, password, full_name, role)
       VALUES ($1, $2, $3, $4)
       ON CONFLICT (username) DO NOTHING
-    `, ['admin', 'admin123', 'صلاح حيدرة', 'admin']);
+    `, ['admin', 'admin123', 'عبدالله قاسم', 'admin']);
 
     // Demo Articles (individual check)
     const demoArticles = [
