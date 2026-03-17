@@ -132,6 +132,30 @@ async function startServer() {
   app.use(express.json({ limit: '512kb' }));
   app.use(express.urlencoded({ extended: false, limit: '512kb' }));
 
+  // --- IP Blocking Middleware ---
+  const checkBlockedIp = async (req: any, res: any, next: any) => {
+    // Skip blocking for direct media access to save DB calls if needed, OR keep it for full ban
+    if (req.path.startsWith('/api/media/') || req.path.startsWith('/uploads/')) {
+       return next();
+    }
+
+    try {
+      const ipStr = getClientIp(req);
+      const { rows } = await db.query("SELECT * FROM blocked_ips WHERE ip_address = $1", [ipStr]);
+      if (rows.length > 0) {
+        console.warn(`Blocked access attempt from banned IP: ${ipStr}`);
+        return res.status(403).json({ 
+          error: "تم حظر عنوان الـ IP الخاص بك لأسباب أمنية. يرجى التواصل مع الإدارة.",
+          banned: true 
+        });
+      }
+      next();
+    } catch (e) {
+      console.error("IP Block check error:", e);
+      next(); // Fail open to avoid locking everyone out if DB is down, or fail closed? Open is safer for news.
+    }
+  };
+
   // Basic security headers
   app.use((req, res, next) => {
     res.setHeader('X-Content-Type-Options', 'nosniff');
@@ -140,6 +164,9 @@ async function startServer() {
     res.setHeader('Cross-Origin-Opener-Policy', 'same-origin');
     next();
   });
+
+  // Apply IP banning globally
+  app.use(checkBlockedIp);
 
   // --- Email Helper (Gmail API / Brevo / MailerSend / Resend / SendGrid HTTP + NodeMailer Fallback) ---
   const sendSystemEmail = async (to: string, subject: string, html: string, username: string = '') => {
@@ -210,7 +237,7 @@ async function startServer() {
               if (sendResponse.ok) {
                   const msg = `Email sent via Gmail API to ${to} for user ${username}`;
                   console.log(msg);
-                  await logAction(null, 'نظام البريد', `نجح الإرسال عبر Gmail API إلى ${to}`);
+                  await logAction(null, 'نظام البريد', `نجح الإرسال عبر Gmail API إلى ${to}`, 'System');
                   return true;
               } else {
                   const sendData = await sendResponse.json();
@@ -248,7 +275,7 @@ async function startServer() {
           });
           const msg = `Email sent via SMTP to ${to} for user ${username}`;
           console.log(msg);
-          await logAction(null, 'نظام البريد', `نجح الإرسال عبر SMTP إلى ${to}`);
+          await logAction(null, 'نظام البريد', `نجح الإرسال عبر SMTP إلى ${to}`, 'System');
           return true;
       } catch (smtpErr: any) {
           let diagnostic = '';
@@ -257,7 +284,7 @@ async function startServer() {
           
           const fullError = `${diagnostic}${lastError ? lastError + ' | ' : ''}SMTP Error: ${smtpErr.message}`;
           console.error(`CRITICAL: All email methods failed for ${to}:`, fullError);
-          await logAction(null, 'خطأ بريد', `فشل إرسال البريد لـ ${to}: ${fullError}`);
+          await logAction(null, 'خطأ بريد', `فشل إرسال البريد لـ ${to}: ${fullError}`, 'System');
           return false;
       }
   };
@@ -265,9 +292,9 @@ async function startServer() {
   app.use("/uploads", express.static(uploadDir));
 
   // --- Auth & Audit Helpers ---
-  const logAction = async (userId: number | null, action: string, details: string) => {
+  const logAction = async (userId: number | null, action: string, details: string, ip: string | null = null) => {
     try {
-      await db.query("INSERT INTO audit_logs (user_id, action, details) VALUES ($1, $2, $3)", [userId, action, details]);
+      await db.query("INSERT INTO audit_logs (user_id, action, details, ip_address) VALUES ($1, $2, $3, $4)", [userId, action, details, ip]);
     } catch (e) {
       console.error("Audit log error:", e);
     }
@@ -300,14 +327,7 @@ async function startServer() {
     }
   };
 
-  const checkBlockedIp = async (req: any, res: any, next: any) => {
-    const ipStr = getClientIp(req);
-    const { rows } = await db.query("SELECT * FROM blocked_ips WHERE ip_address = $1", [ipStr]);
-    if (rows.length > 0) {
-      return res.status(403).json({ error: "تم حظر عنوان الـ IP الخاص بك لأسباب أمنية. يرجى التواصل مع الإدارة." });
-    }
-    next();
-  };
+
 
   // --- API Routes ---
 
@@ -315,11 +335,12 @@ async function startServer() {
   const failedAttempts = new Map<string, number>();
 
   // Auth
-  app.post("/api/auth/login", checkBlockedIp, async (req, res) => {
+  app.post("/api/auth/login", async (req, res) => {
     const ipStr = getClientIp(req);
 
     // Basic brute-force protection
     if (!checkRateLimit(ipStr, 10, 60_000)) {
+      await logAction(null, 'تنبيه أمني', `محاولات دخول كثيرة جداً من IP: ${ipStr}`, ipStr);
       return res.status(429).json({ error: "Too many login attempts. Please wait a minute." });
     }
 
@@ -337,18 +358,18 @@ async function startServer() {
       // Reset failed attempts on success
       failedAttempts.delete(ipStr);
 
-      await logAction(user.id, 'تسجيل دخول', `تم تسجيل الدخول بنجاح من IP: ${ipStr}`);
+      await logAction(user.id, 'تسجيل دخول', `تم تسجيل الدخول بنجاح باسم: ${user.username}`, ipStr);
       res.json({ token, user: userWithoutPassword, requiresPasswordChange: user.requires_password_change });
     } else {
       // Increment failed attempts
       const attempts = (failedAttempts.get(ipStr) || 0) + 1;
       failedAttempts.set(ipStr, attempts);
 
-      await logAction(null, 'محاولة دخول فاشلة', `محاولة دخول باسم المستخدم: ${username} من IP: ${ipStr}`);
+      await logAction(null, 'محاولة دخول فاشلة', `محاولة دخول باسم المستخدم: ${username}`, ipStr);
 
       // Raise a high-priority security alert if threshold reached
       if (attempts >= 5) {
-        await logAction(null, 'تنبيه أمني', `⚠️ محاولات دخول متكررة فاشلة (${attempts}) من عنوان IP: ${ipStr}. يرجى التحقق من الأمان.`);
+        await logAction(null, 'تنبيه أمني', `⚠️ محاولات دخول متكررة فاشلة (${attempts}) من عنوان IP: ${ipStr}. يرجى التحقق من الأمان.`, ipStr);
       }
 
       res.status(401).json({ error: "بيانات الدخول غير صحيحة" });
@@ -365,7 +386,7 @@ async function startServer() {
     try {
       const hashedPassword = hashPassword(newPassword);
       await db.query("UPDATE system_users SET password = $1, requires_password_change = false WHERE id = $2", [hashedPassword, (req as any).user.id]);
-      await logAction((req as any).user.id, 'تغيير كلمة المرور', 'تم تغيير كلمة المرور الإجبارية أو الطوعية بنجاح.');
+      await logAction((req as any).user.id, 'تغيير كلمة المرور', 'تم تغيير كلمة المرور بنجاح.', getClientIp(req));
       res.json({ success: true, message: "تم تغيير كلمة المرور بنجاح." });
     } catch (err) {
       console.error(err);
@@ -383,7 +404,7 @@ async function startServer() {
     const { ip_address, reason } = req.body;
     try {
       await db.query("INSERT INTO blocked_ips (ip_address, reason) VALUES ($1, $2)", [ip_address, reason]);
-      await logAction((req as any).user.id, 'حظر IP', `تم حظر العنوان: ${ip_address} | السبب: ${reason}`);
+      await logAction((req as any).user.id, 'حظر IP', `تم حظر العنوان: ${ip_address} | السبب: ${reason}`, getClientIp(req));
       res.json({ success: true });
     } catch (e) {
       res.status(500).json({ error: "IP address already blocked or invalid" });
@@ -395,11 +416,16 @@ async function startServer() {
     const { rows: existing } = await db.query("SELECT ip_address FROM blocked_ips WHERE id = $1", [id]);
     if (existing.length > 0) {
       await db.query("DELETE FROM blocked_ips WHERE id = $1", [id]);
-      await logAction((req as any).user.id, 'إلغاء حظر IP', `تم إلغاء حظر العنوان: ${existing[0].ip_address}`);
+      await logAction((req as any).user.id, 'إلغاء حظر IP', `تم إلغاء حظر العنوان: ${existing[0].ip_address}`, getClientIp(req));
       res.json({ success: true });
     } else {
       res.status(404).json({ error: "IP not found" });
     }
+  });
+
+  // Endpoint to get current client IP
+  app.get("/api/auth/my-ip", (req, res) => {
+    res.json({ ip: getClientIp(req) });
   });
 
   app.get("/api/auth/me", requireAuth, async (req, res) => {
@@ -560,7 +586,7 @@ async function startServer() {
           `;
           await sendSystemEmail(email, 'رمز التحقق للدخول لأول مرة - نظام هـدس', userMailHtml, username);
       }
-      await logAction((req as any).user.id, 'إضافة مستخدم', `تم إضافة المستخدم: ${username}`);
+      await logAction((req as any).user.id, 'إضافة مستخدم', `تم إضافة المستخدم: ${username}`, getClientIp(req));
       res.json({ id: rows[0].id });
     } catch (e) {
       res.status(400).json({ error: "Username already exists" });
@@ -591,7 +617,7 @@ async function startServer() {
           [username, full_name, email, role, permsString, id]
         );
       }
-      await logAction((req as any).user.id, 'تعديل مستخدم', `تم تعديل المستخدم رقم: ${id}`);
+      await logAction((req as any).user.id, 'تعديل مستخدم', `تم تعديل المستخدم رقم: ${id}`, getClientIp(req));
       res.json({ success: true });
     } catch (e) {
       res.status(400).json({ error: "Error updating user" });
@@ -613,7 +639,7 @@ async function startServer() {
     }
 
     await db.query("DELETE FROM system_users WHERE id = $1", [id]);
-    await logAction((req as any).user.id, 'حذف مستخدم', `تم حذف المستخدم رقم: ${id}`);
+    await logAction((req as any).user.id, 'حذف مستخدم', `تم حذف المستخدم رقم: ${id}`, getClientIp(req));
     res.json({ success: true });
   });
 
@@ -718,7 +744,7 @@ async function startServer() {
           LEFT JOIN writers ON articles.writer_id = writers.id
           LEFT JOIN system_users ON articles.author_user_id = system_users.id
           LEFT JOIN system_users as editors ON articles.last_editor_user_id = editors.id
-          WHERE articles.is_deleted = 0
+          WHERE articles.is_deleted = 0 AND articles.is_active = 1
           ORDER BY created_at DESC
           LIMIT 100
         `),
@@ -746,7 +772,7 @@ async function startServer() {
 
   // Articles
   app.get("/api/articles", async (req, res) => {
-    const { category, limit, includeDeleted } = req.query;
+    const { category, limit, includeDeleted, includeInactive } = req.query;
     let query = `
       SELECT articles.*, categories.name as category_name, categories.slug as category_slug, writers.name as writer_name, writers.image_url as writer_image, system_users.full_name as publisher_name, editors.full_name as last_editor_name
       FROM articles 
@@ -754,12 +780,14 @@ async function startServer() {
       LEFT JOIN writers ON articles.writer_id = writers.id
       LEFT JOIN system_users ON articles.author_user_id = system_users.id
       LEFT JOIN system_users as editors ON articles.last_editor_user_id = editors.id
+      WHERE (articles.is_deleted = $1)
     `;
-    const params: any[] = [];
+    const params: any[] = [includeDeleted === 'true' ? 1 : 0];
 
-    // Filter by deletion status (default: only show non-deleted)
-    query += ` WHERE (articles.is_deleted = $${params.length + 1})`;
-    params.push(includeDeleted === 'true' ? 1 : 0);
+    // Filter by active status (default: only show active)
+    if (includeInactive !== 'true') {
+      query += ` AND (articles.is_active = 1)`;
+    }
 
     if (category) {
       query += ` AND categories.slug = $${params.length + 1}`;
@@ -785,7 +813,8 @@ async function startServer() {
       SELECT articles.*, categories.name as category_name, categories.slug as category_slug 
       FROM articles 
       LEFT JOIN categories ON articles.category_id = categories.id
-      WHERE articles.title ILIKE $1 OR articles.content ILIKE $2
+      LEFT JOIN categories ON articles.category_id = categories.id
+      WHERE (articles.title ILIKE $1 OR articles.content ILIKE $2) AND articles.is_active = 1 AND articles.is_deleted = 0
       ORDER BY created_at DESC
     `, [`%${q}%`, `%${q}%`]);
     res.json(rows);
@@ -802,7 +831,7 @@ async function startServer() {
         LEFT JOIN writers ON articles.writer_id = writers.id
         LEFT JOIN system_users ON articles.author_user_id = system_users.id
         LEFT JOIN system_users as editors ON articles.last_editor_user_id = editors.id
-        WHERE articles.id = $1
+        WHERE articles.id = $1 AND articles.is_active = 1
       `, [req.params.id]),
       db.query("SELECT * FROM ads WHERE is_active = 1"),
       db.query("SELECT * FROM settings")
@@ -830,7 +859,7 @@ async function startServer() {
       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
       RETURNING id
     `, [title, content, category_id, image_url, video_url, is_urgent ? 1 : 0, tags, writer_id || null, is_active !== undefined ? (is_active ? 1 : 0) : 1, (req as any).user.id]);
-    await logAction((req as any).user.id, 'إضافة خبر', `تم إضافة الخبر: ${title}`);
+    await logAction((req as any).user.id, 'إضافة خبر', `تم إضافة الخبر: ${title}`, getClientIp(req));
     res.json({ id: res_db.rows[0].id });
   });
 
@@ -844,7 +873,7 @@ async function startServer() {
       WHERE id = $11
     `, [title, content, category_id, image_url, video_url, is_urgent ? 1 : 0, tags, writer_id || null, is_active !== undefined ? (is_active ? 1 : 0) : 1, (req as any).user.id, req.params.id]);
 
-    await logAction((req as any).user.id, 'تعديل خبر', `تم تعديل الخبر: ${title} (رقم: ${req.params.id})`);
+    await logAction((req as any).user.id, 'تعديل خبر', `تم تعديل الخبر: ${title} (رقم: ${req.params.id})`, getClientIp(req));
     res.json({ success: true });
   });
 
@@ -855,10 +884,10 @@ async function startServer() {
 
     if (permanent === 'true') {
       await db.query("DELETE FROM articles WHERE id = $1", [req.params.id]);
-      await logAction((req as any).user.id, 'حذف نهائي للخبر', `تم حذف الخبر نهائياً: ${articleTitle} (رقم: ${req.params.id})`);
+      await logAction((req as any).user.id, 'حذف نهائي للخبر', `تم حذف الخبر نهائياً: ${articleTitle} (رقم: ${req.params.id})`, getClientIp(req));
     } else {
       await db.query("UPDATE articles SET is_deleted = 1 WHERE id = $1", [req.params.id]);
-      await logAction((req as any).user.id, 'حذف خبر', `تم نقل الخبر للمحذوفات: ${articleTitle} (رقم: ${req.params.id})`);
+      await logAction((req as any).user.id, 'حذف خبر', `تم نقل الخبر للمحذوفات: ${articleTitle} (رقم: ${req.params.id})`, getClientIp(req));
     }
     res.json({ success: true });
   });
@@ -868,14 +897,14 @@ async function startServer() {
     const articleTitle = rows[0]?.title || "غير معروف";
 
     await db.query("UPDATE articles SET is_deleted = 0 WHERE id = $1", [req.params.id]);
-    await logAction((req as any).user.id, 'استعادة خبر', `تم استعادة الخبر: ${articleTitle} (رقم: ${req.params.id})`);
+    await logAction((req as any).user.id, 'استعادة خبر', `تم استعادة الخبر: ${articleTitle} (رقم: ${req.params.id})`, getClientIp(req));
     res.json({ success: true });
   });
 
   app.patch("/api/articles/:id/status", requireAuth, async (req, res) => {
     const { is_active } = req.body;
     await db.query("UPDATE articles SET is_active = $1 WHERE id = $2", [is_active ? 1 : 0, req.params.id]);
-    await logAction((req as any).user.id, 'تغيير حالة الخبر', `تم تغيير حالة الخبر رقم: ${req.params.id} إلى ${is_active ? 'مفعل' : 'معطل'}`);
+    await logAction((req as any).user.id, 'تغيير حالة الخبر', `تم تغيير حالة الخبر رقم: ${req.params.id} إلى ${is_active ? 'مفعل' : 'معطل'}`, getClientIp(req));
     res.json({ success: true });
   });
 
@@ -885,7 +914,7 @@ async function startServer() {
     if (!Array.isArray(ids) || ids.length === 0) return res.status(400).json({ error: "No IDs provided" });
 
     await db.query("UPDATE articles SET is_deleted = 1 WHERE id = ANY($1)", [ids]);
-    await logAction((req as any).user.id, 'نقل مجموعة أخبار للمحذوفات', `تم نقل عدد ${ids.length} أخبار إلى سلة المحذوفات`);
+    await logAction((req as any).user.id, 'نقل مجموعة أخبار للمحذوفات', `تم نقل عدد ${ids.length} أخبار إلى سلة المحذوفات`, getClientIp(req));
     res.json({ success: true });
   });
 
@@ -894,7 +923,7 @@ async function startServer() {
     if (!Array.isArray(ids) || ids.length === 0) return res.status(400).json({ error: "No IDs provided" });
 
     await db.query("UPDATE articles SET is_deleted = 0 WHERE id = ANY($1)", [ids]);
-    await logAction((req as any).user.id, 'استعادة مجموعة أخبار', `تم استعادة عدد ${ids.length} أخبار من المحذوفات`);
+    await logAction((req as any).user.id, 'استعادة مجموعة أخبار', `تم استعادة عدد ${ids.length} أخبار من المحذوفات`, getClientIp(req));
     res.json({ success: true });
   });
 
@@ -903,7 +932,7 @@ async function startServer() {
     if (!Array.isArray(ids) || ids.length === 0) return res.status(400).json({ error: "No IDs provided" });
 
     await db.query("DELETE FROM articles WHERE id = ANY($1)", [ids]);
-    await logAction((req as any).user.id, 'حذف نهائي لمجموعة أخبار', `تم حذف عدد ${ids.length} أخبار نهائياً`);
+    await logAction((req as any).user.id, 'حذف نهائي لمجموعة أخبار', `تم حذف عدد ${ids.length} أخبار نهائياً`, getClientIp(req));
     res.json({ success: true });
   });
 
@@ -911,7 +940,7 @@ async function startServer() {
     const { rows } = await db.query("SELECT COUNT(*) FROM articles WHERE is_deleted = 1");
     const count = rows[0].count;
     await db.query("DELETE FROM articles WHERE is_deleted = 1");
-    await logAction((req as any).user.id, 'تفريغ سلة المحذوفات', `تم تفريغ السلة وحذف ${count} خبر نهائياً`);
+    await logAction((req as any).user.id, 'تفريغ سلة المحذوفات', `تم تفريغ السلة وحذف ${count} خبر نهائياً`, getClientIp(req));
     res.json({ success: true });
   });
 
@@ -924,20 +953,20 @@ async function startServer() {
   app.post("/api/writers", requireAuth, async (req, res) => {
     const { name, bio, image_url } = req.body;
     const { rows } = await db.query("INSERT INTO writers (name, bio, image_url) VALUES ($1, $2, $3) RETURNING id", [name, bio, image_url]);
-    await logAction((req as any).user.id, 'إضافة كاتب', `تم إضافة الكاتب: ${name}`);
+    await logAction((req as any).user.id, 'إضافة كاتب', `تم إضافة الكاتب: ${name}`, getClientIp(req));
     res.json({ id: rows[0].id });
   });
 
   app.put("/api/writers/:id", requireAuth, async (req, res) => {
     const { name, bio, image_url } = req.body;
     await db.query("UPDATE writers SET name = $1, bio = $2, image_url = $3 WHERE id = $4", [name, bio, image_url, req.params.id]);
-    await logAction((req as any).user.id, 'تعديل كاتب', `تم تعديل الكاتب رقم: ${req.params.id}`);
+    await logAction((req as any).user.id, 'تعديل كاتب', `تم تعديل الكاتب رقم: ${req.params.id}`, getClientIp(req));
     res.json({ success: true });
   });
 
   app.delete("/api/writers/:id", requireAuth, async (req, res) => {
     await db.query("DELETE FROM writers WHERE id = $1", [req.params.id]);
-    await logAction((req as any).user.id, 'حذف كاتب', `تم حذف الكاتب رقم: ${req.params.id}`);
+    await logAction((req as any).user.id, 'حذف كاتب', `تم حذف الكاتب رقم: ${req.params.id}`, getClientIp(req));
     res.json({ success: true });
   });
 
@@ -953,7 +982,7 @@ async function startServer() {
       "INSERT INTO ads (title, image_url, link_url, adsense_code, position, is_active, start_date, end_date) VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING id",
       [title, image_url, link_url, adsense_code, position, is_active ? 1 : 0, start_date || null, end_date || null]
     );
-    await logAction((req as any).user.id, 'إضافة إعلان', `تم إضافة الإعلان: ${title}`);
+    await logAction((req as any).user.id, 'إضافة إعلان', `تم إضافة الإعلان: ${title}`, getClientIp(req));
     res.json({ id: rows[0].id });
   });
 
@@ -963,13 +992,13 @@ async function startServer() {
       "UPDATE ads SET title = $1, image_url = $2, link_url = $3, adsense_code = $4, position = $5, is_active = $6, start_date = $7, end_date = $8 WHERE id = $9",
       [title, image_url, link_url, adsense_code, position, is_active ? 1 : 0, start_date || null, end_date || null, req.params.id]
     );
-    await logAction((req as any).user.id, 'تعديل إعلان', `تم تعديل الإعلان رقم: ${req.params.id}`);
+    await logAction((req as any).user.id, 'تعديل إعلان', `تم تعديل الإعلان رقم: ${req.params.id}`, getClientIp(req));
     res.json({ success: true });
   });
 
   app.delete("/api/ads/:id", requireAuth, async (req, res) => {
     await db.query("DELETE FROM ads WHERE id = $1", [req.params.id]);
-    await logAction((req as any).user.id, 'حذف إعلان', `تم حذف الإعلان رقم: ${req.params.id}`);
+    await logAction((req as any).user.id, 'حذف إعلان', `تم حذف الإعلان رقم: ${req.params.id}`, getClientIp(req));
     res.json({ success: true });
   });
 
@@ -993,7 +1022,7 @@ async function startServer() {
     const { action, details } = req.body;
     const ipStr = getClientIp(req);
     const userAgent = req.headers['user-agent'] || 'Unknown';
-    await logAction((req as any).user.id, action, `${details} (IP: ${ipStr}, Browser: ${userAgent})`);
+    await logAction((req as any).user.id, action, `${details} (Browser: ${userAgent})`, ipStr);
     res.json({ success: true });
   });
 
@@ -1008,7 +1037,7 @@ async function startServer() {
 
     // Link Protection
     if (containsLink(name) || containsLink(content)) {
-      await logAction(null, 'محاولة تعليق مشبوهة', `تم حظر تعليق يحتوي على روابط من IP: ${clientIp}`);
+      await logAction(null, 'محاولة تعليق مشبوهة', `تم حظر تعليق يحتوي على روابط`, clientIp);
       return res.status(400).json({ error: "عذراً، لا يُسمح بإضافة روابط في التعليقات أو الأسماء." });
     }
 
@@ -1018,7 +1047,7 @@ async function startServer() {
 
   app.delete("/api/comments/:id", requireAuth, async (req, res) => {
     await db.query("DELETE FROM comments WHERE id = $1", [req.params.id]);
-    await logAction((req as any).user.id, 'حذف تعليق', `تم حذف التعليق رقم: ${req.params.id}`);
+    await logAction((req as any).user.id, 'حذف تعليق', `تم حذف التعليق رقم: ${req.params.id}`, getClientIp(req));
     res.json({ success: true });
   });
 
@@ -1084,7 +1113,7 @@ async function startServer() {
   app.delete("/api/admin/poll/comments", requireAuth, async (req, res) => {
     try {
       await db.query("DELETE FROM poll_comments");
-      await logAction((req as any).user.id, 'مسح استطلاع الرأي', 'تم مسح كافة تعليقات استطلاع الرأي لبدء استطلاع جديد');
+      await logAction((req as any).user.id, 'مسح استطلاع الرأي', 'تم مسح كافة تعليقات استطلاع الرأي لبدء استطلاع جديد', getClientIp(req));
       res.json({ success: true });
     } catch (e) {
       res.status(500).json({ error: "Error clearing poll comments" });
@@ -1105,7 +1134,7 @@ async function startServer() {
 
     // Link Protection
     if (containsLink(finalName) || containsLink(content)) {
-      await logAction(null, 'محاولة مشاركة مشبوهة في الاستطلاع', `تم حظر مشاركة تحتوي على روابط من IP: ${clientIp}`);
+      await logAction(null, 'محاولة مشاركة مشبوهة في الاستطلاع', `تم حظر مشاركة تحتوي على روابط`, clientIp);
       return res.status(400).json({ error: "عذراً، لا يُسمح بإضافة روابط في المشاركات." });
     }
 
@@ -1127,7 +1156,7 @@ async function startServer() {
     const { name, slug, background_url } = req.body;
     try {
       const res_db = await db.query("INSERT INTO categories (name, slug, background_url) VALUES ($1, $2, $3) RETURNING id", [name, slug, background_url]);
-      await logAction((req as any).user.id, 'إضافة قسم', `تم إضافة القسم: ${name}`);
+      await logAction((req as any).user.id, 'إضافة قسم', `تم إضافة القسم: ${name}`, getClientIp(req));
       res.json({ id: res_db.rows[0].id });
     } catch (e) {
       res.status(400).json({ error: "Category slug or name already exists" });
@@ -1137,7 +1166,7 @@ async function startServer() {
   app.put("/api/categories/:id", requireAuth, async (req, res) => {
     const { name, slug, background_url } = req.body;
     await db.query("UPDATE categories SET name = $1, slug = $2, background_url = $3 WHERE id = $4", [name, slug, background_url, req.params.id]);
-    await logAction((req as any).user.id, 'تعديل قسم', `تم تعديل القسم رقم: ${req.params.id}`);
+    await logAction((req as any).user.id, 'تعديل قسم', `تم تعديل القسم رقم: ${req.params.id}`, getClientIp(req));
     res.json({ success: true });
   });
 
@@ -1148,7 +1177,7 @@ async function startServer() {
       return res.status(400).json({ error: "Cannot delete category with associated articles" });
     }
     await db.query("DELETE FROM categories WHERE id = $1", [req.params.id]);
-    await logAction((req as any).user.id, 'حذف قسم', `تم حذف القسم رقم: ${req.params.id}`);
+    await logAction((req as any).user.id, 'حذف قسم', `تم حذف القسم رقم: ${req.params.id}`, getClientIp(req));
     res.json({ success: true });
   });
 
@@ -1174,7 +1203,7 @@ async function startServer() {
         `, [key, value]);
       }
       await client.query('COMMIT');
-      await logAction((req as any).user.id, 'تعديل الإعدادات', 'تم تحديث إعدادات الموقع');
+      await logAction((req as any).user.id, 'تعديل الإعدادات', 'تم تحديث إعدادات الموقع', getClientIp(req));
       res.json({ success: true });
     } catch (e) {
       await client.query('ROLLBACK');

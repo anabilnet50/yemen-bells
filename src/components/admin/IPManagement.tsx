@@ -52,7 +52,8 @@ const IPManagement = () => {
     };
 
     useEffect(() => {
-        fetch('https://api.ipify.org?format=json')
+        // Use server-side endpoint to get the IP as seen by the server
+        fetch('/api/auth/my-ip')
             .then(res => res.json())
             .then(data => setAdminIp(data.ip))
             .catch(err => console.error('Error fetching admin IP:', err));

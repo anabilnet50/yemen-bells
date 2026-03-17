@@ -156,6 +156,7 @@ export async function initDb() {
         user_id INTEGER REFERENCES system_users(id) ON DELETE SET NULL,
         action TEXT NOT NULL,
         details TEXT,
+        ip_address TEXT,
         created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
       );
     `);
@@ -167,6 +168,14 @@ export async function initDb() {
     await client.query("CREATE INDEX IF NOT EXISTS idx_articles_active ON articles(is_deleted, is_active)");
     await client.query("CREATE INDEX IF NOT EXISTS idx_articles_author_user ON articles(author_user_id)");
     await client.query("CREATE INDEX IF NOT EXISTS idx_audit_logs_user_date ON audit_logs(user_id, created_at DESC)");
+    await client.query("CREATE INDEX IF NOT EXISTS idx_audit_logs_ip ON audit_logs(ip_address)");
+
+    // Supplemental migration for ip_address
+    try {
+        await client.query("ALTER TABLE audit_logs ADD COLUMN IF NOT EXISTS ip_address TEXT");
+    } catch (e) {
+        console.log('Migration note:', e.message);
+    }
 
     await client.query(`
       CREATE TABLE IF NOT EXISTS blocked_ips (

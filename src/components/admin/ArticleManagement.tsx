@@ -23,6 +23,7 @@ interface ArticleManagementProps {
     fetchStats: () => void;
     fetchHistory: () => void;
     showNotification: (msg: string, type?: 'success' | 'error') => void;
+    isSubmitting: boolean;
 }
 
 const ArticleManagement: React.FC<ArticleManagementProps> = ({
@@ -44,7 +45,8 @@ const ArticleManagement: React.FC<ArticleManagementProps> = ({
     fetchArticles,
     fetchStats,
     fetchHistory,
-    showNotification
+    showNotification,
+    isSubmitting
 }) => {
     const [filterUrgent, setFilterUrgent] = React.useState(false);
     const [selectedIds, setSelectedIds] = React.useState<number[]>([]);
@@ -294,7 +296,13 @@ const ArticleManagement: React.FC<ArticleManagementProps> = ({
                         </div>
 
                         <div className="flex gap-4 pt-6">
-                            <button type="submit" className="bg-red-600 text-white px-6 py-3 md:px-12 md:py-4 rounded-xl md:rounded-2xl text-sm md:text-base font-black shadow-xl shadow-primary-crimson/20 hover:bg-primary-crimson/80 transition-all">حفظ ونشر الخبر</button>
+                            <button 
+                                type="submit" 
+                                disabled={isSubmitting}
+                                className={`bg-red-600 text-white px-6 py-3 md:px-12 md:py-4 rounded-xl md:rounded-2xl text-sm md:text-base font-black shadow-xl shadow-primary-crimson/20 hover:bg-primary-crimson/80 transition-all ${isSubmitting ? 'opacity-50 cursor-not-allowed' : ''}`}
+                            >
+                                {isSubmitting ? 'جاري الحفظ...' : 'حفظ ونشر الخبر'}
+                            </button>
                             <button type="button" onClick={() => setIsEditing(false)} className="bg-gray-100 text-gray-600 px-6 py-3 md:px-12 md:py-4 rounded-xl md:rounded-2xl text-sm md:text-base font-black hover:bg-gray-200 transition-all">إلغاء</button>
                         </div>
                     </form>

@@ -12,6 +12,7 @@ interface WriterManagementProps {
     handleImageUpload: (file: File, target: string) => void;
     authenticatedFetch: (url: string, options: any) => Promise<any>;
     fetchWriters: () => void;
+    isSubmitting: boolean;
 }
 
 const WriterManagement: React.FC<WriterManagementProps> = ({
@@ -24,7 +25,8 @@ const WriterManagement: React.FC<WriterManagementProps> = ({
     handleWriterDelete,
     handleImageUpload,
     authenticatedFetch,
-    fetchWriters
+    fetchWriters,
+    isSubmitting
 }) => {
     return (
         <div className="space-y-10">
@@ -72,7 +74,13 @@ const WriterManagement: React.FC<WriterManagementProps> = ({
                             <textarea value={currentWriter.bio} onChange={e => setCurrentWriter({ ...currentWriter, bio: e.target.value })} className="w-full p-4 bg-gray-50 border-2 border-gray-100 rounded-2xl outline-none font-bold focus:border-red-500" rows={4}></textarea>
                         </div>
                         <div className="flex gap-4 pt-4">
-                            <button type="submit" className="bg-red-600 text-white px-6 py-3 md:px-8 md:py-3 rounded-xl md:rounded-2xl text-sm md:text-base font-black shadow-xl shadow-red-600/20">حفظ الكاتب</button>
+                            <button 
+                                type="submit" 
+                                disabled={isSubmitting}
+                                className={`bg-red-600 text-white px-6 py-3 md:px-8 md:py-3 rounded-xl md:rounded-2xl text-sm md:text-base font-black shadow-xl shadow-red-600/20 ${isSubmitting ? 'opacity-50 cursor-not-allowed' : ''}`}
+                            >
+                                {isSubmitting ? 'جاري الحفظ...' : 'حفظ الكاتب'}
+                            </button>
                             <button type="button" onClick={() => setIsEditingWriter(false)} className="bg-gray-100 text-gray-600 px-6 py-3 md:px-8 md:py-3 rounded-xl md:rounded-2xl text-sm md:text-base font-black">إلغاء</button>
                         </div>
                     </form>

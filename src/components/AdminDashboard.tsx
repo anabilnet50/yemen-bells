@@ -63,6 +63,7 @@ export default function AdminDashboard() {
   const [currentWriter, setCurrentWriter] = useState<any>({ name: '', bio: '', image_url: '' });
   const [currentAd, setCurrentAd] = useState<any>({ title: '', image_url: '', link_url: '', adsense_code: '', position: 'sidebar', is_active: 1, start_date: '', end_date: '' });
   const [currentUserData, setCurrentUserData] = useState<any>({ username: '', password: '', full_name: '', role: 'editor', permissions: [] });
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   // History Filters
   const [historyFilterUser, setHistoryFilterUser] = useState('');
@@ -112,7 +113,7 @@ export default function AdminDashboard() {
   };
 
   const fetchTrashArticles = () => {
-    authenticatedFetch('/api/articles?includeDeleted=true')
+    authenticatedFetch('/api/articles?includeDeleted=true&includeInactive=true')
       .then(data => setTrashArticles(data.filter((a: any) => a.is_deleted === 1)))
       .catch(() => { });
   };
@@ -126,7 +127,7 @@ export default function AdminDashboard() {
   };
 
   const fetchArticles = () => {
-    authenticatedFetch('/api/articles').then(setArticles).catch(() => { });
+    authenticatedFetch('/api/articles?includeInactive=true').then(setArticles).catch(() => { });
   };
 
   const fetchCategories = () => {
@@ -215,6 +216,7 @@ export default function AdminDashboard() {
 
   const handleForgotPassword = (e: React.FormEvent) => {
     e.preventDefault();
+    setIsSubmitting(true);
     fetch('/api/auth/forgot-password', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -228,11 +230,13 @@ export default function AdminDashboard() {
         } else {
           showNotification(data.error || 'فشل في العملية', 'error');
         }
-      });
+      })
+      .finally(() => setIsSubmitting(false));
   };
 
   const handleVerifyCode = (e: React.FormEvent) => {
     e.preventDefault();
+    setIsSubmitting(true);
     fetch('/api/auth/verify-code', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -246,11 +250,13 @@ export default function AdminDashboard() {
         } else {
           showNotification(data.error || 'رمز التحقق غير صحيح', 'error');
         }
-      });
+      })
+      .finally(() => setIsSubmitting(false));
   };
 
   const handleResetPassword = (e: React.FormEvent) => {
     e.preventDefault();
+    setIsSubmitting(true);
     fetch('/api/auth/reset-password', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -265,12 +271,14 @@ export default function AdminDashboard() {
         } else {
           showNotification(data.error || 'الرمز غير صالح أو انتهى', 'error');
         }
-      });
+      })
+      .finally(() => setIsSubmitting(false));
   };
 
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
     setLoginError('');
+    setIsSubmitting(true);
     fetch('/api/auth/login', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -292,11 +300,13 @@ export default function AdminDashboard() {
         } else {
           setLoginError(data.error || 'اسم المستخدم أو كلمة المرور غير صحيحة. يرجى المحاولة مرة أخرى.');
         }
-      });
+      })
+      .finally(() => setIsSubmitting(false));
   };
 
   const handleChangePassword = (e: React.FormEvent) => {
     e.preventDefault();
+    setIsSubmitting(true);
     authenticatedFetch('/api/auth/change-password', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -315,7 +325,8 @@ export default function AdminDashboard() {
       })
       .catch(err => {
         showNotification(err.message || 'خطأ في الاتصال بالخادم', 'error');
-      });
+      })
+      .finally(() => setIsSubmitting(false));
   };
 
   const handleLogout = () => {
@@ -326,6 +337,7 @@ export default function AdminDashboard() {
 
   const handleSettingsSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    setIsSubmitting(true);
     authenticatedFetch('/api/settings', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -335,11 +347,13 @@ export default function AdminDashboard() {
         showNotification('تم تحديث الإعدادات بنجاح');
         fetchHistory();
       })
-      .catch(() => showNotification('فشل تحديث الإعدادات', 'error'));
+      .catch(() => showNotification('فشل تحديث الإعدادات', 'error'))
+      .finally(() => setIsSubmitting(false));
   };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    setIsSubmitting(true);
     const method = currentArticle.id ? 'PUT' : 'POST';
     const url = currentArticle.id ? `/api/articles/${currentArticle.id}` : '/api/articles';
 
@@ -366,11 +380,13 @@ export default function AdminDashboard() {
         fetchHistory();
         showNotification(currentArticle.id ? 'تم تعديل الخبر بنجاح' : 'تم إضافة الخبر بنجاح');
       })
-      .catch(() => showNotification('حدث خطأ أثناء حفظ الخبر', 'error'));
+      .catch(() => showNotification('حدث خطأ أثناء حفظ الخبر', 'error'))
+      .finally(() => setIsSubmitting(false));
   };
 
   const handleCategorySubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    setIsSubmitting(true);
     const method = currentCategory.id ? 'PUT' : 'POST';
     const url = currentCategory.id ? `/api/categories/${currentCategory.id}` : '/api/categories';
 
@@ -390,11 +406,13 @@ export default function AdminDashboard() {
           showNotification('تم حفظ القسم بنجاح');
         }
       })
-      .catch((err) => showNotification(err.message || 'خطأ في العملية', 'error'));
+      .catch((err) => showNotification(err.message || 'خطأ في العملية', 'error'))
+      .finally(() => setIsSubmitting(false));
   };
 
   const handleWriterSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    setIsSubmitting(true);
     const method = currentWriter.id ? 'PUT' : 'POST';
     const url = currentWriter.id ? `/api/writers/${currentWriter.id}` : '/api/writers';
 
@@ -410,11 +428,13 @@ export default function AdminDashboard() {
         fetchHistory();
         showNotification('تم حفظ بيانات الكاتب');
       })
-      .catch(() => showNotification('خطأ في حفظ الكاتب', 'error'));
+      .catch(() => showNotification('خطأ في حفظ الكاتب', 'error'))
+      .finally(() => setIsSubmitting(false));
   };
 
   const handleAdSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    setIsSubmitting(true);
     const method = currentAd.id ? 'PUT' : 'POST';
     const url = currentAd.id ? `/api/ads/${currentAd.id}` : '/api/ads';
 
@@ -430,7 +450,8 @@ export default function AdminDashboard() {
         fetchHistory();
         showNotification('تم حفظ الإعلان بنجاح');
       })
-      .catch(() => showNotification('خطأ في حفظ الإعلان', 'error'));
+      .catch(() => showNotification('خطأ في حفظ الإعلان', 'error'))
+      .finally(() => setIsSubmitting(false));
   };
 
   const handleArticleDelete = (id: number) => {
@@ -495,6 +516,7 @@ export default function AdminDashboard() {
 
   const handleUserSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    setIsSubmitting(true);
     const method = currentUserData.id ? 'PUT' : 'POST';
     const url = currentUserData.id ? `/api/admin/users/${currentUserData.id}` : '/api/admin/users';
 
@@ -513,7 +535,8 @@ export default function AdminDashboard() {
         fetchHistory();
         showNotification(currentUserData.id ? 'تم تعديل المستخدم بنجاح' : 'تم إضافة المستخدم بنجاح');
       })
-      .catch(err => showNotification(err.message || 'خطأ في حفظ المستخدم', 'error'));
+      .catch(err => showNotification(err.message || 'خطأ في حفظ المستخدم', 'error'))
+      .finally(() => setIsSubmitting(false));
   };
 
   const handleUserDelete = (id: number) => {
@@ -1081,6 +1104,7 @@ export default function AdminDashboard() {
                     categories={categories}
                     writers={writers}
                     setIsEditingTicker={setIsEditingTicker}
+                    isSubmitting={isSubmitting}
                   />
                 )}
 
@@ -1094,6 +1118,7 @@ export default function AdminDashboard() {
                     handleCategorySubmit={handleCategorySubmit}
                     handleCategoryDelete={handleCategoryDelete}
                     handleImageUpload={handleImageUpload}
+                    isSubmitting={isSubmitting}
                   />
                 )}
 
@@ -1111,6 +1136,7 @@ export default function AdminDashboard() {
                     handleSettingsSubmit={handleSettingsSubmit}
                     handleImageUpload={handleImageUpload}
                     fetchSettings={fetchSettings}
+                    isSubmitting={isSubmitting}
                   />
                 )}
 
@@ -1126,6 +1152,7 @@ export default function AdminDashboard() {
                     handleImageUpload={handleImageUpload}
                     authenticatedFetch={authenticatedFetch}
                     fetchWriters={fetchWriters}
+                    isSubmitting={isSubmitting}
                   />
                 )}
 
@@ -1141,6 +1168,7 @@ export default function AdminDashboard() {
                     handleImageUpload={handleImageUpload}
                     authenticatedFetch={authenticatedFetch}
                     fetchAds={fetchAds}
+                    isSubmitting={isSubmitting}
                   />
                 )}
 
@@ -1185,6 +1213,7 @@ export default function AdminDashboard() {
                     fetchHistory={fetchHistory}
                     authenticatedFetch={authenticatedFetch}
                     showNotification={showNotification}
+                    isSubmitting={isSubmitting}
                   />
                 )}
 

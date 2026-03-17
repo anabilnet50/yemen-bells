@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
-import { Calendar, User, Eye, Clock, ArrowLeft, ChevronRight, ChevronLeft, Search, MapPin, Play, DollarSign } from 'lucide-react';
+import { Calendar, User, Eye, Clock, ArrowLeft, ChevronRight, ChevronLeft, Search, MapPin, Play, DollarSign, Image as ImageIcon } from 'lucide-react';
 import { motion } from 'motion/react';
 
 export default function CategoryArticles() {
@@ -129,12 +129,22 @@ export default function CategoryArticles() {
                                                         </span>
                                                     </div>
 
-                                                    {(!article.image_url && ['general', 'short-urgent'].includes(article.category_slug)) ? (
-                                                        <img src="/images/urgent-fallback.png" alt="عاجل" className="w-full aspect-[16/10] object-cover group-hover:scale-110 transition-transform duration-1000" />
+                                                    {!article.image_url ? (
+                                                        ['general', 'short-urgent'].includes(article.category_slug) ? (
+                                                            <div className="w-full aspect-[16/10] bg-primary-crimson flex flex-col items-center justify-center p-4 overflow-hidden relative group-hover:scale-105 transition-transform duration-1000">
+                                                                {/* Solid Red Background for Urgent */}
+                                                            </div>
+                                                        ) : (
+                                                            <div className="w-full aspect-[16/10] bg-gradient-to-br from-gray-50 to-gray-100 flex flex-col items-center justify-center p-8 overflow-hidden relative group-hover:scale-105 transition-transform duration-1000 border-b border-gray-100">
+                                                                <div className="absolute inset-0 opacity-[0.03] bg-[url('https://www.transparenttextures.com/patterns/asfalt-dark.png')]"></div>
+                                                                <ImageIcon className="w-12 h-12 text-primary-navy/10 mb-4" />
+                                                                <span className="text-[10px] font-black text-primary-navy/5 uppercase tracking-[0.4em]">هـدس</span>
+                                                            </div>
+                                                        )
                                                     ) : (
                                                         <img
-                                                            src={article.category_slug === 'opinion' ? (article.writer_image || article.image_url) : (article.image_url || `https://picsum.photos/seed/${article.id}/600/400`)}
-                                                            className={`w-full h-full object-cover transition-all duration-1000 ${article.category_slug === 'opinion' ? 'group-hover:scale-105 group-hover:brightness-110' : 'group-hover:scale-110'}`}
+                                                            src={article.category_slug === 'opinion' ? (article.writer_image || article.image_url) : article.image_url}
+                                                            className={`w-full aspect-[16/10] object-cover transition-all duration-1000 ${article.category_slug === 'opinion' ? 'group-hover:scale-105 group-hover:brightness-110' : 'group-hover:scale-110'}`}
                                                             alt={article.title}
                                                             referrerPolicy="no-referrer"
                                                         />
@@ -153,8 +163,12 @@ export default function CategoryArticles() {
                                                         <span className="flex items-center gap-1.5"><Calendar className="w-3.5 h-3.5" /> {new Date(article.created_at).toLocaleDateString('ar-YE')}</span>
                                                         <span className="flex items-center gap-1.5"><Eye className="w-3.5 h-3.5" /> {article.views || 0} قراءة</span>
                                                     </div>
-                                                    <h3 className="text-xl font-black text-primary-navy group-hover:text-primary-crimson transition-colors line-clamp-2 leading-tight mb-6 flex-1">
-                                                        {article.title}
+                                                    <h3 className={`font-black text-primary-navy group-hover:text-primary-crimson transition-all duration-300 line-clamp-2 leading-tight mb-6 flex-1 ${
+                                                        (article.short_title || article.title || '').length > 80 ? 'text-sm sm:text-base' :
+                                                        (article.short_title || article.title || '').length > 40 ? 'text-base sm:text-lg' :
+                                                        'text-xl'
+                                                    }`}>
+                                                        {article.short_title || article.title}
                                                     </h3>
                                                     <div className="flex items-center justify-between pt-6 border-t border-gray-50 mt-auto overflow-hidden">
                                                         <span className="text-xs font-black text-primary-navy/60 group-hover:text-primary-navy transition-colors truncate">

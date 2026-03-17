@@ -8,8 +8,8 @@ interface CategoryManagementProps {
     currentCategory: any;
     setCurrentCategory: (category: any) => void;
     handleCategorySubmit: (e: React.FormEvent) => void;
-    handleCategoryDelete: (id: number) => void;
     handleImageUpload: (file: File, target: string) => void;
+    isSubmitting: boolean;
 }
 
 const CategoryManagement: React.FC<CategoryManagementProps> = ({
@@ -20,7 +20,8 @@ const CategoryManagement: React.FC<CategoryManagementProps> = ({
     setCurrentCategory,
     handleCategorySubmit,
     handleCategoryDelete,
-    handleImageUpload
+    handleImageUpload,
+    isSubmitting
 }) => {
     return (
         <div className="space-y-10">
@@ -61,7 +62,13 @@ const CategoryManagement: React.FC<CategoryManagementProps> = ({
                             </div>
                         </div>
                         <div className="flex gap-4 pt-6">
-                            <button type="submit" className="bg-red-600 text-white px-6 py-3 md:px-8 md:py-3 rounded-xl md:rounded-2xl text-sm md:text-base font-black shadow-xl shadow-primary-crimson/20 hover:bg-primary-crimson/80 transition-all">حفظ القسم</button>
+                            <button 
+                                type="submit" 
+                                disabled={isSubmitting}
+                                className={`bg-red-600 text-white px-6 py-3 md:px-8 md:py-3 rounded-xl md:rounded-2xl text-sm md:text-base font-black shadow-xl shadow-primary-crimson/20 hover:bg-primary-crimson/80 transition-all ${isSubmitting ? 'opacity-50 cursor-not-allowed' : ''}`}
+                            >
+                                {isSubmitting ? 'جاري الحفظ...' : 'حفظ القسم'}
+                            </button>
                             <button type="button" onClick={() => setIsEditingCategory(false)} className="bg-gray-100 text-gray-600 px-6 py-3 md:px-8 md:py-3 rounded-xl md:rounded-2xl text-sm md:text-base font-black hover:bg-gray-200 transition-all">إلغاء</button>
                         </div>
                     </form>

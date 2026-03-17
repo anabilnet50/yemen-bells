@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { BrowserRouter as Router, Routes, Route, Link, useNavigate, useLocation } from 'react-router-dom';
-import { Search, Globe, Facebook, Twitter, Youtube, Linkedin, ChevronLeft, ChevronRight, Calendar, User, Eye, TrendingUp, Play, Clock, Send, MessageCircle, ArrowLeft, MapPin, DollarSign } from 'lucide-react';
+import { Search, Globe, Facebook, Twitter, Youtube, Linkedin, ChevronLeft, ChevronRight, Calendar, User, Eye, TrendingUp, Play, Clock, Send, MessageCircle, ArrowLeft, MapPin, DollarSign, Image as ImageIcon } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import ArticleDetail from './components/ArticleDetail';
 import AdminDashboard from './components/AdminDashboard';
@@ -98,6 +98,32 @@ function Home() {
   const [pollComment, setPollComment] = useState('');
   const [showPollComments, setShowPollComments] = useState(false);
   const [pollComments, setPollComments] = useState<any[]>([]);
+  const [touchStartX, setTouchStartX] = useState<number | null>(null);
+  const [touchEndX, setTouchEndX] = useState<number | null>(null);
+
+  const minSwipeDistance = 50;
+
+  const onTouchStart = (e: React.TouchEvent) => {
+    setTouchEndX(null);
+    setTouchStartX(e.targetTouches[0].clientX);
+  };
+
+  const onTouchMove = (e: React.TouchEvent) => {
+    setTouchEndX(e.targetTouches[0].clientX);
+  };
+
+  const onTouchEnd = () => {
+    if (!touchStartX || !touchEndX) return;
+    const distance = touchStartX - touchEndX;
+    const isLeftSwipe = distance > minSwipeDistance;
+    const isRightSwipe = distance < -minSwipeDistance;
+    if (isLeftSwipe) {
+      handleNextHero();
+    }
+    if (isRightSwipe) {
+      handlePrevHero();
+    }
+  };
 
   const [showContactModal, setShowContactModal] = useState(false);
   const [showBackToTop, setShowBackToTop] = useState(false);
@@ -177,13 +203,13 @@ function Home() {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
-  const handleNextHero = (e: React.MouseEvent) => {
-    e.stopPropagation();
+  const handleNextHero = (e?: React.MouseEvent) => {
+    e?.stopPropagation();
     setHeroIndex(prev => prev + 1);
   };
 
-  const handlePrevHero = (e: React.MouseEvent) => {
-    e.stopPropagation();
+  const handlePrevHero = (e?: React.MouseEvent) => {
+    e?.stopPropagation();
     setHeroIndex(prev => prev - 1);
   };
 
@@ -588,7 +614,17 @@ function Home() {
           {/* Top Section */}
           <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 p-0 md:p-6">
             {/* Main News Hero - Premium Large Format */}
-            <div className="lg:col-span-3 flex flex-col group/hero order-1 lg:order-1">
+            <div className="lg:col-span-3 flex flex-col group/hero order-1 lg:order-1"
+                 onTouchStart={onTouchStart}
+                 onTouchMove={onTouchMove}
+                 onTouchEnd={onTouchEnd}>
+              
+              
+              
+              
+              
+              
+              
               {mainArticle && (
                 <div
                   onClick={mainArticle.category_slug === 'short-urgent' ? undefined : () => navigate(`/article/${mainArticle.id}`)}
@@ -602,7 +638,6 @@ function Home() {
                   >
                     <div className="bg-black/40 backdrop-blur-2xl px-4 md:px-5 py-1.5 md:py-2 rounded-2xl border border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.4)] flex items-center gap-3 overflow-hidden">
                       <div className="flex items-center gap-3 relative">
-                        {/* The Musnad "𐩠𐩵𐩪" anchor */}
                         <motion.span 
                           animate={{ 
                             textShadow: ["0 0 5px rgba(255,255,255,0.2)", "0 0 15px rgba(255,255,255,0.5)", "0 0 5px rgba(255,255,255,0.2)"]
@@ -612,11 +647,7 @@ function Home() {
                         >
                           𐩠𐩵𐩪
                         </motion.span>
-
-                        {/* Divider */}
                         <div className="w-px h-5 md:h-7 bg-white/20"></div>
-
-                        {/* The "هـدس" part */}
                         <div className="relative overflow-hidden pr-0.5">
                           <motion.span 
                             animate={{ 
@@ -666,12 +697,20 @@ function Home() {
                       className="w-full h-full relative"
                     >
                       <div className="w-full h-full relative">
-                        <img
-                          src={mainArticle.image_url || '/images/urgent-fallback.svg'}
-                          alt={mainArticle.title || 'عاجل'}
-                          className={`w-full h-full object-cover transition-transform duration-1000 scale-100 ${mainArticle.category_slug === 'short-urgent' ? '' : 'group-hover:scale-105'}`}
-                          referrerPolicy="no-referrer"
-                        />
+                        {mainArticle.image_url ? (
+                          <img
+                            src={mainArticle.image_url}
+                            alt={mainArticle.title || 'عاجل'}
+                            className={`w-full h-full object-cover transition-transform duration-1000 scale-100 ${mainArticle.category_slug === 'short-urgent' ? '' : 'group-hover:scale-105'}`}
+                            referrerPolicy="no-referrer"
+                          />
+                        ) : (
+                          <div className={`w-full h-full flex flex-col items-center justify-center p-8 overflow-hidden relative ${mainArticle.category_slug === 'short-urgent' ? 'bg-primary-crimson' : 'bg-primary-navy'}`}>
+                             <div className="relative z-10 flex flex-col items-center gap-6">
+                               {/* Content and animations could go here */}
+                             </div>
+                          </div>
+                        )}
                       </div>
                       {mainArticle.video_url && !videoLoaded && (
                         <div className="absolute inset-0 flex items-center justify-center bg-black/50 backdrop-blur-sm z-30">
@@ -685,16 +724,11 @@ function Home() {
 
                   {/* Professional TV-Style News Ticker (Al Hadath/Al Jazeera Style) */}
                   <div className="absolute bottom-0 left-0 right-0 bg-white border-t-2 border-primary-crimson z-20 flex items-stretch h-10 md:h-12 overflow-hidden shadow-[0_-5px_20px_rgba(0,0,0,0.2)]">
-                    {/* Urgent Indicator - Right Side - Aggressively Shrinked for Mobile Space */}
                     <div className="bg-primary-crimson text-white px-1.5 md:px-4 flex items-center justify-center font-black text-[9px] md:text-xs uppercase tracking-tighter md:tracking-widest relative group/urgent shrink-0 z-30 shadow-[5px_0_15px_rgba(225,29,72,0.3)]">
-                      <div className="absolute inset-0 bg-white/10 animate-pulse"></div>
-                      عاجل
+                      <div className="absolute inset-0 bg-white/10 animate-pulse"></div>عاجل
                     </div>
-
-                    {/* Scrolling Content - Center */}
                     <div className="flex-1 overflow-hidden flex items-center bg-white border-x border-gray-100 relative">
                       <div className="whitespace-nowrap text-primary-navy font-black text-sm md:text-base w-full" style={{ gap: 0 }}>
-                        {/* Build the base content block first to avoid massive inline repetition */}
                         {(() => {
                           const TickerItemContent = (
                             <>
@@ -715,29 +749,22 @@ function Home() {
                               ))}
                             </>
                           );
-
                           const FallbackContent = (
                             <span className="text-gray-400 font-bold text-[10px] md:text-xs tracking-widest shrink-0 flex items-center gap-4">
-                              <span className="w-1 h-1 bg-gray-300 rounded-full"></span>
-                              هـدس .. تغطية حية ومستمرة لكل ما يدور في الساحة اليمنية والمنطقة
+                              <span className="w-1 h-1 bg-gray-300 rounded-full"></span>هـدس .. تغطية حية ومستمرة لكل ما يدور في الساحة اليمنية والمنطقة
                             </span>
                           );
-
                           const hasCustomText = settings?.custom_ticker_text && settings.custom_ticker_text.trim() !== '';
                           const blocksToRender = (urgentArticles.length > 0 || hasCustomText) ? TickerItemContent : FallbackContent;
-
                           const itemsCount = Math.max(1, urgentArticles.length) + (hasCustomText ? 1 : 0);
-                          const calculatedDuration = itemsCount * 8 * 15; // 15 seconds per distinct news item reading time
-
+                          const calculatedDuration = itemsCount * 8 * 15;
                           return (
                             <div className="flex animate-marquee hover:pause w-max" style={{ animationDuration: `${calculatedDuration}s` }}>
-                              {/* Half 1 */}
                               <div className="flex items-center gap-12 px-6">
                                 {[...Array(8)].map((_, i) => (
                                   <React.Fragment key={`h1-${i}`}>{blocksToRender}</React.Fragment>
                                 ))}
                               </div>
-                              {/* Half 2 */}
                               <div className="flex items-center gap-12 px-6" aria-hidden="true">
                                 {[...Array(8)].map((_, i) => (
                                   <React.Fragment key={`h2-${i}`}>{blocksToRender}</React.Fragment>
@@ -748,56 +775,51 @@ function Home() {
                         })()}
                       </div>
                     </div>
-
-                    {/* Time Indicator - Left Side - Aggressively Shrinked for Mobile Space */}
                     <div className="bg-primary-crimson text-white px-1 md:px-2 flex items-center justify-center shrink-0 relative overflow-hidden group/clock z-20 shadow-[-10px_0_20px_white]">
                       <div className="absolute inset-0 bg-white/10 animate-pulse"></div>
                       <DigitalClock />
                     </div>
                   </div>
 
-                   {/* High-End Overlay - Moved Up slightly to accommodate the ticker */}
-                   <div className="absolute inset-0 bg-gradient-to-t from-primary-navy/90 via-transparent to-transparent flex flex-col justify-end p-8 md:p-10 pb-16 md:pb-20">
-                     {mainArticle.id !== 'placeholder-short-urgent' && (
-                       <>
-                         <div className="flex items-center gap-3 mb-3">
-                           <span className="bg-primary-crimson text-white border border-primary-crimson px-3 py-1 text-[10px] md:text-sm font-black uppercase tracking-[0.2em] rounded-full shadow-[0_0_15px_rgba(225,29,72,0.4)] animate-pulse">
-                             عاجل
-                           </span>
-                         </div>
- 
-                         <h2 className={`text-white text-xl md:text-3xl font-black leading-[1.2] mb-4 group-hover:text-accent-gold transition-colors duration-500 drop-shadow-2xl line-clamp-3`}>
-                           {mainArticle.short_title || mainArticle.title}
-                         </h2>
-                       </>
-                     )}
+                  {/* High-End Overlay */}
+                  <div className={`absolute inset-0 ${mainArticle.image_url ? 'bg-gradient-to-t from-primary-navy/90 via-transparent to-transparent' : ''} flex flex-col justify-end p-8 md:p-10 pb-16 md:pb-20`}>
+                    {/* Content Stack - Conditional Alignment for Short Urgent */}
+                    <div className={`flex flex-col gap-3 w-full max-w-4xl mx-auto items-start text-right pr-16 ${mainArticle.category_slug === 'short-urgent' ? 'md:pr-20' : 'md:items-end md:pr-0'}`}>
+                      {/* Urgent Badge - Properly aligned */}
+                      <motion.div
+                        initial={{ opacity: 0, scale: 0.8 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        className="mb-2"
+                      >
+                         <span className={`bg-primary-crimson text-white border border-primary-crimson ${mainArticle.category_slug === 'short-urgent' ? 'px-3.5 py-1.5 text-xs md:text-base' : 'px-5 py-2 text-sm md:text-xl'} font-black uppercase tracking-[0.2em] rounded-full shadow-[0_0_20px_rgba(225,29,72,0.5)] animate-pulse`}>
+                           عاجل
+                         </span>
+                      </motion.div>
 
-                    <div className="flex items-center justify-between opacity-0 group-hover:opacity-100 transition-opacity duration-500">
-                      {/* Metadata removed as per user request */}
+                      {mainArticle.id !== 'placeholder-short-urgent' && (
+                        <h2 className={`text-white font-black leading-[1.1] mb-2 group-hover:text-accent-gold transition-all duration-500 drop-shadow-2xl line-clamp-4 ${
+                          (mainArticle.short_title || mainArticle.title || '').length > 180 ? 'text-[9px] md:text-xs' :
+                          (mainArticle.short_title || mainArticle.title || '').length > 150 ? 'text-[10px] md:text-sm' :
+                          (mainArticle.short_title || mainArticle.title || '').length > 120 ? 'text-xs md:text-base' :
+                          (mainArticle.short_title || mainArticle.title || '').length > 90 ? 'text-sm md:text-lg' :
+                          (mainArticle.short_title || mainArticle.title || '').length > 60 ? 'text-base md:text-xl' :
+                          (mainArticle.short_title || mainArticle.title || '').length > 40 ? 'text-xl md:text-2xl' :
+                          'text-2xl md:text-3xl'
+                        }`}>
+                          {mainArticle.short_title || mainArticle.title}
+                        </h2>
+                      )}
                     </div>
                   </div>
 
-                  {/* Hero Navigation Buttons - Sleek Style - Always visible on mobile for UX */}
-                  <div className="absolute top-1/2 -translate-y-1/2 left-4 right-4 flex justify-between z-[60] opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity duration-500">
-                    <button 
-                      onClick={handleNextHero}
-                      className="w-10 h-10 md:w-12 md:h-12 bg-black/40 backdrop-blur-xl text-white rounded-2xl border border-white/20 flex items-center justify-center hover:bg-primary-crimson hover:scale-110 active:scale-95 transition-all shadow-2xl"
-                      title="التالي"
-                    >
-                      <ChevronRight className="w-6 h-6 md:w-7 md:h-7" />
-                    </button>
-                    <button 
-                      onClick={handlePrevHero}
-                      className="w-10 h-10 md:w-12 md:h-12 bg-black/40 backdrop-blur-xl text-white rounded-2xl border border-white/20 flex items-center justify-center hover:bg-primary-crimson hover:scale-110 active:scale-95 transition-all shadow-2xl"
-                      title="السابق"
-                    >
-                      <ChevronLeft className="w-6 h-6 md:w-7 md:h-7" />
-                    </button>
+                  {/* Hero Navigation Buttons - Shifted SLIGHTLY UPWARDS */}
+                  <div className="absolute top-[40%] -translate-y-1/2 left-4 right-4 flex justify-between z-[60] opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity duration-500">
+                    <button onClick={handleNextHero} className="w-10 h-10 md:w-12 md:h-12 bg-black/40 backdrop-blur-xl text-white rounded-2xl border border-white/20 flex items-center justify-center hover:bg-primary-crimson hover:scale-110 active:scale-95 transition-all shadow-2xl"><ChevronRight className="w-6 h-6 md:w-7 md:h-7" /></button>
+                    <button onClick={handlePrevHero} className="w-10 h-10 md:w-12 md:h-12 bg-black/40 backdrop-blur-xl text-white rounded-2xl border border-white/20 flex items-center justify-center hover:bg-primary-crimson hover:scale-110 active:scale-95 transition-all shadow-2xl"><ChevronLeft className="w-6 h-6 md:w-7 md:h-7" /></button>
                   </div>
                 </div>
               )}
             </div>
-
             {/* Ad Space - Visible only on Desktop */}
             <div className="hidden lg:flex lg:col-span-1 glass-card bg-primary-navy text-white flex flex-col items-center justify-center p-0 text-center relative overflow-hidden h-auto group shadow-2xl border border-white/5 rounded-[2rem] order-2 lg:order-2">
               {ads.filter(ad => isAdActive(ad) && ad.position?.split(',').includes('top')).length > 0 ? (
@@ -989,40 +1011,46 @@ function Home() {
                         <div className="absolute left-0 top-0 bottom-0 w-0 group-hover/item:w-1.5 bg-primary-crimson shadow-[0_0_15px_rgba(225,29,72,0.4)] transition-all duration-500 ease-out"></div>
 
                         {/* Image Content - Cinematic Frame */}
-                        {(article.image_url || ['general', 'short-urgent'].includes(article.category_slug)) && (
-                          <div className={`w-full md:w-56 lg:w-48 xl:w-64 shrink-0 overflow-hidden rounded-3xl shadow-xl relative group-hover/item:shadow-[0_20px_50px_rgba(0,0,0,0.15)] transition-all duration-700 flex items-center justify-center bg-gray-50 h-48 md:h-auto`}>
-                            {/* Category Badge on Image - Pulsing for urgent */}
-                            <div className="absolute top-3 right-3 z-30">
-                              <span className={`bg-primary-crimson/90 backdrop-blur-md text-white px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest shadow-[0_0_15px_rgba(225,29,72,0.5)] border border-white/20 ${['general', 'short-urgent'].includes(article.category_slug) ? 'animate-pulse' : ''}`}>
-                                {article.category_name}
-                              </span>
-                            </div>
-                            
-                            <div className="w-full h-full relative flex items-center justify-center">
-                              {article.image_url ? (
-                                <img
-                                  src={article.image_url}
-                                  alt={article.title}
-                                  className="w-full h-full object-cover transition-transform duration-1000 scale-100 group-hover/item:scale-105"
-                                  referrerPolicy="no-referrer"
-                                />
-                              ) : (
+                        <div className={`w-full md:w-56 lg:w-48 xl:w-64 shrink-0 overflow-hidden rounded-3xl shadow-xl relative group-hover/item:shadow-[0_20px_50px_rgba(0,0,0,0.15)] transition-all duration-700 flex items-center justify-center bg-gray-50 h-48 md:h-auto`}>
+                          {/* Category Badge on Image - Pulsing for urgent */}
+                          <div className="absolute top-3 right-3 z-30">
+                            <span className={`bg-primary-crimson/90 backdrop-blur-md text-white px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest shadow-[0_0_15px_rgba(225,29,72,0.5)] border border-white/20 ${['general', 'short-urgent'].includes(article.category_slug) ? 'animate-pulse' : ''}`}>
+                              {article.category_name}
+                            </span>
+                          </div>
+                          
+                          <div className="w-full h-full relative flex items-center justify-center">
+                            {!article.image_url ? (
+                              ['general', 'short-urgent'].includes(article.category_slug) ? (
                                 <img src="/urgent_fallback.jpg" alt="عاجل" className="w-full h-full object-cover transition-transform duration-1000 scale-100 group-hover/item:scale-105" />
-                              )}
-                            </div>
-                            <div className="absolute inset-0 bg-primary-navy/20 group-hover/item:bg-transparent transition-colors duration-700"></div>
-                            {article.video_url && (
-                              <div className="absolute inset-0 flex items-center justify-center z-20">
-                                <motion.div
-                                  whileHover={{ scale: 1.1 }}
-                                  className="w-16 h-16 bg-white/10 backdrop-blur-xl rounded-full flex items-center justify-center text-white border border-white/30 shadow-2xl group-hover/item:bg-primary-crimson group-hover/item:border-primary-crimson transition-all duration-500"
-                                >
-                                  <Play className="w-8 h-8 fill-current" />
-                                </motion.div>
-                              </div>
+                              ) : (
+                                <div className="w-full h-full bg-gradient-to-br from-gray-50 to-gray-100 flex flex-col items-center justify-center p-6 transition-transform duration-1000 scale-100 group-hover/item:scale-105 border-b border-gray-100">
+                                  <div className="absolute inset-0 opacity-[0.03] bg-[url('https://www.transparenttextures.com/patterns/asfalt-dark.png')]"></div>
+                                  <ImageIcon className="w-10 h-10 text-primary-navy/10 mb-2" />
+                                  <span className="text-[8px] font-black text-primary-navy/5 uppercase tracking-[0.4em]">هـدس</span>
+                                </div>
+                              )
+                            ) : (
+                              <img
+                                src={article.image_url}
+                                alt={article.title}
+                                className="w-full h-full object-cover transition-transform duration-1000 scale-100 group-hover/item:scale-105"
+                                referrerPolicy="no-referrer"
+                              />
                             )}
                           </div>
-                        )}
+                          <div className="absolute inset-0 bg-primary-navy/20 group-hover/item:bg-transparent transition-colors duration-700"></div>
+                          {article.video_url && (
+                            <div className="absolute inset-0 flex items-center justify-center z-20">
+                              <motion.div
+                                whileHover={{ scale: 1.1 }}
+                                className="w-16 h-16 bg-white/10 backdrop-blur-xl rounded-full flex items-center justify-center text-white border border-white/30 shadow-2xl group-hover/item:bg-primary-crimson group-hover/item:border-primary-crimson transition-all duration-500"
+                              >
+                                <Play className="w-8 h-8 fill-current" />
+                              </motion.div>
+                            </div>
+                          )}
+                        </div>
 
                         {/* Text Content - Refined Spacing */}
                         <div className="flex-1 min-w-0 flex flex-col justify-center text-right">

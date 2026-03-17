@@ -116,6 +116,7 @@ const AuditLog: React.FC<AuditLogProps> = ({
                                 <th className="p-2 sm:p-4 md:p-6 text-[10px] sm:text-xs md:text-sm font-black uppercase text-center whitespace-nowrap print:py-4">المسؤول</th>
                                 <th className="p-2 sm:p-4 md:p-6 text-[10px] sm:text-xs md:text-sm font-black uppercase text-center whitespace-nowrap print:py-4">الإجراء</th>
                                 <th className="p-2 sm:p-4 md:p-6 text-[10px] sm:text-xs md:text-sm font-black uppercase text-center print:py-4">التفاصيل</th>
+                                <th className="p-2 sm:p-4 md:p-6 text-[10px] sm:text-xs md:text-sm font-black uppercase text-center whitespace-nowrap print:py-4">IP الجهاز</th>
                                 <th className="p-2 sm:p-4 md:p-6 text-[10px] sm:text-xs md:text-sm font-black uppercase text-center whitespace-nowrap print:py-4">التوقيت</th>
                             </tr>
                         </thead>
@@ -135,6 +136,9 @@ const AuditLog: React.FC<AuditLogProps> = ({
                                     </td>
                                     <td className="p-2 sm:p-4 md:p-6 text-[10px] sm:text-[13px] md:text-[15px] text-gray-700 font-bold print:py-4 print:text-gray-900 align-middle leading-tight sm:leading-relaxed text-right md:px-10">
                                         {log.details}
+                                    </td>
+                                    <td className="p-2 sm:p-4 md:p-6 text-[10px] sm:text-sm font-mono text-primary-crimson font-black print:py-4 align-middle">
+                                        {log.ip_address || '---'}
                                     </td>
                                     <td className="p-2 sm:p-4 md:p-6 text-[10px] sm:text-sm md:text-base text-gray-900 font-bold print:py-4 print:text-gray-900 align-middle" dir="rtl">
                                         <div className="flex flex-col items-center">

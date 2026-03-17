@@ -6,9 +6,9 @@ interface UserManagementProps {
     isEditingUser: boolean;
     setIsEditingUser: (editing: boolean) => void;
     currentUserData: any;
-    setCurrentUserData: (user: any) => void;
     handleUserSubmit: (e: React.FormEvent) => void;
     handleUserDelete: (id: number) => void;
+    isSubmitting: boolean;
 }
 
 const UserManagement: React.FC<UserManagementProps> = ({
@@ -18,7 +18,8 @@ const UserManagement: React.FC<UserManagementProps> = ({
     currentUserData,
     setCurrentUserData,
     handleUserSubmit,
-    handleUserDelete
+    handleUserDelete,
+    isSubmitting
 }) => {
     const availablePermissions = [
         { id: 'news', label: 'إدارة الأخبار' },
@@ -107,7 +108,13 @@ const UserManagement: React.FC<UserManagementProps> = ({
                         )}
 
                         <div className="flex gap-4 pt-8">
-                            <button type="submit" className="bg-primary-navy text-white px-6 py-3 md:px-8 md:py-3 rounded-xl md:rounded-2xl font-black shadow-xl shadow-primary-navy/20 hover:bg-black transition-all text-sm md:text-base">حفظ البيانات</button>
+                            <button 
+                                type="submit" 
+                                disabled={isSubmitting}
+                                className={`bg-primary-navy text-white px-6 py-3 md:px-8 md:py-3 rounded-xl md:rounded-2xl font-black shadow-xl shadow-primary-navy/20 hover:bg-black transition-all text-sm md:text-base ${isSubmitting ? 'opacity-50 cursor-not-allowed' : ''}`}
+                            >
+                                {isSubmitting ? 'جاري الحفظ...' : 'حفظ البيانات'}
+                            </button>
                             <button type="button" onClick={() => setIsEditingUser(false)} className="bg-gray-100 text-gray-600 px-6 py-3 md:px-8 md:py-3 rounded-xl md:rounded-2xl font-black hover:bg-gray-200 transition-all text-sm md:text-base">إلغاء</button>
                         </div>
                     </form>

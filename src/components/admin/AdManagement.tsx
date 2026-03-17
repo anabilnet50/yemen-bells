@@ -12,6 +12,7 @@ interface AdManagementProps {
     handleImageUpload: (file: File, target: string) => void;
     authenticatedFetch: (url: string, options: any) => Promise<any>;
     fetchAds: () => void;
+    isSubmitting: boolean;
 }
 
 const AdManagement: React.FC<AdManagementProps> = ({
@@ -24,7 +25,8 @@ const AdManagement: React.FC<AdManagementProps> = ({
     handleAdDelete,
     handleImageUpload,
     authenticatedFetch,
-    fetchAds
+    fetchAds,
+    isSubmitting
 }) => {
     const formatDateForInput = (dateString: string) => {
         if (!dateString) return '';
@@ -142,7 +144,13 @@ const AdManagement: React.FC<AdManagementProps> = ({
                             </div>
                         </div>
                         <div className="flex gap-4 pt-4">
-                            <button type="submit" className="bg-red-600 text-white px-6 py-3 md:px-12 md:py-4 rounded-xl md:rounded-2xl text-sm md:text-base font-black shadow-xl shadow-red-600/20 hover:bg-red-700 transition-all font-bold">حفظ الإعلان</button>
+                            <button 
+                                type="submit" 
+                                disabled={isSubmitting}
+                                className={`bg-red-600 text-white px-6 py-3 md:px-12 md:py-4 rounded-xl md:rounded-2xl text-sm md:text-base font-black shadow-xl shadow-red-600/20 hover:bg-red-700 transition-all font-bold ${isSubmitting ? 'opacity-50 cursor-not-allowed' : ''}`}
+                            >
+                                {isSubmitting ? 'جاري الحفظ...' : 'حفظ الإعلان'}
+                            </button>
                             <button type="button" onClick={() => setIsEditingAd(false)} className="bg-gray-100 text-gray-600 px-6 py-3 md:px-12 md:py-4 rounded-xl md:rounded-2xl text-sm md:text-base font-black hover:bg-gray-200 transition-all font-bold">إلغاء</button>
                         </div>
                     </form>

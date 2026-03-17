@@ -7,6 +7,7 @@ interface SettingsManagementProps {
     handleSettingsSubmit: (e: React.FormEvent) => void;
     handleImageUpload: (file: File, target: string) => void;
     fetchSettings: () => void;
+    isSubmitting: boolean;
 }
 
 const SettingsManagement: React.FC<SettingsManagementProps> = ({
@@ -14,7 +15,8 @@ const SettingsManagement: React.FC<SettingsManagementProps> = ({
     setSettings,
     handleSettingsSubmit,
     handleImageUpload,
-    fetchSettings
+    fetchSettings,
+    isSubmitting
 }) => {
     return (
         <div className="space-y-10 max-w-4xl">
@@ -412,8 +414,12 @@ const SettingsManagement: React.FC<SettingsManagementProps> = ({
                     <button type="button" onClick={fetchSettings} className="bg-gray-100 text-gray-600 px-6 py-3 md:px-12 md:py-5 rounded-xl md:rounded-[2rem] font-black text-sm md:text-lg hover:bg-gray-200 transition-all">
                         إلغاء
                     </button>
-                    <button type="submit" className="bg-primary-navy text-white px-6 py-3 md:px-16 md:py-5 rounded-xl md:rounded-[2rem] font-black text-sm md:text-xl shadow-2xl shadow-primary-navy/20 hover:scale-105 active:scale-95 transition-all">
-                        حفظ الإعدادات بالكامل
+                    <button 
+                        type="submit" 
+                        disabled={isSubmitting}
+                        className={`bg-primary-navy text-white px-6 py-3 md:px-16 md:py-5 rounded-xl md:rounded-[2rem] font-black text-sm md:text-xl shadow-2xl shadow-primary-navy/20 hover:scale-105 active:scale-95 transition-all ${isSubmitting ? 'opacity-50 cursor-not-allowed hover:scale-100 active:scale-100' : ''}`}
+                    >
+                        {isSubmitting ? 'جاري الحفظ...' : 'حفظ الإعدادات بالكامل'}
                     </button>
                 </div>
             </form>

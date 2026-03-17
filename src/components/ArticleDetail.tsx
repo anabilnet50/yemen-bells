@@ -17,7 +17,8 @@ import {
   Bookmark,
   ArrowLeft,
   DollarSign,
-  Shield
+  Shield,
+  Image as ImageIcon
 } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 
@@ -210,27 +211,33 @@ export default function ArticleDetail() {
           <div className="lg:col-span-8">
             <div className="bg-white rounded-[2rem] shadow-premium overflow-hidden border border-gray-100">
               {/* Article Image - Now Inside Card */}
-              {(article.image_url || (article.category_slug === 'opinion' && article.writer_image) || ['general', 'short-urgent'].includes(article.category_slug)) && (
-                <div className="p-4 md:p-8 pb-0 relative group">
-                  { (article.image_url || (article.category_slug === 'opinion' && article.writer_image)) ? (
-                    <img
-                      src={article.category_slug === 'opinion' ? (article.writer_image || article.image_url) : article.image_url}
-                      className={article.category_slug === 'opinion'
-                        ? "w-48 h-48 md:w-64 md:h-64 rounded-full mx-auto object-cover shadow-2xl border-4 border-white transform hover:scale-105 transition-transform duration-700"
-                        : "w-full h-auto rounded-3xl shadow-sm border border-gray-100"}
-                      alt={article.title}
-                      referrerPolicy="no-referrer"
-                    />
-                  ) : (
+              <div className="p-4 md:p-8 pb-0 relative group">
+                {!article.image_url && !(article.category_slug === 'opinion' && article.writer_image) ? (
+                  ['general', 'short-urgent'].includes(article.category_slug) ? (
                     <img src="/images/urgent-fallback.png" alt="عاجل" className="w-full aspect-video object-cover rounded-3xl" />
-                  )}
-                  <div className="absolute top-8 right-8 md:top-12 md:right-12 z-10">
-                    <span className={`bg-[#e11d48] text-white px-4 py-1.5 rounded-full text-xs font-black uppercase tracking-widest shadow-[0_0_15px_rgba(225,29,72,0.5)] ${['general', 'short-urgent'].includes(article.category_slug) ? 'animate-pulse' : ''}`}>
-                      {article.category_name}
-                    </span>
-                  </div>
+                  ) : (
+                    <div className="w-full aspect-video bg-gradient-to-br from-gray-50 to-gray-100 flex flex-col items-center justify-center p-12 transition-transform duration-1000 scale-100 group-hover:scale-[1.03] border border-gray-100 rounded-3xl shadow-sm">
+                      <div className="absolute inset-0 opacity-[0.03] bg-[url('https://www.transparenttextures.com/patterns/asfalt-dark.png')]"></div>
+                      <ImageIcon className="w-20 h-20 text-primary-navy/10 mb-6" />
+                      <span className="text-xs font-black text-primary-navy/5 uppercase tracking-[0.8em]">هـدس</span>
+                    </div>
+                  )
+                ) : (
+                  <img
+                    src={article.category_slug === 'opinion' ? (article.writer_image || article.image_url) : article.image_url}
+                    className={article.category_slug === 'opinion'
+                      ? "w-48 h-48 md:w-64 md:h-64 rounded-full mx-auto object-cover shadow-2xl border-4 border-white transform hover:scale-105 transition-transform duration-700"
+                      : "w-full h-auto rounded-3xl shadow-sm border border-gray-100"}
+                    alt={article.title}
+                    referrerPolicy="no-referrer"
+                  />
+                )}
+                <div className="absolute top-8 right-8 md:top-12 md:right-12 z-10">
+                  <span className={`bg-[#e11d48] text-white px-4 py-1.5 rounded-full text-xs font-black uppercase tracking-widest shadow-[0_0_15px_rgba(225,29,72,0.5)] ${['general', 'short-urgent'].includes(article.category_slug) ? 'animate-pulse' : ''}`}>
+                    {article.category_name}
+                  </span>
                 </div>
-              )}
+              </div>
               {/* Header Metadata */}
               <div className="p-8 md:p-12 border-b border-gray-50">
                 <div className="flex flex-wrap items-center gap-3 mb-6">
@@ -464,7 +471,7 @@ export default function ArticleDetail() {
                   <button
                     type="submit"
                     disabled={isSubmitting}
-                    className="bg-[#005c97] text-white px-10 py-2.5 rounded-lg font-black text-sm shadow-lg hover:bg-primary-crimson transition-all"
+                    className={`bg-[#005c97] text-white px-10 py-2.5 rounded-lg font-black text-sm shadow-lg hover:bg-primary-crimson transition-all ${isSubmitting ? 'opacity-50 cursor-not-allowed' : ''}`}
                   >
                     {isSubmitting ? "جاري الإرسال..." : "إرسال التعليق"}
                   </button>
