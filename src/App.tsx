@@ -795,10 +795,9 @@ function Home() {
                     </div>
                   </div>
 
-                  {/* High-End Overlay */}
-                  <div className={`absolute inset-0 ${mainArticle.image_url ? 'bg-gradient-to-t from-primary-navy/90 via-transparent to-transparent' : ''} flex flex-col justify-end p-8 md:p-10 pb-16 md:pb-20`}>
+                  <div className={`absolute inset-0 ${mainArticle.image_url ? 'bg-gradient-to-t from-primary-navy/90 via-transparent to-transparent' : ''} flex flex-col ${mainArticle.category_slug === 'short-urgent' ? 'justify-center mt-12 sm:mt-8 md:mt-0 md:justify-end' : 'justify-end'} p-8 md:p-10 pb-16 md:pb-20`}>
                     {/* Content Stack - Conditional Alignment for Short Urgent */}
-                    <div className={`flex flex-col gap-3 w-full max-w-4xl mx-auto items-start text-right pr-16 ${mainArticle.category_slug === 'short-urgent' ? 'md:pr-20' : 'md:items-end md:pr-0'}`}>
+                    <div className={`flex flex-col gap-3 w-full max-w-4xl mx-auto items-start text-right pr-6 sm:pr-16 ${mainArticle.category_slug === 'short-urgent' ? 'md:pr-20' : 'md:items-end md:pr-0'}`}>
                       {/* Urgent Badge - Properly aligned */}
                       {mainArticle.id !== 'placeholder-short-urgent' && (
                        <motion.div
