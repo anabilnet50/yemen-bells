@@ -7,7 +7,7 @@
     "dev": "tsx server.ts",
     "start": "node dist/server.js",
     "build": "vite build && npm run build-server",
-    "build-server": "esbuild server.ts --bundle --platform=node --target=node18 --outfile=dist/server.js",
+    "build-server": "esbuild server.ts --bundle --platform=node --target=node18 --packages=external --outfile=dist/server.js",
     "clean": "rm -rf dist",
     "test-email": "node test_email.js",
     "db:delete_articles": "tsx scripts/delete_all_articles.ts"
