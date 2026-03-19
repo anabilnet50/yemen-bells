@@ -795,44 +795,78 @@ function Home() {
                     </div>
                   </div>
 
-                  <div className={`absolute inset-0 ${mainArticle.image_url ? 'bg-gradient-to-t from-primary-navy/90 via-transparent to-transparent' : ''} flex flex-col ${mainArticle.category_slug === 'short-urgent' ? 'justify-center mt-12 sm:mt-8 md:mt-0 md:justify-end' : 'justify-end'} p-8 md:p-10 pb-16 md:pb-20`}>
-                    {/* Content Stack - Conditional Alignment for Short Urgent */}
-                    <div className={`flex flex-col gap-3 w-full max-w-4xl mx-auto items-start text-right pr-6 sm:pr-16 ${mainArticle.category_slug === 'short-urgent' ? 'md:pr-20' : 'md:items-end md:pr-0'}`}>
-                      {/* Urgent Badge - Properly aligned */}
-                      {mainArticle.id !== 'placeholder-short-urgent' && (
-                       <motion.div
-                         initial={{ opacity: 0, scale: 0.8 }}
-                         animate={{ opacity: 1, scale: 1 }}
-                         className="mb-2"
-                       >
-                          <span className={`bg-primary-crimson text-white border border-primary-crimson ${mainArticle.category_slug === 'short-urgent' ? 'px-3.5 py-1.5 text-xs md:text-base' : 'px-5 py-2 text-sm md:text-xl'} font-black uppercase tracking-[0.2em] rounded-full shadow-[0_0_20px_rgba(225,29,72,0.5)] animate-pulse`}>
-                            عاجل
-                          </span>
-                       </motion.div>
-                      )}
+                  <div className={`absolute inset-0 flex flex-col justify-end ${mainArticle.image_url ? 'bg-gradient-to-t from-primary-navy/90 via-transparent to-transparent' : ''} p-8 md:p-10 pb-16 md:pb-20`}>
+                    {/* Content Stack */}
+                    <div className={`flex flex-col w-full max-w-4xl mx-auto ${mainArticle.category_slug === 'short-urgent' ? 'absolute inset-0 flex flex-col justify-end items-center px-4 sm:px-10 pb-12 md:pb-16 gap-0' : 'items-start text-right pr-6 sm:pr-16 md:items-end md:pr-0 gap-3'}`}>
+                      
+                      {/* Container for Short Urgent to lock badge and box together */}
+                      {mainArticle.category_slug === 'short-urgent' ? (
+                        <div className="relative flex flex-col items-start w-full max-w-2xl group/short mb-2">
+                          {/* Urgent Badge - Tab style */}
+                          {mainArticle.id !== 'placeholder-short-urgent' && (
+                           <motion.div
+                             initial={{ opacity: 0, y: 10 }}
+                             animate={{ opacity: 1, y: 0 }}
+                             className="z-30 -mb-3.5 mr-6"
+                           >
+                              <span className="bg-primary-crimson text-white px-4 py-1.5 text-xs md:text-sm font-black uppercase tracking-widest rounded-t-xl shadow-lg border-x border-t border-white/20 animate-pulse inline-block">
+                                عاجل
+                              </span>
+                           </motion.div>
+                          )}
 
-                      {mainArticle.id !== 'placeholder-short-urgent' && (
-                        <h2 className={`text-white font-black leading-[1.4] transition-all duration-500 line-clamp-4 ${
-                          mainArticle.category_slug === 'short-urgent' ? 'bg-black/40 backdrop-blur-md p-4 rounded-2xl border border-white/10 mb-2 drop-shadow-sm' : 'mb-2 drop-shadow-2xl'
-                        } ${
-                          (mainArticle.short_title || mainArticle.title || '').length > 180 ? 'text-[9px] md:text-xs' :
-                          (mainArticle.short_title || mainArticle.title || '').length > 150 ? 'text-[10px] md:text-sm' :
-                          (mainArticle.short_title || mainArticle.title || '').length > 120 ? 'text-xs md:text-base' :
-                          (mainArticle.short_title || mainArticle.title || '').length > 90 ? 'text-sm md:text-lg' :
-                          (mainArticle.short_title || mainArticle.title || '').length > 60 ? 'text-base md:text-xl' :
-                          (mainArticle.short_title || mainArticle.title || '').length > 40 ? 'text-xl md:text-2xl' :
-                          'text-2xl md:text-3xl'
-                        }`}>
-                          {mainArticle.short_title || mainArticle.title}
-                        </h2>
+                          {/* Main Title - Glassy Box */}
+                          {mainArticle.id !== 'placeholder-short-urgent' && (
+                            <h2 className={`text-white font-black leading-tight transition-all duration-500 line-clamp-3 bg-black/70 backdrop-blur-2xl px-5 pt-8 pb-4 rounded-2xl rounded-tr-none border border-white/10 w-full shadow-[0_25px_50px_-12px_rgba(0,0,0,0.5)] text-right ${
+                              (mainArticle.short_title || mainArticle.title || '').length > 180 ? 'text-[10px] md:text-sm' :
+                              (mainArticle.short_title || mainArticle.title || '').length > 150 ? 'text-xs md:text-base' :
+                              (mainArticle.short_title || mainArticle.title || '').length > 120 ? 'text-sm md:text-lg' :
+                              (mainArticle.short_title || mainArticle.title || '').length > 90 ? 'text-base md:text-xl' :
+                              (mainArticle.short_title || mainArticle.title || '').length > 60 ? 'text-lg md:text-2xl' :
+                              (mainArticle.short_title || mainArticle.title || '').length > 40 ? 'text-xl md:text-3xl' :
+                              'text-2xl md:text-5xl'
+                            }`}>
+                              {mainArticle.short_title || mainArticle.title}
+                            </h2>
+                          )}
+                        </div>
+                      ) : (
+                        <>
+                          {/* Standard Layout for other categories */}
+                          {mainArticle.id !== 'placeholder-short-urgent' && (
+                           <motion.div
+                             initial={{ opacity: 0, scale: 0.8 }}
+                             animate={{ opacity: 1, scale: 1 }}
+                             className="mb-2"
+                           >
+                              <span className="bg-primary-crimson text-white border border-primary-crimson px-5 py-2 text-sm md:text-xl font-black uppercase tracking-[0.1em] rounded-full shadow-[0_0_20px_rgba(225,29,72,0.5)] animate-pulse">
+                                عاجل
+                              </span>
+                           </motion.div>
+                          )}
+
+                          {mainArticle.id !== 'placeholder-short-urgent' && (
+                            <h2 className={`text-white font-black leading-[1.6] transition-all duration-500 line-clamp-4 mb-2 drop-shadow-2xl ${
+                              (mainArticle.short_title || mainArticle.title || '').length > 180 ? 'text-[9px] md:text-xs' :
+                              (mainArticle.short_title || mainArticle.title || '').length > 150 ? 'text-[10px] md:text-sm' :
+                              (mainArticle.short_title || mainArticle.title || '').length > 120 ? 'text-xs md:text-base' :
+                              (mainArticle.short_title || mainArticle.title || '').length > 90 ? 'text-sm md:text-lg' :
+                              (mainArticle.short_title || mainArticle.title || '').length > 60 ? 'text-base md:text-xl' :
+                              (mainArticle.short_title || mainArticle.title || '').length > 40 ? 'text-xl md:text-2xl' :
+                              'text-2xl md:text-4xl'
+                            }`}>
+                              {mainArticle.short_title || mainArticle.title}
+                            </h2>
+                          )}
+                        </>
                       )}
                     </div>
                   </div>
 
                   {/* Hero Navigation Buttons - Shifted SLIGHTLY UPWARDS */}
-                  <div className="absolute top-[40%] -translate-y-1/2 left-4 right-4 flex justify-between z-[60] opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity duration-500">
-                    <button onClick={handleNextHero} className="w-10 h-10 md:w-12 md:h-12 bg-black/40 backdrop-blur-xl text-white rounded-2xl border border-white/20 flex items-center justify-center hover:bg-primary-crimson hover:scale-110 active:scale-95 transition-all shadow-2xl"><ChevronRight className="w-6 h-6 md:w-7 md:h-7" /></button>
-                    <button onClick={handlePrevHero} className="w-10 h-10 md:w-12 md:h-12 bg-black/40 backdrop-blur-xl text-white rounded-2xl border border-white/20 flex items-center justify-center hover:bg-primary-crimson hover:scale-110 active:scale-95 transition-all shadow-2xl"><ChevronLeft className="w-6 h-6 md:w-7 md:h-7" /></button>
+                  <div className="absolute top-[40%] -translate-y-1/2 left-2 right-2 flex justify-between z-[60] opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity duration-500">
+                    <button onClick={handleNextHero} className="w-9 h-9 md:w-11 md:h-11 bg-black/40 backdrop-blur-xl text-white rounded-2xl border border-white/20 flex items-center justify-center hover:bg-primary-crimson hover:scale-110 active:scale-95 transition-all shadow-2xl"><ChevronRight className="w-5 h-5 md:w-6 md:h-6" /></button>
+                    <button onClick={handlePrevHero} className="w-9 h-9 md:w-11 md:h-11 bg-black/40 backdrop-blur-xl text-white rounded-2xl border border-white/20 flex items-center justify-center hover:bg-primary-crimson hover:scale-110 active:scale-95 transition-all shadow-2xl"><ChevronLeft className="w-5 h-5 md:w-6 md:h-6" /></button>
                   </div>
                 </div>
               )}
