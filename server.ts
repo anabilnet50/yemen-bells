@@ -78,6 +78,25 @@ const verifyToken = (token: string) => {
   }
 };
 
+// --- Branding Helper ---
+const cleanBranding = (obj: any) => {
+  if (!obj) return obj;
+  
+  // Custom cleaning function for generic branding if needed
+  const clean = (val: string) => {
+    if (typeof val !== 'string') return val;
+    // Previously we replaced "صلاح حيدرة" here, but the user now has a writer with this name.
+    // We remove the replacement logic to allow manual writer control.
+    return val;
+  };
+
+  // We explicitly skip cleaning writer_name to allow manual selection.
+  // publisher_name and author are also not cleaned here anymore to avoid conflicting with the writer's name.
+  // Instead, the frontend handles the branding by defaulting to "موقع هدس" where appropriate.
+  
+  return obj;
+};
+
 // Ensure uploads directory exists
 const uploadDir = process.env.UPLOADS_PATH || path.join(process.cwd(), "public", "uploads");
 if (!fs.existsSync(uploadDir)) {
@@ -110,19 +129,26 @@ async function startServer() {
       let ipAddress = '127.0.0.1';
       
       const forwardedIpsStr = req.headers['x-forwarded-for'];
+      const realIp = req.headers['x-real-ip'];
+      
       if (forwardedIpsStr) {
-         // 'x-forwarded-for' can be a comma-separated list, the first is the original client
          ipAddress = forwardedIpsStr.split(',')[0].trim();
-      } else if (req.headers['x-real-ip']) {
-         ipAddress = req.headers['x-real-ip'];
+      } else if (realIp) {
+         ipAddress = String(realIp);
       } else {
          ipAddress = String(req.ip || req.connection?.remoteAddress || req.socket?.remoteAddress || '127.0.0.1');
       }
 
-      // Clean IPv6 mapped IPv4 (e.g. ::ffff:192.168.1.1 -> 192.168.1.1)
+      // Clean IPv6 mapped IPv4
       if (ipAddress.startsWith('::ffff:')) {
           ipAddress = ipAddress.substring(7);
       }
+
+      // Diagnostic logging for Render IP troubleshooting
+      if (process.env.NODE_ENV === 'production') {
+        console.log(`[IP Detection] Detected: ${ipAddress} | X-Forwarded-For: ${forwardedIpsStr || 'N/A'} | X-Real-IP: ${realIp || 'N/A'}`);
+      }
+      
       return ipAddress;
   };
 
@@ -143,7 +169,7 @@ async function startServer() {
       const ipStr = getClientIp(req);
       const { rows } = await db.query("SELECT * FROM blocked_ips WHERE ip_address = $1", [ipStr]);
       if (rows.length > 0) {
-        console.warn(`Blocked access attempt from banned IP: ${ipStr}`);
+        console.warn(`[SECURITY] Blocked access attempt from banned IP: ${ipStr} | Reason: ${rows[0].reason || 'N/A'}`);
         return res.status(403).json({ 
           error: "تم حظر عنوان الـ IP الخاص بك لأسباب أمنية. يرجى التواصل مع الإدارة.",
           banned: true 
@@ -156,12 +182,20 @@ async function startServer() {
     }
   };
 
-  // Basic security headers
+  // Basic security and cache headers
   app.use((req, res, next) => {
     res.setHeader('X-Content-Type-Options', 'nosniff');
     res.setHeader('X-Frame-Options', 'DENY');
     res.setHeader('Referrer-Policy', 'no-referrer');
     res.setHeader('Cross-Origin-Opener-Policy', 'same-origin');
+    
+    // Disable caching for all API routes to ensure real-time updates (e.g. is_active status)
+    if (req.path.startsWith('/api/')) {
+        res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+        res.setHeader('Pragma', 'no-cache');
+        res.setHeader('Expires', '0');
+    }
+    
     next();
   });
 
@@ -235,10 +269,9 @@ async function startServer() {
               });
 
               if (sendResponse.ok) {
-                  const msg = `Email sent via Gmail API to ${to} for user ${username}`;
-                  console.log(msg);
-                  await logAction(null, 'نظام البريد', `نجح الإرسال عبر Gmail API إلى ${to}`, 'System');
-                  return true;
+                   const msg = `Email sent via Gmail API to ${to} for user ${username}`;
+                   console.log(msg);
+                   return true;
               } else {
                   const sendData = await sendResponse.json();
                   lastError = `Gmail API Error: ${JSON.stringify(sendData)}`;
@@ -254,7 +287,7 @@ async function startServer() {
 
       // 5. Fallback to SMTP
       try {
-          const transporter = nodemailer.createTransporter({
+          const transporter = nodemailer.createTransport({
             host: process.env.SMTP_HOST || 'smtp.ethereal.email',
             port: parseInt(process.env.SMTP_PORT || '587'),
             secure: process.env.SMTP_PORT === '465',
@@ -275,7 +308,6 @@ async function startServer() {
           });
           const msg = `Email sent via SMTP to ${to} for user ${username}`;
           console.log(msg);
-          await logAction(null, 'نظام البريد', `نجح الإرسال عبر SMTP إلى ${to}`, 'System');
           return true;
       } catch (smtpErr: any) {
           let diagnostic = '';
@@ -284,7 +316,6 @@ async function startServer() {
           
           const fullError = `${diagnostic}${lastError ? lastError + ' | ' : ''}SMTP Error: ${smtpErr.message}`;
           console.error(`CRITICAL: All email methods failed for ${to}:`, fullError);
-          await logAction(null, 'خطأ بريد', `فشل إرسال البريد لـ ${to}: ${fullError}`, 'System');
           return false;
       }
   };
@@ -292,9 +323,9 @@ async function startServer() {
   app.use("/uploads", express.static(uploadDir));
 
   // --- Auth & Audit Helpers ---
-  const logAction = async (userId: number | null, action: string, details: string, ip: string | null = null) => {
+  const logAction = async (userId: number | null, action: string, details: string) => {
     try {
-      await db.query("INSERT INTO audit_logs (user_id, action, details, ip_address) VALUES ($1, $2, $3, $4)", [userId, action, details, ip]);
+      await db.query("INSERT INTO audit_logs (user_id, action, details) VALUES ($1, $2, $3)", [userId, action, details]);
     } catch (e) {
       console.error("Audit log error:", e);
     }
@@ -339,9 +370,7 @@ async function startServer() {
     const ipStr = getClientIp(req);
 
     // Basic brute-force protection
-    if (!checkRateLimit(ipStr, 10, 60_000)) {
-      await logAction(null, 'تنبيه أمني', `محاولات دخول كثيرة جداً من IP: ${ipStr}`, ipStr);
-      return res.status(429).json({ error: "Too many login attempts. Please wait a minute." });
+    if (!checkRateLimit(ipStr, 10, 60_000)) {      return res.status(429).json({ error: "Too many login attempts. Please wait a minute." });
     }
 
     let { username, password } = req.body;
@@ -358,18 +387,18 @@ async function startServer() {
       // Reset failed attempts on success
       failedAttempts.delete(ipStr);
 
-      await logAction(user.id, 'تسجيل دخول', `تم تسجيل الدخول بنجاح باسم: ${user.username}`, ipStr);
+      await logAction(user.id, 'تسجيل دخول', `تم تسجيل الدخول بنجاح باسم: ${user.username} من IP: ${ipStr}`);
       res.json({ token, user: userWithoutPassword, requiresPasswordChange: user.requires_password_change });
     } else {
       // Increment failed attempts
       const attempts = (failedAttempts.get(ipStr) || 0) + 1;
       failedAttempts.set(ipStr, attempts);
 
-      await logAction(null, 'محاولة دخول فاشلة', `محاولة دخول باسم المستخدم: ${username}`, ipStr);
+      await logAction(null, 'محاولة دخول فاشلة', `محاولة دخول باسم المستخدم: ${username} من IP: ${ipStr}`);
 
       // Raise a high-priority security alert if threshold reached
       if (attempts >= 5) {
-        await logAction(null, 'تنبيه أمني', `⚠️ محاولات دخول متكررة فاشلة (${attempts}) من عنوان IP: ${ipStr}. يرجى التحقق من الأمان.`, ipStr);
+        await logAction(null, 'تحذير أمني', `محاولة دخول متكررة (5+) من عنوان IP: ${ipStr}. يرجى التحقق من الأمان.`);
       }
 
       res.status(401).json({ error: "بيانات الدخول غير صحيحة" });
@@ -385,8 +414,7 @@ async function startServer() {
     
     try {
       const hashedPassword = hashPassword(newPassword);
-      await db.query("UPDATE system_users SET password = $1, requires_password_change = false WHERE id = $2", [hashedPassword, (req as any).user.id]);
-      await logAction((req as any).user.id, 'تغيير كلمة المرور', 'تم تغيير كلمة المرور بنجاح.', getClientIp(req));
+        await db.query("UPDATE system_users SET password = $1, requires_password_change = false WHERE id = $2", [hashedPassword, (req as any).user.id]);
       res.json({ success: true, message: "تم تغيير كلمة المرور بنجاح." });
     } catch (err) {
       console.error(err);
@@ -403,8 +431,7 @@ async function startServer() {
   app.post("/api/admin/blocked-ips", requireAuth, async (req, res) => {
     const { ip_address, reason } = req.body;
     try {
-      await db.query("INSERT INTO blocked_ips (ip_address, reason) VALUES ($1, $2)", [ip_address, reason]);
-      await logAction((req as any).user.id, 'حظر IP', `تم حظر العنوان: ${ip_address} | السبب: ${reason}`, getClientIp(req));
+        await db.query("INSERT INTO blocked_ips (ip_address, reason) VALUES ($1, $2)", [ip_address, reason]);
       res.json({ success: true });
     } catch (e) {
       res.status(500).json({ error: "IP address already blocked or invalid" });
@@ -416,7 +443,6 @@ async function startServer() {
     const { rows: existing } = await db.query("SELECT ip_address FROM blocked_ips WHERE id = $1", [id]);
     if (existing.length > 0) {
       await db.query("DELETE FROM blocked_ips WHERE id = $1", [id]);
-      await logAction((req as any).user.id, 'إلغاء حظر IP', `تم إلغاء حظر العنوان: ${existing[0].ip_address}`, getClientIp(req));
       res.json({ success: true });
     } else {
       res.status(404).json({ error: "IP not found" });
@@ -570,24 +596,23 @@ async function startServer() {
       );
 
       if (email) {
-          const userMailHtml = `
-            <div dir="rtl" style="font-family: sans-serif; line-height: 1.6; color: #333;">
-              <h2>مرحباً ${full_name}،</h2>
-              <p>تم إنشاء حساب جديد لك في لوحة تحكم موقع <b>هـدس</b>.</p>
-              <div style="background: #f4f6f8; padding: 20px; border-radius: 8px; margin: 20px 0;">
-                <p><strong>الرابط:</strong> <a href="${process.env.PUBLIC_URL || 'http://localhost:3000'}/admin">${process.env.PUBLIC_URL || 'http://localhost:3000'}/admin</a></p>
-                <p><strong>اسم المستخدم:</strong> ${username}</p>
-                <p><strong>رمز التحقق (للدخول لأول مرة):</strong> <code style="background:#e2e8f0;padding:2px 10px;border-radius:4px;font-size:24px;color:#2563eb;font-weight:bold;">${password}</code></p>
+            const userMailHtml = `
+              <div dir="rtl" style="font-family: sans-serif; line-height: 1.6; color: #333;">
+                <h2>مرحباً ${full_name}،</h2>
+                <p>تم إنشاء حساب جديد لك في لوحة تحكم موقع <b>هـدس</b>.</p>
+                <div style="background: #f4f6f8; padding: 20px; border-radius: 8px; margin: 20px 0;">
+                  <p><strong>الرابط:</strong> <a href="${process.env.PUBLIC_URL || 'http://localhost:3000'}/admin">${process.env.PUBLIC_URL || 'http://localhost:3000'}/admin</a></p>
+                  <p><strong>اسم المستخدم:</strong> ${username}</p>
+                  <p><strong>رمز التحقق (للدخول لأول مرة):</strong> <code style="background:#e2e8f0;padding:2px 10px;border-radius:4px;font-size:24px;color:#2563eb;font-weight:bold;">${password}</code></p>
+                </div>
+                <p style="color: #666; font-size: 14px;">يرجى استخدام هذا الرمز لتسجيل الدخول، وسيُطلب منك تعيين كلمة مرور خاصة بك فور الدخول.</p>
+                <hr style="border: none; border-top: 1px solid #eee; margin-top: 30px;" />
+                <p style="color: #999; font-size: 12px;">رسالة تلقائية مقدّمة من نظام هـدس الإخباري.</p>
               </div>
-              <p style="color: #666; font-size: 14px;">يرجى استخدام هذا الرمز لتسجيل الدخول، وسيُطلب منك تعيين كلمة مرور خاصة بك فور الدخول.</p>
-              <hr style="border: none; border-top: 1px solid #eee; margin-top: 30px;" />
-              <p style="color: #999; font-size: 12px;">رسالة تلقائية مقدّمة من نظام هـدس الإخباري.</p>
-            </div>
-          `;
-          await sendSystemEmail(email, 'رمز التحقق للدخول لأول مرة - نظام هـدس', userMailHtml, username);
-      }
-      await logAction((req as any).user.id, 'إضافة مستخدم', `تم إضافة المستخدم: ${username}`, getClientIp(req));
-      res.json({ id: rows[0].id });
+            `;
+            await sendSystemEmail(email, 'رمز التحقق للدخول لأول مرة - نظام هـدس', userMailHtml, username);
+        }
+        res.json({ id: rows[0].id });
     } catch (e) {
       res.status(400).json({ error: "Username already exists" });
     }
@@ -617,7 +642,6 @@ async function startServer() {
           [username, full_name, email, role, permsString, id]
         );
       }
-      await logAction((req as any).user.id, 'تعديل مستخدم', `تم تعديل المستخدم رقم: ${id}`, getClientIp(req));
       res.json({ success: true });
     } catch (e) {
       res.status(400).json({ error: "Error updating user" });
@@ -639,7 +663,6 @@ async function startServer() {
     }
 
     await db.query("DELETE FROM system_users WHERE id = $1", [id]);
-    await logAction((req as any).user.id, 'حذف مستخدم', `تم حذف المستخدم رقم: ${id}`, getClientIp(req));
     res.json({ success: true });
   });
 
@@ -758,8 +781,10 @@ async function startServer() {
         return acc;
       }, {});
 
+      // settingsMap.chief_editor replacement removed to allow manual editing from dashboard
+
       res.json({
-        articles: articles.rows,
+        articles: articles.rows.map(cleanBranding),
         categories: categories.rows,
         settings: settingsMap,
         ads: ads.rows
@@ -802,22 +827,27 @@ async function startServer() {
     }
 
     const { rows } = await db.query(query, params);
-    res.json(rows);
+    const cleanedRows = rows.map(cleanBranding);
+    res.json(cleanedRows);
   });
 
   app.get("/api/search", async (req, res) => {
     const { q } = req.query;
     if (!q) return res.json([]);
 
-    const { rows } = await db.query(`
-      SELECT articles.*, categories.name as category_name, categories.slug as category_slug 
-      FROM articles 
-      LEFT JOIN categories ON articles.category_id = categories.id
-      LEFT JOIN categories ON articles.category_id = categories.id
-      WHERE (articles.title ILIKE $1 OR articles.content ILIKE $2) AND articles.is_active = 1 AND articles.is_deleted = 0
-      ORDER BY created_at DESC
-    `, [`%${q}%`, `%${q}%`]);
-    res.json(rows);
+    try {
+      const { rows } = await db.query(`
+        SELECT articles.*, categories.name as category_name, categories.slug as category_slug 
+        FROM articles 
+        LEFT JOIN categories ON articles.category_id = categories.id
+        WHERE (articles.title ILIKE $1 OR articles.content ILIKE $2) AND articles.is_active = 1 AND articles.is_deleted = 0
+        ORDER BY created_at DESC
+      `, [`%${q}%`, `%${q}%`]);
+      res.json(rows.map(cleanBranding));
+    } catch (error) {
+      console.error("Search error:", error);
+      res.status(500).json({ error: "Internal server error" });
+    }
   });
 
   app.get("/api/articles/:id", async (req, res) => {
@@ -837,19 +867,52 @@ async function startServer() {
       db.query("SELECT * FROM settings")
     ]);
 
-    const article = articleRes.rows[0];
+    const article = cleanBranding(articleRes.rows[0]);
     if (!article) return res.status(404).json({ error: "Article not found" });
 
     const settingsMap = settingsRes.rows.reduce((acc: any, curr: any) => {
       acc[curr.key] = curr.value;
       return acc;
     }, {});
+    // settingsMap.chief_editor replacement removed to allow manual editing from dashboard
 
     res.json({
       article,
       ads: adsRes.rows,
       settings: settingsMap
     });
+  });
+
+  // Article Management (Bulk and Specialized first to avoid :id collisions)
+  app.post("/api/articles/bulk/trash", requireAuth, async (req, res) => {
+    const { ids } = req.body;
+    if (!Array.isArray(ids) || ids.length === 0) return res.status(400).json({ error: "No IDs provided" });
+
+    await db.query("UPDATE articles SET is_deleted = 1 WHERE id = ANY($1)", [ids]);
+    res.json({ success: true });
+  });
+
+  app.post("/api/articles/bulk/restore", requireAuth, async (req, res) => {
+    const { ids } = req.body;
+    if (!Array.isArray(ids) || ids.length === 0) return res.status(400).json({ error: "No IDs provided" });
+
+    await db.query("UPDATE articles SET is_deleted = 0 WHERE id = ANY($1)", [ids]);
+    res.json({ success: true });
+  });
+
+  app.post("/api/articles/bulk/delete", requireAuth, async (req, res) => {
+    const { ids } = req.body;
+    if (!Array.isArray(ids) || ids.length === 0) return res.status(400).json({ error: "No IDs provided" });
+
+    await db.query("DELETE FROM articles WHERE id = ANY($1)", [ids]);
+    res.json({ success: true });
+  });
+
+  app.delete("/api/articles/trash/empty", requireAuth, async (req, res) => {
+    const { rows } = await db.query("SELECT COUNT(*) FROM articles WHERE is_deleted = 1");
+    const count = rows[0].count;
+    await db.query("DELETE FROM articles WHERE is_deleted = 1");
+    res.json({ success: true });
   });
 
   app.post("/api/articles", requireAuth, async (req, res) => {
@@ -859,7 +922,6 @@ async function startServer() {
       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
       RETURNING id
     `, [title, content, category_id, image_url, video_url, is_urgent ? 1 : 0, tags, writer_id || null, is_active !== undefined ? (is_active ? 1 : 0) : 1, (req as any).user.id]);
-    await logAction((req as any).user.id, 'إضافة خبر', `تم إضافة الخبر: ${title}`, getClientIp(req));
     res.json({ id: res_db.rows[0].id });
   });
 
@@ -873,7 +935,7 @@ async function startServer() {
       WHERE id = $11
     `, [title, content, category_id, image_url, video_url, is_urgent ? 1 : 0, tags, writer_id || null, is_active !== undefined ? (is_active ? 1 : 0) : 1, (req as any).user.id, req.params.id]);
 
-    await logAction((req as any).user.id, 'تعديل خبر', `تم تعديل الخبر: ${title} (رقم: ${req.params.id})`, getClientIp(req));
+    await logAction((req as any).user.id, 'تعديل خبر', `تم تعديل الخبر: ${title} (رقم: ${req.params.id})`);
     res.json({ success: true });
   });
 
@@ -884,10 +946,10 @@ async function startServer() {
 
     if (permanent === 'true') {
       await db.query("DELETE FROM articles WHERE id = $1", [req.params.id]);
-      await logAction((req as any).user.id, 'حذف نهائي للخبر', `تم حذف الخبر نهائياً: ${articleTitle} (رقم: ${req.params.id})`, getClientIp(req));
+      await logAction((req as any).user.id, 'حذف نهائي للخبر', `تم حذف الخبر نهائياً: ${articleTitle} (رقم: ${req.params.id})`);
     } else {
       await db.query("UPDATE articles SET is_deleted = 1 WHERE id = $1", [req.params.id]);
-      await logAction((req as any).user.id, 'حذف خبر', `تم نقل الخبر للمحذوفات: ${articleTitle} (رقم: ${req.params.id})`, getClientIp(req));
+      await logAction((req as any).user.id, 'حذف خبر', `تم نقل الخبر للمحذوفات: ${articleTitle} (رقم: ${req.params.id})`);
     }
     res.json({ success: true });
   });
@@ -897,52 +959,16 @@ async function startServer() {
     const articleTitle = rows[0]?.title || "غير معروف";
 
     await db.query("UPDATE articles SET is_deleted = 0 WHERE id = $1", [req.params.id]);
-    await logAction((req as any).user.id, 'استعادة خبر', `تم استعادة الخبر: ${articleTitle} (رقم: ${req.params.id})`, getClientIp(req));
+    await logAction((req as any).user.id, 'استعادة خبر', `تم استعادة الخبر: ${articleTitle} (رقم: ${req.params.id})`);
     res.json({ success: true });
   });
 
   app.patch("/api/articles/:id/status", requireAuth, async (req, res) => {
     const { is_active } = req.body;
     await db.query("UPDATE articles SET is_active = $1 WHERE id = $2", [is_active ? 1 : 0, req.params.id]);
-    await logAction((req as any).user.id, 'تغيير حالة الخبر', `تم تغيير حالة الخبر رقم: ${req.params.id} إلى ${is_active ? 'مفعل' : 'معطل'}`, getClientIp(req));
     res.json({ success: true });
   });
 
-  // Bulk Trash Operations
-  app.post("/api/articles/bulk/trash", requireAuth, async (req, res) => {
-    const { ids } = req.body;
-    if (!Array.isArray(ids) || ids.length === 0) return res.status(400).json({ error: "No IDs provided" });
-
-    await db.query("UPDATE articles SET is_deleted = 1 WHERE id = ANY($1)", [ids]);
-    await logAction((req as any).user.id, 'نقل مجموعة أخبار للمحذوفات', `تم نقل عدد ${ids.length} أخبار إلى سلة المحذوفات`, getClientIp(req));
-    res.json({ success: true });
-  });
-
-  app.post("/api/articles/bulk/restore", requireAuth, async (req, res) => {
-    const { ids } = req.body;
-    if (!Array.isArray(ids) || ids.length === 0) return res.status(400).json({ error: "No IDs provided" });
-
-    await db.query("UPDATE articles SET is_deleted = 0 WHERE id = ANY($1)", [ids]);
-    await logAction((req as any).user.id, 'استعادة مجموعة أخبار', `تم استعادة عدد ${ids.length} أخبار من المحذوفات`, getClientIp(req));
-    res.json({ success: true });
-  });
-
-  app.post("/api/articles/bulk/delete", requireAuth, async (req, res) => {
-    const { ids } = req.body;
-    if (!Array.isArray(ids) || ids.length === 0) return res.status(400).json({ error: "No IDs provided" });
-
-    await db.query("DELETE FROM articles WHERE id = ANY($1)", [ids]);
-    await logAction((req as any).user.id, 'حذف نهائي لمجموعة أخبار', `تم حذف عدد ${ids.length} أخبار نهائياً`, getClientIp(req));
-    res.json({ success: true });
-  });
-
-  app.delete("/api/articles/trash/empty", requireAuth, async (req, res) => {
-    const { rows } = await db.query("SELECT COUNT(*) FROM articles WHERE is_deleted = 1");
-    const count = rows[0].count;
-    await db.query("DELETE FROM articles WHERE is_deleted = 1");
-    await logAction((req as any).user.id, 'تفريغ سلة المحذوفات', `تم تفريغ السلة وحذف ${count} خبر نهائياً`, getClientIp(req));
-    res.json({ success: true });
-  });
 
   // Writers
   app.get("/api/writers", async (req, res) => {
@@ -953,20 +979,17 @@ async function startServer() {
   app.post("/api/writers", requireAuth, async (req, res) => {
     const { name, bio, image_url } = req.body;
     const { rows } = await db.query("INSERT INTO writers (name, bio, image_url) VALUES ($1, $2, $3) RETURNING id", [name, bio, image_url]);
-    await logAction((req as any).user.id, 'إضافة كاتب', `تم إضافة الكاتب: ${name}`, getClientIp(req));
     res.json({ id: rows[0].id });
   });
 
   app.put("/api/writers/:id", requireAuth, async (req, res) => {
     const { name, bio, image_url } = req.body;
     await db.query("UPDATE writers SET name = $1, bio = $2, image_url = $3 WHERE id = $4", [name, bio, image_url, req.params.id]);
-    await logAction((req as any).user.id, 'تعديل كاتب', `تم تعديل الكاتب رقم: ${req.params.id}`, getClientIp(req));
     res.json({ success: true });
   });
 
   app.delete("/api/writers/:id", requireAuth, async (req, res) => {
     await db.query("DELETE FROM writers WHERE id = $1", [req.params.id]);
-    await logAction((req as any).user.id, 'حذف كاتب', `تم حذف الكاتب رقم: ${req.params.id}`, getClientIp(req));
     res.json({ success: true });
   });
 
@@ -982,7 +1005,6 @@ async function startServer() {
       "INSERT INTO ads (title, image_url, link_url, adsense_code, position, is_active, start_date, end_date) VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING id",
       [title, image_url, link_url, adsense_code, position, is_active ? 1 : 0, start_date || null, end_date || null]
     );
-    await logAction((req as any).user.id, 'إضافة إعلان', `تم إضافة الإعلان: ${title}`, getClientIp(req));
     res.json({ id: rows[0].id });
   });
 
@@ -992,13 +1014,11 @@ async function startServer() {
       "UPDATE ads SET title = $1, image_url = $2, link_url = $3, adsense_code = $4, position = $5, is_active = $6, start_date = $7, end_date = $8 WHERE id = $9",
       [title, image_url, link_url, adsense_code, position, is_active ? 1 : 0, start_date || null, end_date || null, req.params.id]
     );
-    await logAction((req as any).user.id, 'تعديل إعلان', `تم تعديل الإعلان رقم: ${req.params.id}`, getClientIp(req));
     res.json({ success: true });
   });
 
   app.delete("/api/ads/:id", requireAuth, async (req, res) => {
     await db.query("DELETE FROM ads WHERE id = $1", [req.params.id]);
-    await logAction((req as any).user.id, 'حذف إعلان', `تم حذف الإعلان رقم: ${req.params.id}`, getClientIp(req));
     res.json({ success: true });
   });
 
@@ -1022,7 +1042,7 @@ async function startServer() {
     const { action, details } = req.body;
     const ipStr = getClientIp(req);
     const userAgent = req.headers['user-agent'] || 'Unknown';
-    await logAction((req as any).user.id, action, `${details} (Browser: ${userAgent})`, ipStr);
+    await logAction((req as any).user.id, action, `${details} (Browser: ${userAgent})`);
     res.json({ success: true });
   });
 
@@ -1036,9 +1056,7 @@ async function startServer() {
     }
 
     // Link Protection
-    if (containsLink(name) || containsLink(content)) {
-      await logAction(null, 'محاولة تعليق مشبوهة', `تم حظر تعليق يحتوي على روابط`, clientIp);
-      return res.status(400).json({ error: "عذراً، لا يُسمح بإضافة روابط في التعليقات أو الأسماء." });
+    if (containsLink(name) || containsLink(content)) {      return res.status(400).json({ error: "عذراً، لا يُسمح بإضافة روابط في التعليقات أو الأسماء." });
     }
 
     await db.query("INSERT INTO comments (article_id, name, content) VALUES ($1, $2, $3)", [req.params.id, name, content]);
@@ -1047,7 +1065,6 @@ async function startServer() {
 
   app.delete("/api/comments/:id", requireAuth, async (req, res) => {
     await db.query("DELETE FROM comments WHERE id = $1", [req.params.id]);
-    await logAction((req as any).user.id, 'حذف تعليق', `تم حذف التعليق رقم: ${req.params.id}`, getClientIp(req));
     res.json({ success: true });
   });
 
@@ -1113,7 +1130,6 @@ async function startServer() {
   app.delete("/api/admin/poll/comments", requireAuth, async (req, res) => {
     try {
       await db.query("DELETE FROM poll_comments");
-      await logAction((req as any).user.id, 'مسح استطلاع الرأي', 'تم مسح كافة تعليقات استطلاع الرأي لبدء استطلاع جديد', getClientIp(req));
       res.json({ success: true });
     } catch (e) {
       res.status(500).json({ error: "Error clearing poll comments" });
@@ -1133,9 +1149,7 @@ async function startServer() {
     }
 
     // Link Protection
-    if (containsLink(finalName) || containsLink(content)) {
-      await logAction(null, 'محاولة مشاركة مشبوهة في الاستطلاع', `تم حظر مشاركة تحتوي على روابط`, clientIp);
-      return res.status(400).json({ error: "عذراً، لا يُسمح بإضافة روابط في المشاركات." });
+    if (containsLink(finalName) || containsLink(content)) {      return res.status(400).json({ error: "عذراً، لا يُسمح بإضافة روابط في المشاركات." });
     }
 
     try {
@@ -1156,7 +1170,6 @@ async function startServer() {
     const { name, slug, background_url } = req.body;
     try {
       const res_db = await db.query("INSERT INTO categories (name, slug, background_url) VALUES ($1, $2, $3) RETURNING id", [name, slug, background_url]);
-      await logAction((req as any).user.id, 'إضافة قسم', `تم إضافة القسم: ${name}`, getClientIp(req));
       res.json({ id: res_db.rows[0].id });
     } catch (e) {
       res.status(400).json({ error: "Category slug or name already exists" });
@@ -1166,7 +1179,6 @@ async function startServer() {
   app.put("/api/categories/:id", requireAuth, async (req, res) => {
     const { name, slug, background_url } = req.body;
     await db.query("UPDATE categories SET name = $1, slug = $2, background_url = $3 WHERE id = $4", [name, slug, background_url, req.params.id]);
-    await logAction((req as any).user.id, 'تعديل قسم', `تم تعديل القسم رقم: ${req.params.id}`, getClientIp(req));
     res.json({ success: true });
   });
 
@@ -1177,7 +1189,6 @@ async function startServer() {
       return res.status(400).json({ error: "Cannot delete category with associated articles" });
     }
     await db.query("DELETE FROM categories WHERE id = $1", [req.params.id]);
-    await logAction((req as any).user.id, 'حذف قسم', `تم حذف القسم رقم: ${req.params.id}`, getClientIp(req));
     res.json({ success: true });
   });
 
@@ -1203,7 +1214,6 @@ async function startServer() {
         `, [key, value]);
       }
       await client.query('COMMIT');
-      await logAction((req as any).user.id, 'تعديل الإعدادات', 'تم تحديث إعدادات الموقع', getClientIp(req));
       res.json({ success: true });
     } catch (e) {
       await client.query('ROLLBACK');
@@ -1273,4 +1283,7 @@ async function startServer() {
   });
 }
 
-startServer();
+startServer().catch(err => {
+  console.error("FAILED TO START SERVER:", err);
+  process.exit(1);
+});

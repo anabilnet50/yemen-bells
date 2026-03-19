@@ -116,13 +116,11 @@ const AuditLog: React.FC<AuditLogProps> = ({
                                 <th className="p-2 sm:p-4 md:p-6 text-[10px] sm:text-xs md:text-sm font-black uppercase text-center whitespace-nowrap print:py-4">المسؤول</th>
                                 <th className="p-2 sm:p-4 md:p-6 text-[10px] sm:text-xs md:text-sm font-black uppercase text-center whitespace-nowrap print:py-4">الإجراء</th>
                                 <th className="p-2 sm:p-4 md:p-6 text-[10px] sm:text-xs md:text-sm font-black uppercase text-center print:py-4">التفاصيل</th>
-                                <th className="p-2 sm:p-4 md:p-6 text-[10px] sm:text-xs md:text-sm font-black uppercase text-center whitespace-nowrap print:py-4">IP الجهاز</th>
                                 <th className="p-2 sm:p-4 md:p-6 text-[10px] sm:text-xs md:text-sm font-black uppercase text-center whitespace-nowrap print:py-4">التوقيت</th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-[#cfdce9] print:divide-gray-300">
                             {history
-                              .filter((log: any) => !['تسجيل دخول', 'محاولة دخول فاشلة', 'تنبيه أمني', 'تسجيل خروج'].includes(log.action))
                               .map((log: any) => (
                                 <tr key={log.id} className="even:bg-[#e9f0f8] odd:bg-white hover:bg-blue-50 transition-colors divide-x divide-x-reverse divide-[#cfdce9] text-center border-b border-[#cfdce9]">
                                     <td className="p-2 sm:p-4 md:p-6 font-black text-primary-navy print:py-4 align-middle text-[10px] sm:text-xs md:text-base">{log.user_name || 'آلي'}</td>
@@ -137,9 +135,6 @@ const AuditLog: React.FC<AuditLogProps> = ({
                                     <td className="p-2 sm:p-4 md:p-6 text-[10px] sm:text-[13px] md:text-[15px] text-gray-700 font-bold print:py-4 print:text-gray-900 align-middle leading-tight sm:leading-relaxed text-right md:px-10">
                                         {log.details}
                                     </td>
-                                    <td className="p-2 sm:p-4 md:p-6 text-[10px] sm:text-sm font-mono text-primary-crimson font-black print:py-4 align-middle">
-                                        {log.ip_address || '---'}
-                                    </td>
                                     <td className="p-2 sm:p-4 md:p-6 text-[10px] sm:text-sm md:text-base text-gray-900 font-bold print:py-4 print:text-gray-900 align-middle" dir="rtl">
                                         <div className="flex flex-col items-center">
                                             <span className="text-[10px] sm:text-sm">{new Date(log.created_at).toLocaleDateString('ar-YE')}</span>
@@ -148,7 +143,7 @@ const AuditLog: React.FC<AuditLogProps> = ({
                                     </td>
                                 </tr>
                             ))}
-                            {history.filter((log: any) => !['تسجيل دخول', 'محاولة دخول فاشلة', 'تنبيه أمني', 'تسجيل خروج'].includes(log.action)).length === 0 && (
+                            {history.length === 0 && (
                                 <tr><td colSpan={4} className="p-24 text-center text-gray-400 font-black text-xl">لا توجد سجلات تطابق معايير البحث الحالية</td></tr>
                             )}
                         </tbody>

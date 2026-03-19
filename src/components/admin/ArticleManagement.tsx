@@ -24,6 +24,7 @@ interface ArticleManagementProps {
     fetchHistory: () => void;
     showNotification: (msg: string, type?: 'success' | 'error') => void;
     isSubmitting: boolean;
+    settings: any;
 }
 
 const ArticleManagement: React.FC<ArticleManagementProps> = ({
@@ -46,7 +47,8 @@ const ArticleManagement: React.FC<ArticleManagementProps> = ({
     fetchStats,
     fetchHistory,
     showNotification,
-    isSubmitting
+    isSubmitting,
+    settings
 }) => {
     const [filterUrgent, setFilterUrgent] = React.useState(false);
     const [selectedIds, setSelectedIds] = React.useState<number[]>([]);
@@ -237,7 +239,7 @@ const ArticleManagement: React.FC<ArticleManagementProps> = ({
                                             onChange={e => setCurrentArticle({ ...currentArticle, writer_id: e.target.value })}
                                             className="w-full p-4 bg-gray-50 border-2 border-primary-crimson/30 ring-4 ring-primary-crimson/5 rounded-2xl focus:border-red-500 focus:bg-white transition-all outline-none font-bold appearance-none bg-[url('data:image/svg+xml;charset=UTF-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2224%22%20height%3D%2224%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22%236b7280%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Cpolyline%20points%3D%226%209%2012%2015%2018%209%22%3E%3C%2Fpolyline%3E%3C%2Fsvg%3E')] bg-[length:20px] bg-[left_15px_center] bg-no-repeat"
                                         >
-                                            <option value="">موقع هدس (افتراضي)</option>
+                                            <option value="">{settings?.default_author_name || 'موقع هدس'} (افتراضي)</option>
                                             {writers.map(writer => <option key={writer.id} value={writer.id}>{writer.name}</option>)}
                                         </select>
 
@@ -375,7 +377,9 @@ const ArticleManagement: React.FC<ArticleManagementProps> = ({
                                                         <span className="text-[8px] sm:text-[10px] font-black text-primary-navy/40 bg-gray-100 px-1.5 py-0.5 rounded-md">#{article.id}</span>
                                                         <span className="sm:hidden text-[8px] font-black text-primary-navy bg-blue-50 px-1 py-0.5 rounded-md truncate max-w-[50px]">{article.category_name}</span>
                                                             <div className="lg:hidden text-[8px] font-black text-primary-crimson bg-red-50 px-1 py-0.5 rounded-md truncate max-w-[100px]">
-                                                                <div className="text-[7px] font-bold text-gray-600">{article.publisher_name || article.author || 'موقع هدس'}</div>
+                                                                <div className="text-[7px] font-bold text-gray-600">
+                                                                    {article.publisher_name || article.author || 'غير معروف'}
+                                                                </div>
                                                                 {article.last_editor_name && (
                                                                     <div className="text-[6px] font-bold text-gray-500">المعدل: {article.last_editor_name}</div>
                                                                 )}
@@ -405,8 +409,8 @@ const ArticleManagement: React.FC<ArticleManagementProps> = ({
                                         </td>
                                         <td className="p-5 hidden lg:table-cell text-center">
                                             <div className="flex flex-col items-center">
-                                                <span className="text-[10px] font-black text-primary-navy block truncate max-w-[120px]" title={article.last_editor_name ? `${article.publisher_name || article.author || 'موقع هدس'} - المعدل: ${article.last_editor_name}` : (article.publisher_name || article.author)}>
-                                                    {article.publisher_name || article.author || 'موقع هدس'}
+                                                <span className="text-[10px] font-black text-primary-navy block truncate max-w-[120px]" title={article.last_editor_name ? `${article.publisher_name || article.author || 'غير معروف'} - المعدل: ${article.last_editor_name}` : (article.publisher_name || article.author || 'غير معروف')}>
+                                                    {article.publisher_name || article.author || 'غير معروف'}
                                                 </span>
                                                 {article.last_editor_name && (
                                                     <span className="text-[8px] font-bold text-gray-500 block truncate max-w-[120px]" title={`المعدل: ${article.last_editor_name}`}>

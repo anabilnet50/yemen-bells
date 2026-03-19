@@ -52,6 +52,19 @@ const SettingsManagement: React.FC<SettingsManagementProps> = ({
                                 placeholder="الأقرب للأحدث - موقع إخباري متكامل"
                             />
                         </div>
+                        <div className="space-y-3 md:col-span-2">
+                            <label className="block text-sm font-black text-gray-700 mr-1 text-primary-crimson flex items-center gap-2">
+                                <span className="w-2 h-2 rounded-full bg-primary-crimson animate-pulse"></span>
+                                نص الشريط الإخباري المخصص (يظهر في أسفل الهيدر)
+                            </label>
+                            <textarea
+                                value={settings.custom_ticker_text || ''}
+                                onChange={e => setSettings((prev: any) => ({ ...prev, custom_ticker_text: e.target.value }))}
+                                className="w-full p-4 bg-gray-50 border-2 border-gray-100 rounded-2xl focus:border-red-500 focus:bg-white transition-all outline-none font-bold text-sm h-20 resize-none"
+                                placeholder="اكتب هنا الخبر الذي ترغب بظهوره بشكل دائم في شريط الأخبار..."
+                            />
+                            <p className="text-[10px] text-gray-400 mr-1 font-bold italic">ملاحظة: اتركه فارغاً لإخفاء النص اليدوي والاعتماد على الأخبار العاجلة فقط.</p>
+                        </div>
                         <div className="space-y-3">
                             <label className="block text-sm font-black text-gray-700 mr-1">رئيس التحرير</label>
                             <input
@@ -59,6 +72,16 @@ const SettingsManagement: React.FC<SettingsManagementProps> = ({
                                 value={settings.chief_editor}
                                 onChange={e => setSettings((prev: any) => ({ ...prev, chief_editor: e.target.value }))}
                                 className="w-full p-4 bg-gray-50 border-2 border-gray-100 rounded-2xl focus:border-red-500 focus:bg-white transition-all outline-none font-black"
+                            />
+                        </div>
+                        <div className="space-y-3">
+                            <label className="block text-sm font-black text-gray-700 mr-1">الكاتب الافتراضي للمقالات</label>
+                            <input
+                                type="text"
+                                value={settings.default_author_name || ''}
+                                onChange={e => setSettings((prev: any) => ({ ...prev, default_author_name: e.target.value }))}
+                                className="w-full p-4 bg-gray-50 border-2 border-gray-100 rounded-2xl focus:border-red-500 focus:bg-white transition-all outline-none font-black"
+                                placeholder="موقع هدس"
                             />
                         </div>
                         <div className="space-y-3">

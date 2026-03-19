@@ -73,33 +73,49 @@ export async function initDb() {
       );
     `);
 
-    // Quick check logic moved after essential tables but before heavy init
-    const tableCheck = await client.query("SELECT 1 FROM information_schema.tables WHERE table_name = 'categories'");
-    const columnCheck = await client.query("SELECT 1 FROM information_schema.columns WHERE table_name = 'articles' AND column_name = 'author_user_id'");
+    // Supplemental migrations that should ALWAYS run
+    console.log('Ensuring all schema columns and tables exist...');
     
-    // Supplemental migrations that should ALWAYS run if the column is missing
-    if (columnCheck.rows.length === 0) {
-      console.log('Applying supplemental database migrations...');
-      try {
-        await client.query('ALTER TABLE articles ADD COLUMN IF NOT EXISTS writer_id INTEGER REFERENCES writers(id) ON DELETE SET NULL');
-        await client.query('ALTER TABLE articles ADD COLUMN IF NOT EXISTS is_deleted INTEGER DEFAULT 0');
-        await client.query('ALTER TABLE articles ADD COLUMN IF NOT EXISTS is_active INTEGER DEFAULT 1');
-        await client.query('ALTER TABLE categories ADD COLUMN IF NOT EXISTS background_url TEXT');
-        await client.query('ALTER TABLE articles ADD COLUMN IF NOT EXISTS author_user_id INTEGER REFERENCES system_users(id) ON DELETE SET NULL');
-        await client.query('ALTER TABLE articles ADD COLUMN IF NOT EXISTS last_editor_user_id INTEGER REFERENCES system_users(id) ON DELETE SET NULL');
-        await client.query('ALTER TABLE articles ADD COLUMN IF NOT EXISTS short_title TEXT');
-        await client.query("ALTER TABLE system_users ADD COLUMN IF NOT EXISTS permissions TEXT DEFAULT '[]'");
-        await client.query("ALTER TABLE system_users ADD COLUMN IF NOT EXISTS email TEXT");
-        await client.query("ALTER TABLE system_users ADD COLUMN IF NOT EXISTS reset_token TEXT");
-        await client.query("ALTER TABLE system_users ADD COLUMN IF NOT EXISTS reset_token_expiry TIMESTAMPTZ");
-      } catch (e) {
-        console.log('Some migration columns might already exist:', e.message);
-      }
-    }
+    // Core Tables
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS articles (
+        id SERIAL PRIMARY KEY,
+        title TEXT NOT NULL,
+        content TEXT NOT NULL,
+        category_id INTEGER,
+        image_url TEXT,
+        video_url TEXT,
+        author TEXT,
+        created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+        is_urgent INTEGER DEFAULT 0,
+        is_deleted INTEGER DEFAULT 0,
+        is_active INTEGER DEFAULT 1,
+        views INTEGER DEFAULT 0,
+        tags TEXT
+      );
+    `);
 
-    if (tableCheck.rows.length > 0 && columnCheck.rows.length > 0) {
-      console.log('Database already initialized and up to date. Skipping heavy init.');
-      return;
+    // Column Migrations
+    const migrations = [
+      "ALTER TABLE articles ADD COLUMN IF NOT EXISTS writer_id INTEGER REFERENCES writers(id) ON DELETE SET NULL",
+      "ALTER TABLE articles ADD COLUMN IF NOT EXISTS is_deleted INTEGER DEFAULT 0",
+      "ALTER TABLE articles ADD COLUMN IF NOT EXISTS is_active INTEGER DEFAULT 1",
+      "ALTER TABLE categories ADD COLUMN IF NOT EXISTS background_url TEXT",
+      "ALTER TABLE articles ADD COLUMN IF NOT EXISTS author_user_id INTEGER REFERENCES system_users(id) ON DELETE SET NULL",
+      "ALTER TABLE articles ADD COLUMN IF NOT EXISTS last_editor_user_id INTEGER REFERENCES system_users(id) ON DELETE SET NULL",
+      "ALTER TABLE articles ADD COLUMN IF NOT EXISTS short_title TEXT",
+      "ALTER TABLE system_users ADD COLUMN IF NOT EXISTS permissions TEXT DEFAULT '[]'",
+      "ALTER TABLE system_users ADD COLUMN IF NOT EXISTS email TEXT",
+      "ALTER TABLE system_users ADD COLUMN IF NOT EXISTS reset_token TEXT",
+      "ALTER TABLE system_users ADD COLUMN IF NOT EXISTS reset_token_expiry TIMESTAMPTZ"
+    ];
+
+    for (const sql of migrations) {
+      try {
+        await client.query(sql);
+      } catch (e) {
+        // Silently skip if already exists or other non-critical error
+      }
     }
 
     await client.query(`
@@ -156,26 +172,9 @@ export async function initDb() {
         user_id INTEGER REFERENCES system_users(id) ON DELETE SET NULL,
         action TEXT NOT NULL,
         details TEXT,
-        ip_address TEXT,
         created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
       );
     `);
-
-    // Performance Indexes
-    await client.query("CREATE INDEX IF NOT EXISTS idx_articles_category ON articles(category_id)");
-    await client.query("CREATE INDEX IF NOT EXISTS idx_articles_created_at ON articles(created_at DESC)");
-    await client.query("CREATE INDEX IF NOT EXISTS idx_articles_urgent ON articles(is_urgent) WHERE is_urgent = 1");
-    await client.query("CREATE INDEX IF NOT EXISTS idx_articles_active ON articles(is_deleted, is_active)");
-    await client.query("CREATE INDEX IF NOT EXISTS idx_articles_author_user ON articles(author_user_id)");
-    await client.query("CREATE INDEX IF NOT EXISTS idx_audit_logs_user_date ON audit_logs(user_id, created_at DESC)");
-    await client.query("CREATE INDEX IF NOT EXISTS idx_audit_logs_ip ON audit_logs(ip_address)");
-
-    // Supplemental migration for ip_address
-    try {
-        await client.query("ALTER TABLE audit_logs ADD COLUMN IF NOT EXISTS ip_address TEXT");
-    } catch (e) {
-        console.log('Migration note:', e.message);
-    }
 
     await client.query(`
       CREATE TABLE IF NOT EXISTS blocked_ips (
@@ -226,7 +225,7 @@ export async function initDb() {
     // Initial Settings
     const defaultSettings = [
       { key: 'site_name', value: 'هـدس' },
-      { key: 'chief_editor', value: 'صلاح حيدرة' },
+      { key: 'chief_editor', value: 'موقع هدس' },
       { key: 'wisdom_right', value: 'الحرية شمس يجب أن تشرق في كل نفس.' },
       { key: 'wisdom_left', value: 'العلم يبني بيوتاً لا عماد لها، والجهل يهدم بيت العز والكرم.' },
       { key: 'rights_title', value: 'حقوق وحريات' },
@@ -244,6 +243,7 @@ export async function initDb() {
       { key: 'site_tagline', value: 'الأقرب للأحدث - موقع إخباري شامل' },
       { key: 'header_background_url', value: '/header_bg_new.jpg' },
       { key: 'poll_question', value: 'هل تعتقد أن التحولات السياسية الأخيرة ستؤدي إلى استقرار اقتصادي مستدام في المنطقة؟' },
+      { key: 'default_author_name', value: 'موقع هدس' },
     ];
 
     for (const s of defaultSettings) {
@@ -261,6 +261,13 @@ export async function initDb() {
     await client.query(`
       INSERT INTO settings (key, value) 
       VALUES ('poll_question', 'هل تعتقد أن التحولات السياسية الأخيرة ستؤدي إلى استقرار اقتصادي مستدام في المنطقة؟')
+      ON CONFLICT (key) DO NOTHING
+    `);
+
+    // Force migration for default_author_name
+    await client.query(`
+      INSERT INTO settings (key, value) 
+      VALUES ('default_author_name', 'موقع هدس')
       ON CONFLICT (key) DO NOTHING
     `);
 
@@ -443,6 +450,7 @@ export async function initDb() {
       },
     ];
 
+    /*
     for (const art of demoArticles) {
       const exists = await client.query("SELECT id FROM articles WHERE title = $1", [art.title]);
       if (exists.rows.length === 0) {
@@ -452,6 +460,7 @@ export async function initDb() {
         `, [art.title, art.content, art.category_slug, art.image_url, art.video_url || null, art.is_urgent, art.tags]);
       }
     }
+    */
 
     await client.query('COMMIT');
     console.log('PostgreSQL database initialization complete.');

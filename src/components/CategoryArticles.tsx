@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
-import { Calendar, User, Eye, Clock, ArrowLeft, ChevronRight, ChevronLeft, Search, MapPin, Play, DollarSign, Image as ImageIcon } from 'lucide-react';
+import { Calendar, User, Eye, Clock, ArrowLeft, ChevronRight, ChevronLeft, Search, MapPin, Play, DollarSign, Image as ImageIcon, Flame } from 'lucide-react';
 import { motion } from 'motion/react';
 
 export default function CategoryArticles() {
@@ -129,7 +129,7 @@ export default function CategoryArticles() {
                                                         </span>
                                                     </div>
 
-                                                    {!article.image_url ? (
+                                                    {!( (article.image_url && article.image_url !== 'null' && article.image_url !== 'undefined' && article.image_url.trim() !== '') || (article.category_slug === 'opinion' && article.writer_image && article.writer_image !== 'null' && article.writer_image !== 'undefined' && article.writer_image.trim() !== '') ) ? (
                                                         ['general', 'short-urgent'].includes(article.category_slug) ? (
                                                             <div className="w-full aspect-[16/10] bg-primary-crimson flex flex-col items-center justify-center p-4 overflow-hidden relative group-hover:scale-105 transition-transform duration-1000">
                                                                 {/* Solid Red Background for Urgent */}
@@ -172,7 +172,14 @@ export default function CategoryArticles() {
                                                     </h3>
                                                     <div className="flex items-center justify-between pt-6 border-t border-gray-50 mt-auto overflow-hidden">
                                                         <span className="text-xs font-black text-primary-navy/60 group-hover:text-primary-navy transition-colors truncate">
-                                                            بواسطة: {article.category_slug === 'opinion' ? (article.writer_name || article.author || "موقع هدس") : "موقع هدس"}
+                                                            بواسطة: {(() => {
+                                                                const defaultAuthor = settings?.default_author_name || "موقع هدس";
+                                                                if (article.category_slug === 'opinion' && article.writer_name) {
+                                                                    return article.writer_name;
+                                                                }
+                                                                const fallbackName = article.author || defaultAuthor;
+                                                                return fallbackName === "صلاح حيدرة" ? defaultAuthor : fallbackName;
+                                                            })()}
                                                         </span>
                                                         <ArrowLeft className="w-4 h-4 text-primary-crimson group-hover:translate-x-[-5px] transition-transform shrink-0" />
                                                     </div>
@@ -209,9 +216,8 @@ export default function CategoryArticles() {
                             <div className="py-20 text-center">
                                 {slug === 'short-urgent' ? (
                                     <div className="max-w-md mx-auto">
-                                        <div className="relative aspect-[16/10] rounded-[2.5rem] overflow-hidden shadow-premium border border-gray-100 mb-8 group">
-                                            <img src="/images/urgent-fallback.png" alt="عاجل" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-1000" />
-                                            <div className="absolute inset-0 bg-primary-navy/10"></div>
+                                        <div className="relative aspect-[16/10] rounded-[2.5rem] overflow-hidden shadow-premium mb-8 group bg-primary-crimson flex flex-col items-center justify-center p-4">
+                                            {/* Solid Red Background for Short-Urgent Placeholder */}
                                         </div>
                                     </div>
                                 ) : (

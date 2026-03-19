@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { BrowserRouter as Router, Routes, Route, Link, useNavigate, useLocation } from 'react-router-dom';
-import { Search, Globe, Facebook, Twitter, Youtube, Linkedin, ChevronLeft, ChevronRight, Calendar, User, Eye, TrendingUp, Play, Clock, Send, MessageCircle, ArrowLeft, MapPin, DollarSign, Image as ImageIcon } from 'lucide-react';
+import { Search, Globe, Facebook, Twitter, Youtube, Linkedin, ChevronLeft, ChevronRight, Calendar, User, Eye, TrendingUp, Play, Flame, Clock, Send, MessageCircle, ArrowLeft, MapPin, DollarSign, Image as ImageIcon } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import ArticleDetail from './components/ArticleDetail';
 import AdminDashboard from './components/AdminDashboard';
@@ -94,8 +94,10 @@ function Home() {
   const [searchTerm, setSearchTerm] = useState('');
   const [searchResults, setSearchResults] = useState<any[]>([]);
   const [isSearching, setIsSearching] = useState(false);
+  const [pollResults, setPollResults] = useState<any>(null);
   const [pollVoted, setPollVoted] = useState(false);
   const [pollComment, setPollComment] = useState('');
+  const [isPollSubmitting, setIsPollSubmitting] = useState(false);
   const [showPollComments, setShowPollComments] = useState(false);
   const [pollComments, setPollComments] = useState<any[]>([]);
   const [touchStartX, setTouchStartX] = useState<number | null>(null);
@@ -247,7 +249,7 @@ function Home() {
 
   const handlePollCommentSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!pollComment) return;
+    if (!pollComment || isPollSubmitting) return;
 
     // Link Protection
     const urlPattern = /(https?:\/\/[^\s]+)|(www\.[^\s]+)|([a-z0-9-]+\.(com|net|org|edu|gov|io|co|me|ai|app|xyz|info|biz|site|online|tech|website|store|shop|link|click|tk|ml|ga|cf|gq|pw|ws|fun|space|top|vip|icu|win|bid|loan|host|live|mobi|name|pro|tel|pub|news))/gi;
@@ -256,6 +258,7 @@ function Home() {
       return;
     }
 
+    setIsPollSubmitting(true);
     fetch('/api/poll/comments', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -272,7 +275,8 @@ function Home() {
           alert(data.error || "حدث خطأ أثناء الإرسال");
         }
       })
-      .catch(() => alert("حدث خطأ أثناء الإرسال"));
+      .catch(() => alert("حدث خطأ أثناء الإرسال"))
+      .finally(() => setIsPollSubmitting(false));
   };
 
   const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -506,7 +510,7 @@ function Home() {
                     filter: 'drop-shadow(0 0 10px rgba(202,138,4,0.3))'
                   }}
                 >
-                  {settings.chief_editor || 'موقع هدس'}
+                  {settings?.chief_editor || 'موقع هدس'}
                 </span>
                 <div className="absolute inset-0 bg-gradient-to-r from-primary-crimson/10 via-transparent to-accent-gold/10 rounded-lg blur-xl animate-pulse pointer-events-none opacity-50"></div>
               </div>
@@ -697,7 +701,7 @@ function Home() {
                       className="w-full h-full relative"
                     >
                       <div className="w-full h-full relative">
-                        {mainArticle.image_url ? (
+                        {(mainArticle.image_url && mainArticle.image_url !== 'null' && mainArticle.image_url !== 'undefined' && mainArticle.image_url.trim() !== '') ? (
                           <img
                             src={mainArticle.image_url}
                             alt={mainArticle.title || 'عاجل'}
@@ -705,10 +709,13 @@ function Home() {
                             referrerPolicy="no-referrer"
                           />
                         ) : (
-                          <div className={`w-full h-full flex flex-col items-center justify-center p-8 overflow-hidden relative ${mainArticle.category_slug === 'short-urgent' ? 'bg-primary-crimson' : 'bg-primary-navy'}`}>
-                             <div className="relative z-10 flex flex-col items-center gap-6">
-                               {/* Content and animations could go here */}
-                             </div>
+                          <div className={`w-full h-full flex flex-col items-center justify-center p-8 overflow-hidden relative ${['short-urgent', 'general'].includes(mainArticle.category_slug) ? 'bg-primary-crimson' : 'bg-primary-navy'}`}>
+                            {/* Simple Solid Red for Short-Urgent Placeholder, ImageIcon for others */}
+                            {mainArticle.category_slug !== 'short-urgent' && (
+                              <div className="w-24 h-24 bg-white/10 rounded-full flex items-center justify-center mb-4">
+                                <ImageIcon className="w-12 h-12 text-white/40" />
+                              </div>
+                            )}
                           </div>
                         )}
                       </div>
@@ -724,9 +731,11 @@ function Home() {
 
                   {/* Professional TV-Style News Ticker (Al Hadath/Al Jazeera Style) */}
                   <div className="absolute bottom-0 left-0 right-0 bg-white border-t-2 border-primary-crimson z-20 flex items-stretch h-10 md:h-12 overflow-hidden shadow-[0_-5px_20px_rgba(0,0,0,0.2)]">
-                    <div className="bg-primary-crimson text-white px-1.5 md:px-4 flex items-center justify-center font-black text-[9px] md:text-xs uppercase tracking-tighter md:tracking-widest relative group/urgent shrink-0 z-30 shadow-[5px_0_15px_rgba(225,29,72,0.3)]">
-                      <div className="absolute inset-0 bg-white/10 animate-pulse"></div>عاجل
-                    </div>
+                    {(urgentArticles.length > 0 || (settings?.custom_ticker_text && settings.custom_ticker_text.trim() !== '')) && (
+                      <div className="bg-primary-crimson text-white px-1.5 md:px-4 flex items-center justify-center font-black text-[9px] md:text-xs uppercase tracking-tighter md:tracking-widest relative group/urgent shrink-0 z-30 shadow-[5px_0_15px_rgba(225,29,72,0.3)]">
+                        <div className="absolute inset-0 bg-white/10 animate-pulse"></div>عاجل
+                      </div>
+                    )}
                     <div className="flex-1 overflow-hidden flex items-center bg-white border-x border-gray-100 relative">
                       <div className="whitespace-nowrap text-primary-navy font-black text-sm md:text-base w-full" style={{ gap: 0 }}>
                         {(() => {
@@ -743,7 +752,12 @@ function Home() {
                                   <span className="w-1.5 h-1.5 bg-primary-crimson rotate-45 group-hover/tickeritem:scale-125 transition-transform"></span>
                                   {a.title}
                                   {a.category_slug === 'opinion' && (
-                                    <span className="text-primary-crimson/80 mr-2"> - {a.writer_name || a.author || "موقع هدس"}</span>
+                                    <span className="text-primary-crimson/80 mr-2"> - {(() => {
+                                      const da = settings?.default_author_name || "موقع هدس";
+                                      if (a.writer_name) return a.writer_name;
+                                      const fallbackName = a.author || da;
+                                      return fallbackName === "صلاح حيدرة" ? da : fallbackName;
+                                    })()}</span>
                                   )}
                                 </Link>
                               ))}
@@ -786,18 +800,22 @@ function Home() {
                     {/* Content Stack - Conditional Alignment for Short Urgent */}
                     <div className={`flex flex-col gap-3 w-full max-w-4xl mx-auto items-start text-right pr-16 ${mainArticle.category_slug === 'short-urgent' ? 'md:pr-20' : 'md:items-end md:pr-0'}`}>
                       {/* Urgent Badge - Properly aligned */}
-                      <motion.div
-                        initial={{ opacity: 0, scale: 0.8 }}
-                        animate={{ opacity: 1, scale: 1 }}
-                        className="mb-2"
-                      >
-                         <span className={`bg-primary-crimson text-white border border-primary-crimson ${mainArticle.category_slug === 'short-urgent' ? 'px-3.5 py-1.5 text-xs md:text-base' : 'px-5 py-2 text-sm md:text-xl'} font-black uppercase tracking-[0.2em] rounded-full shadow-[0_0_20px_rgba(225,29,72,0.5)] animate-pulse`}>
-                           عاجل
-                         </span>
-                      </motion.div>
+                      {mainArticle.id !== 'placeholder-short-urgent' && (
+                       <motion.div
+                         initial={{ opacity: 0, scale: 0.8 }}
+                         animate={{ opacity: 1, scale: 1 }}
+                         className="mb-2"
+                       >
+                          <span className={`bg-primary-crimson text-white border border-primary-crimson ${mainArticle.category_slug === 'short-urgent' ? 'px-3.5 py-1.5 text-xs md:text-base' : 'px-5 py-2 text-sm md:text-xl'} font-black uppercase tracking-[0.2em] rounded-full shadow-[0_0_20px_rgba(225,29,72,0.5)] animate-pulse`}>
+                            عاجل
+                          </span>
+                       </motion.div>
+                      )}
 
                       {mainArticle.id !== 'placeholder-short-urgent' && (
-                        <h2 className={`text-white font-black leading-[1.1] mb-2 group-hover:text-accent-gold transition-all duration-500 drop-shadow-2xl line-clamp-4 ${
+                        <h2 className={`text-white font-black leading-[1.4] transition-all duration-500 line-clamp-4 ${
+                          mainArticle.category_slug === 'short-urgent' ? 'bg-black/40 backdrop-blur-md p-4 rounded-2xl border border-white/10 mb-2 drop-shadow-sm' : 'mb-2 drop-shadow-2xl'
+                        } ${
                           (mainArticle.short_title || mainArticle.title || '').length > 180 ? 'text-[9px] md:text-xs' :
                           (mainArticle.short_title || mainArticle.title || '').length > 150 ? 'text-[10px] md:text-sm' :
                           (mainArticle.short_title || mainArticle.title || '').length > 120 ? 'text-xs md:text-base' :
@@ -893,16 +911,23 @@ function Home() {
                           className="flex items-center gap-4 group/vitem bg-white/60 p-3 rounded-2xl hover:bg-white/95 transition-all border border-white/20 shadow-sm hover:shadow-md hover:-translate-y-0.5 transform duration-300"
                         >
                           <div className="w-20 h-20 rounded-2xl overflow-hidden shrink-0 relative order-2 border-2 border-white shadow-md ring-1 ring-black/5 group-hover/vitem:ring-primary-crimson/20 transition-all duration-500">
-                            <img
-                              src={v.writer_image || v.image_url || `https://i.pravatar.cc/150?u=${v.writer_id}`}
-                              alt={v.writer_name}
-                              className="w-full h-full object-cover group-hover/vitem:scale-115 transition-transform duration-700"
-                            />
+                            {((v.writer_image && v.writer_image !== 'null' && v.writer_image !== 'undefined' && v.writer_image.trim() !== '') || (v.image_url && v.image_url !== 'null' && v.image_url !== 'undefined' && v.image_url.trim() !== '')) ? (
+                               <img
+                                 src={v.writer_image || v.image_url}
+                                 alt={v.writer_name}
+                                 className="w-full h-full object-cover group-hover/vitem:scale-115 transition-transform duration-700"
+                               />
+                            ) : (
+                               <div className="w-full h-full bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center relative overflow-hidden group-hover/vitem:scale-115 transition-transform duration-700 border-b border-gray-100">
+                                 <div className="absolute inset-0 opacity-[0.03] bg-[url('https://www.transparenttextures.com/patterns/asfalt-dark.png')]"></div>
+                                 <User className="w-8 h-8 text-gray-300 relative z-10" />
+                               </div>
+                            )}
                           </div>
                           <div className="flex-1 text-right order-1">
                             <h4 className="text-primary-navy font-black text-xs line-clamp-2 leading-relaxed group-hover/vitem:text-primary-crimson transition-colors">{v.title}</h4>
                             <p className="text-[10px] text-gray-400 font-bold mt-1 flex items-center justify-end gap-1">
-                              <span>{v.writer_name || v.author || 'موقع هدس'}</span>
+                              <span>{(() => { const da = settings?.default_author_name || 'موقع هدس'; if (v.category_slug === 'opinion' && v.writer_name) return v.writer_name; const fallback = v.author || da; return fallback === 'صلاح حيدرة' ? da : fallback; })()}</span>
                               <User className="w-3 h-3" />
                             </p>
                           </div>
@@ -942,7 +967,7 @@ function Home() {
                           className="flex items-center gap-4 group/vitem bg-white/50 p-3 rounded-2xl hover:bg-white/80 transition-all border border-gray-100 shadow-sm"
                         >
                           <div className="w-20 h-14 rounded-lg overflow-hidden shrink-0 relative order-1">
-                            {v.image_url ? (
+                            {(v.image_url && v.image_url !== 'null' && v.image_url !== 'undefined' && v.image_url.trim() !== '') ? (
                               <img src={v.image_url || undefined} alt={v.title} className="w-full h-full object-cover group-hover/vitem:scale-110 transition-transform duration-500" referrerPolicy="no-referrer" />
                             ) : (['general', 'short-urgent'].includes(v.category_slug)) ? (
                               <div className="w-full h-full urgent-fallback"></div>
@@ -955,7 +980,7 @@ function Home() {
                           <div className="flex-1 text-right order-2">
                             <h4 className="text-primary-navy font-black text-xs line-clamp-2 leading-relaxed group-hover/vitem:text-primary-crimson transition-colors">{v.title}</h4>
                             <p className="text-[10px] text-gray-400 font-bold mt-1 flex items-center justify-end gap-1">
-                              <span>{"موقع هدس"}</span>
+                              <span>{(() => { const da = settings?.default_author_name || 'موقع هدس'; if (v.category_slug === 'opinion' && v.writer_name) return v.writer_name; const fallback = v.writer_name || v.author || da; return fallback === 'صلاح حيدرة' ? da : fallback; })()}</span>
                               <User className="w-3 h-3" />
                             </p>
                           </div>
@@ -1020,9 +1045,17 @@ function Home() {
                           </div>
                           
                           <div className="w-full h-full relative flex items-center justify-center">
-                            {!article.image_url ? (
+                            {!( (article.image_url && article.image_url !== 'null' && article.image_url !== 'undefined' && article.image_url.trim() !== '') || (article.category_slug === 'opinion' && article.writer_image && article.writer_image !== 'null' && article.writer_image !== 'undefined' && article.writer_image.trim() !== '') ) ? (
                               ['general', 'short-urgent'].includes(article.category_slug) ? (
-                                <img src="/urgent_fallback.jpg" alt="عاجل" className="w-full h-full object-cover transition-transform duration-1000 scale-100 group-hover/item:scale-105" />
+                                <div className="w-full h-full bg-primary-crimson flex flex-col items-center justify-center p-4 overflow-hidden relative transition-transform duration-1000 scale-100 group-hover/item:scale-105">
+                                    {/* Solid Red Background for Urgent */}
+                                    {/* Simple Solid Red for Short-Urgent list fallback, ImageIcon for others */}
+                                    {article.category_slug !== 'short-urgent' && (
+                                      <div className="w-12 h-12 bg-white/10 rounded-full flex items-center justify-center">
+                                        <ImageIcon className="w-6 h-6 text-white/30" />
+                                      </div>
+                                    )}
+                                </div>
                               ) : (
                                 <div className="w-full h-full bg-gradient-to-br from-gray-50 to-gray-100 flex flex-col items-center justify-center p-6 transition-transform duration-1000 scale-100 group-hover/item:scale-105 border-b border-gray-100">
                                   <div className="absolute inset-0 opacity-[0.03] bg-[url('https://www.transparenttextures.com/patterns/asfalt-dark.png')]"></div>
@@ -1032,7 +1065,7 @@ function Home() {
                               )
                             ) : (
                               <img
-                                src={article.image_url}
+                                src={article.category_slug === 'opinion' ? (article.writer_image || article.image_url) : article.image_url}
                                 alt={article.title}
                                 className="w-full h-full object-cover transition-transform duration-1000 scale-100 group-hover/item:scale-105"
                                 referrerPolicy="no-referrer"
@@ -1067,7 +1100,17 @@ function Home() {
                             <div className="flex items-center gap-3 md:gap-6 text-gray-400 overflow-hidden">
                               <span className="flex items-center gap-1 sm:gap-2 group-hover/item:text-primary-navy transition-colors truncate max-w-[150px] sm:max-w-none">
                                 <User className="w-3 h-3 sm:w-4 sm:h-4 text-primary-crimson/50" /> 
-                                {article.category_slug === 'opinion' ? (article.writer_name || article.author || "موقع هدس") : "موقع هدس"}
+                                {(() => {
+                                  const defaultAuthor = settings?.default_author_name || "موقع هدس";
+                                  const authorName = article.category_slug === 'opinion' 
+                                    ? (article.writer_name || article.author || defaultAuthor)
+                                    : defaultAuthor;
+                                  
+                                  if (authorName === "صلاح حيدرة") {
+                                    return defaultAuthor;
+                                  }
+                                  return authorName;
+                                })()}
                               </span>
                               <span className="flex items-center gap-1 sm:gap-2 group-hover/item:text-primary-navy transition-colors shrink-0"><Eye className="w-3 h-3 sm:w-4 sm:h-4 text-primary-crimson/50" /> {article.views || 0} قراءة</span>
                               <span className="hidden sm:flex items-center gap-2 group-hover/item:text-primary-navy transition-colors shrink-0"><MapPin className="w-4 h-4 text-primary-crimson/50" /> {settings?.site_location || "صنعاء"}</span>
@@ -1484,7 +1527,7 @@ function Home() {
                       <div className="relative z-10">
                         <p className="text-sm text-gray-500 font-bold mb-1">رئيس التحرير</p>
                         <p className="font-black text-transparent bg-clip-text bg-gradient-to-r from-primary-navy to-primary-crimson text-lg animate-pulse">
-                          {settings.chief_editor || 'موقع هدس'}
+                          {settings?.chief_editor || 'موقع هدس'}
                         </p>
                       </div>
                     </div>

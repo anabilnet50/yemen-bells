@@ -62,8 +62,9 @@ export default function AdminDashboard() {
   const [currentCategory, setCurrentCategory] = useState<any>({ name: '', slug: '' });
   const [currentWriter, setCurrentWriter] = useState<any>({ name: '', bio: '', image_url: '' });
   const [currentAd, setCurrentAd] = useState<any>({ title: '', image_url: '', link_url: '', adsense_code: '', position: 'sidebar', is_active: 1, start_date: '', end_date: '' });
-  const [currentUserData, setCurrentUserData] = useState<any>({ username: '', password: '', full_name: '', role: 'editor', permissions: [] });
+  const [currentUserData, setCurrentUserData] = useState<any>({ username: '', password: '', full_name: '', email: '', role: 'editor', permissions: [] });
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [articleStatusLoading, setArticleStatusLoading] = useState<number | null>(null);
 
   // History Filters
   const [historyFilterUser, setHistoryFilterUser] = useState('');
@@ -345,6 +346,8 @@ export default function AdminDashboard() {
     })
       .then(() => {
         showNotification('تم تحديث الإعدادات بنجاح');
+        fetchSettings();
+        fetchArticles();
         fetchHistory();
       })
       .catch(() => showNotification('فشل تحديث الإعدادات', 'error'))
@@ -612,15 +615,19 @@ export default function AdminDashboard() {
   };
 
   const handleToggleArticleStatus = (id: number, currentStatus: number) => {
+    if (articleStatusLoading === id) return;
+    setArticleStatusLoading(id);
     const newStatus = currentStatus === 1 ? 0 : 1;
     authenticatedFetch(`/api/articles/${id}/status`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ is_active: newStatus })
-    }).then(() => {
+    })
+    .then(() => {
       fetchArticles();
       showNotification('تم تغيير حالة الخبر');
-    });
+    })
+    .finally(() => setArticleStatusLoading(null));
   };
 
   const handleRestoreArticle = (id: number) => {
@@ -1105,6 +1112,7 @@ export default function AdminDashboard() {
                     writers={writers}
                     setIsEditingTicker={setIsEditingTicker}
                     isSubmitting={isSubmitting}
+                    settings={settings}
                   />
                 )}
 

@@ -34,11 +34,12 @@ const IPManagement = () => {
                 const failedLogins = auditData
                     .filter((log: any) => log.action === 'محاولة دخول فاشلة')
                     .map((log: any) => {
-                        // Extract IP from "محاولة دخول باسم المستخدم: xxx من IP: yyy"
+                        // Extract IP from "محاولة دخول باسم المستخدم: xxx من IP: yyy" (old format)
+                        // Or use the new ip_address column
                         const match = log.details.match(/IP:\s*([\d\.]+|[a-fA-F0-9:]+)/);
                         return {
                             ...log,
-                            extracted_ip: match ? match[1] : 'غير معروف'
+                            extracted_ip: log.ip_address || (match ? match[1] : 'غير معروف')
                         };
                     });
                 setFailedAttempts(failedLogins);

@@ -17,6 +17,11 @@ import {
   Bookmark,
   ArrowLeft,
   DollarSign,
+  Search,
+  CheckCircle,
+  AlertCircle,
+  Clock3,
+  Flame,
   Shield,
   Image as ImageIcon
 } from "lucide-react";
@@ -214,7 +219,12 @@ export default function ArticleDetail() {
               <div className="p-4 md:p-8 pb-0 relative group">
                 {!article.image_url && !(article.category_slug === 'opinion' && article.writer_image) ? (
                   ['general', 'short-urgent'].includes(article.category_slug) ? (
-                    <img src="/images/urgent-fallback.png" alt="عاجل" className="w-full aspect-video object-cover rounded-3xl" />
+                    <div className="w-full aspect-video bg-primary-crimson flex flex-col items-center justify-center p-4 overflow-hidden relative rounded-3xl">
+                      {/* Solid Red Background for Urgent Placeholder, ImageIcon for others */}
+                      <div className="w-24 h-24 bg-white/10 rounded-full flex items-center justify-center">
+                          <ImageIcon className="w-12 h-12 text-white/30" />
+                      </div>
+                    </div>
                   ) : (
                     <div className="w-full aspect-video bg-gradient-to-br from-gray-50 to-gray-100 flex flex-col items-center justify-center p-12 transition-transform duration-1000 scale-100 group-hover:scale-[1.03] border border-gray-100 rounded-3xl shadow-sm">
                       <div className="absolute inset-0 opacity-[0.03] bg-[url('https://www.transparenttextures.com/patterns/asfalt-dark.png')]"></div>
@@ -264,10 +274,14 @@ export default function ArticleDetail() {
                       <User className="w-3 h-3 md:w-5 md:h-5 text-primary-crimson" />
                     )}
                     <span className="font-black text-primary-navy truncate max-w-[150px] md:max-w-none">
-                      {article.category_slug === 'opinion' 
-                        ? (article.writer_name || article.author || "موقع هدس")
-                        : "موقع هدس"
-                      }
+                      {(() => {
+                        const defaultAuthor = settings?.default_author_name || "موقع هدس";
+                        if (article.category_slug === 'opinion' && article.writer_name) {
+                          return article.writer_name;
+                        }
+                        const fallbackName = article.author || defaultAuthor;
+                        return fallbackName === "صلاح حيدرة" ? defaultAuthor : fallbackName;
+                      })()}
                     </span>
                   </div>
                   <div className="flex items-center gap-1 shrink-0">
